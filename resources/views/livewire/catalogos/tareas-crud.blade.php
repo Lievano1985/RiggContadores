@@ -9,20 +9,25 @@
 
     <div class="flex space-x-4 items-center">
         <input type="text" wire:model.live.debounce.500ms="search" placeholder="Buscar por nombre"
-            class="w-1/2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white" />
+            class="w-1/2 px-3 py-2 border rounded-md 
+                   dark:bg-gray-700 dark:text-white 
+                   border-gray-300 dark:border-gray-600 
+                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                   focus:outline-none" />
 
-            <select wire:model.live="obligacionFiltro" class="w-full px-3 py-2 border rounded">
-                <option value="">-- Todas --</option>
-                <option value="sin">Sin obligación</option>
-                @foreach($obligaciones as $obligacion)
-                    <option value="{{ $obligacion->id }}">{{ $obligacion->nombre }}</option>
-                @endforeach
-            </select>
-            
+        <select wire:model.live="obligacionFiltro"
+            class="w-full px-3 py-2 border rounded-md 
+                   dark:bg-gray-700 dark:text-white 
+                   border-gray-300 dark:border-gray-600 
+                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                   focus:outline-none">
+            <option value="">-- Todas --</option>
+            <option value="sin">Sin obligación</option>
+            @foreach($obligaciones as $obligacion)
+                <option value="{{ $obligacion->id }}">{{ $obligacion->nombre }}</option>
+            @endforeach
+        </select>
     </div>
-
-    
-
 
     <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700 mt-4">
         <thead class="bg-stone-100 dark:bg-stone-900">
@@ -75,7 +80,11 @@
                 <div>
                     <label>Nombre</label>
                     <input type="text" wire:model.defer="form.nombre"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white" />
+                        class="w-full px-3 py-2 border rounded-md 
+                               dark:bg-gray-700 dark:text-white 
+                               border-gray-300 dark:border-gray-600 
+                               focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                               focus:outline-none" />
                     @error('form.nombre')
                         <span class="text-red-600 text-sm">{{ $message }}</span>
                     @enderror
@@ -83,7 +92,12 @@
 
                 <div>
                     <label>Descripción</label>
-                    <textarea wire:model.defer="form.descripcion" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"></textarea>
+                    <textarea wire:model.defer="form.descripcion"
+                        class="w-full px-3 py-2 border rounded-md 
+                               dark:bg-gray-700 dark:text-white 
+                               border-gray-300 dark:border-gray-600 
+                               focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                               focus:outline-none"></textarea>
                     @error('form.descripcion')
                         <span class="text-red-600 text-sm">{{ $message }}</span>
                     @enderror
@@ -92,7 +106,11 @@
                 <div>
                     <label>Obligación relacionada (opcional)</label>
                     <select wire:model.defer="form.obligacion_id"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                        class="w-full px-3 py-2 border rounded-md 
+                               dark:bg-gray-700 dark:text-white 
+                               border-gray-300 dark:border-gray-600 
+                               focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                               focus:outline-none">
                         <option value="">Sin obligación</option>
                         @foreach ($obligaciones as $obligacion)
                             <option value="{{ $obligacion->id }}">{{ $obligacion->nombre }}</option>

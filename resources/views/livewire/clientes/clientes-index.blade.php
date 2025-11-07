@@ -39,25 +39,26 @@
                             <td class="px-4 py-2">{{ $cliente->despacho->nombre ?? '-' }}</td>
                         @endif
                         <td class="px-4 py-2 space-x-2">
-                           {{--  <button wire:click="abrirModalEditar({{ $cliente->id }})"
+                            {{--  <button wire:click="abrirModalEditar({{ $cliente->id }})"
                                 class="text-stone-600 hover:underline">Editar</button> --}}
+                                @hasrole('admin_despacho')
                             <button wire:click="confirmarEliminar({{ $cliente->id }})"
                                 class="text-red-600 hover:underline">Eliminar</button>
+                                @endhasrole
+
                             <a href="{{ route('clientes.expediente.show', $cliente->id) }}"
-                               class="text-green-600 hover:underline">Expediente</a>
-                               
+                                class="text-green-600 hover:underline">Expediente</a>
+
                         </td>
                         <td class="px-4 py-2">
-                            @if($cliente->asignaciones_completas)
-                               
-                                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✔ Completo</span>
-
+                            @if ($cliente->asignaciones_completas)
+                                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✔
+                                    Completo</span>
                             @else
-                            <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">⚠  Incompleto</span>
-
+                                <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">⚠ Incompleto</span>
                             @endif
                         </td>
-                        
+
                     </tr>
                 @empty
                     <tr>
@@ -76,127 +77,138 @@
     </div>
 
     <!-- Modal Crear/Editar -->
-    @if($modalFormVisible)
-    <div class="fixed inset-0 flex items-center justify-center bg-stone-600/70 z-50">
-        <div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white p-6 rounded-lg w-full max-w-2xl shadow-lg overflow-y-auto max-h-[90vh]">
-            <h3 class="text-lg font-semibold mb-4 text-stone-600">
-                {{ $clienteId ? 'Editar Cliente' : 'Crear Cliente' }}
-            </h3>
+    @if ($modalFormVisible)
+        <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
+            <div
+                class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white p-6 rounded-lg w-full max-w-2xl shadow-lg overflow-y-auto max-h-[90vh]">
+                <h3 class="text-lg font-semibold mb-4 text-stone-600">
+                    {{ $clienteId ? 'Editar Cliente' : 'Crear Cliente' }}
+                </h3>
 
-            <form wire:submit.prevent="guardar" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm mb-1">Nombre comercial</label>
-                        <input type="text" wire:model.defer="nombre" 
-                        class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline" 
-                        oninput="this.value = this.value.toUpperCase()" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Razón social</label>
-                        <input type="text" wire:model.defer="razon_social" 
-                        class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline" 
-                        oninput="this.value = this.value.toUpperCase()" required>
-                    </div>
+                <form wire:submit.prevent="guardar" class="space-y-4" x-data="{ tipo: @entangle('tipo_persona') }">
 
-                    <div>
-                        <label class="block text-sm mb-1">RFC</label>
-                        <input type="text" wire:model.defer="rfc" 
-                        class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline" 
-                        oninput="this.value = this.value.toUpperCase()" required>
-                        @error('rfc')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">CURP</label>
-                        <input type="text" wire:model.defer="curp"
-                        class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline" 
-                        oninput="this.value = this.value.toUpperCase()" >
-                        @error('curp')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                    <div>
-                        <label class="block text-sm mb-1">Correo</label>
-                        <input type="email" wire:model.defer="correo" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm mb-1">Teléfono</label>
-                        <input type="text" wire:model.defer="telefono" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
-                    </div>
+                        <div>
+                            <label class="block text-sm mb-1">Tipo de Persona</label>
+                            <select wire:model.live="tipo_persona"
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white 
+                                   focus:border-amber-600 focus:outline-none"
+                                required>
+                                <option value="">-- Selecciona --</option>
+                                <option value="fisica">Persona Física</option>
+                                <option value="moral">Persona Moral</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        </div>
 
-                  
 
-                    <div>
-                        <label class="block text-sm mb-1">Tipo de Persona</label>
-                        <select wire:model.defer="tipo_persona" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:outline-none" required>
-                            <option value="">-- Selecciona --</option>
-                            <option value="fisica">Persona Física</option>
-                            <option value="moral">Persona Moral</option>
-                        </select>
-                    </div>
-                    <div>
+
+
+                        <!-- Resto de campos igual -->
+                        <div>
+                            <label class="block text-sm mb-1">Razón social</label>
+                            <input type="text" wire:model.defer="razon_social"
+                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline"
+                                oninput="this.value = this.value.toUpperCase()" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">Nombre comercial</label>
+                            <input type="text" wire:model.defer="nombre"
+                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline"
+                                oninput="this.value = this.value.toUpperCase()" required>
+                        </div>
+
+
+
+                        <div>
+                            <label class="block text-sm mb-1">RFC</label>
+                            <input type="text" wire:model.defer="rfc"
+                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline"
+                                oninput="this.value = this.value.toUpperCase()" required>
+                            @error('rfc')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">CURP</label>
+                            <input type="text" wire:model.defer="curp" @disabled($tipo_persona === 'moral')
+                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white 
+                                      focus:outline-amber-600 focus:outline disabled:bg-gray-200 disabled:dark:bg-gray-600 disabled:cursor-not-allowed"
+                                oninput="this.value = this.value.toUpperCase()"
+                                @if ($tipo_persona === 'fisica') required @endif>
+                            @error('curp')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-sm mb-1">Correo</label>
+                            <input type="email" wire:model.defer="correo"
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline"
+                                required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm mb-1">Teléfono</label>
+                            <input type="text" wire:model.defer="telefono"
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        </div>
+
+                        {{--   <div>
                         <label class="block text-sm mb-1">Tiene trabajadores</label>
-                        <select wire:model.defer="tiene_trabajadores" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:outline-none">
+                        <select wire:model.defer="tiene_trabajadores"
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:outline-none">
                             <option value="1">Sí</option>
                             <option value="0">No</option>
                         </select>
                     </div>
+             --}}
+                    </div>
 
-                <div class="flex justify-end space-x-2 mt-6">
-                    <button type="button" wire:click="$set('modalFormVisible', false)"
+                    <div class="flex justify-end space-x-2 mt-6">
+                        <button type="button" wire:click="$set('modalFormVisible', false)"
                             class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">
-                        Cancelar
-                    </button>
-                    <button type="submit"
-                            class="px-4 py-2 bg-stone-600 text-white rounded hover:bg-stone-700">
-                        Guardar
-                    </button>
-                </div>
-            </form>
-            <div wire:loading wire:target="guardar" class="absolute inset-0 flex items-center justify-center bg-black/75 dark:bg-gray-900/75 rounded-lg z-50">
-                <div class="flex flex-col items-center space-y-2">
-                    <svg class="animate-spin h-8 w-8 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 01-8 8z"/>
-                    </svg>
-                    <p class="text-stone-600 dark:text-white">Guardando cliente y creando carpetas...</p>
-                </div>
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-stone-600 text-white rounded hover:bg-stone-700">
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+                <x-spinner target="guardar" />
+
+            
             </div>
         </div>
-    </div>
     @endif
     @if ($confirmingDelete)
-    <div class="fixed inset-0 flex items-center justify-center bg-stone-600/70 z-50">
-        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg border border-amber-900 text-center w-full max-w-md mx-auto">
-            <p class="text-stone-600 dark:text-white text-lg font-semibold mb-4">
-                ¿Estás seguro que deseas eliminar este cliente?
-            </p>
-            <div class="flex justify-center space-x-4">
-                <button wire:click="eliminar"
-                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                    Sí, eliminar
-                </button>
-                <button wire:click="$set('confirmingDelete', false)"
+        <div class="fixed inset-0 flex items-center justify-center bg-stone-600/70 z-50">
+            <div
+                class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg border border-amber-900 text-center w-full max-w-md mx-auto">
+                <p class="text-stone-600 dark:text-white text-lg font-semibold mb-4">
+                    ¿Estás seguro que deseas eliminar este cliente?
+                </p>
+                <div class="flex justify-center space-x-4">
+                    <button wire:click="eliminar" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                        Sí, eliminar
+                    </button>
+                    <button wire:click="$set('confirmingDelete', false)"
                         class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">
-                    Cancelar
-                </button>
+                        Cancelar
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-@endif
-@if (session()->has('message'))
-<div
-    x-data="{ show: true }"
-    x-init="setTimeout(() => show = false, 3000)"
-    x-show="show"
-    x-transition:leave="transition ease-in duration-500"
-    x-transition:leave-start="opacity-100 transform translate-y-0"
-    x-transition:leave-end="opacity-0 transform -translate-y-10"
-    class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm p-4 text-sm text-green-800 bg-green-200 rounded-lg shadow-lg dark:bg-green-200 dark:text-green-900"
->
- {{ session('message') }}
-</div>
-@endif
+    @endif
+    @if (session()->has('message'))
+        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show"
+            x-transition:leave="transition ease-in duration-500"
+            x-transition:leave-start="opacity-100 transform translate-y-0"
+            x-transition:leave-end="opacity-0 transform -translate-y-10"
+            class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm p-4 text-sm text-green-800 bg-green-200 rounded-lg shadow-lg dark:bg-green-200 dark:text-green-900">
+            {{ session('message') }}
+        </div>
+    @endif
 </div>

@@ -13,6 +13,7 @@ use App\Notifications\DatosAccesoCliente;
 use App\Services\BrevoService;
 
 
+
 class ClientesIndex extends Component
 {
     use WithPagination;
@@ -48,26 +49,25 @@ class ClientesIndex extends Component
 
     protected $paginationTheme = 'tailwind';
 
-    protected $rules = [
-        'nombre' => 'required|string|max:255',
-        'rfc' => 'required|string|min:12|max:13',
-        'correo' => 'required|email|max:255',
-        'tipo_persona' => 'required|in:fisica,moral',
-        'telefono' => 'nullable|string|max:20',
-        'direccion' => 'nullable|string|max:255',
-        'nombre_comercial' => 'nullable|string|max:255',
-        'razon_social' => 'nullable|string|max:255',
-        'curp' => 'nullable|string|size:18',
-        'codigo_postal' => 'nullable|string|max:10',
-        'tiene_trabajadores' => 'boolean',
-        'inicio_obligaciones' => 'nullable|date',
-        'fin_obligaciones' => 'nullable|date',
-        'contrato' => 'nullable|string|max:255',
-        'vigencia' => 'nullable|date',
-        'representante_legal' => 'nullable|string|max:255',
-        'rfc_representante' => 'nullable|string|min:12|max:13',
-        'correo_representante' => 'nullable|email|max:255',
-    ];
+    protected function rules()
+    {
+        return [
+            'nombre' => 'required|string|max:255',
+            'rfc' => 'required|string|min:12|max:13',
+            'correo' => 'required|email|max:255',
+            'tipo_persona' => 'required|in:fisica,moral',
+            'telefono' => 'nullable|string|max:20',
+            'direccion' => 'nullable|string|max:255',
+            'nombre_comercial' => 'nullable|string|max:255',
+            'razon_social' => 'nullable|string|max:255',
+            'curp' => $this->tipo_persona === 'fisica'
+                ? 'required|string|size:18'
+                : 'nullable',
+            'codigo_postal' => 'nullable|string|max:10',
+            'tiene_trabajadores' => 'boolean',
+        ];
+    }
+    
 
 
     public function __construct()

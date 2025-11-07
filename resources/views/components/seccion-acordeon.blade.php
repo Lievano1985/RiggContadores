@@ -1,10 +1,12 @@
+
+
+@props(['titulo', 'open' => false])
 {{-- 
 Componente: seccion-acordeon
 Autor: Luis Liévano - JL3 Digital
 Descripción: Contenedor tipo acordeón (expandible/colapsable) para secciones del formulario.
 --}}
-
-<div x-data="{ expanded: true }" class="border-b border-gray-300 dark:border-gray-700 py-2">
+<div x-data="{ expanded: @js($open) }" class="border-b border-gray-300 dark:border-gray-700 py-2">
     <h2>
         <button type="button"
             class="flex items-center justify-between w-full text-left font-semibold py-2 text-stone-700 dark:text-white"

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace App\Livewire\Control;
 
@@ -21,7 +21,8 @@ class TareasAsignadasCrud extends Component
     public $modalFormVisible = false;
     public $tareasCompletadas = false;
     public $modoEdicion = false;
-
+    public $filtroEjercicio;
+    public $filtroMes;
     public $tareaId;
     public $tarea_catalogo_id;
     public $contador_id;
@@ -60,15 +61,56 @@ class TareasAsignadasCrud extends Component
         $this->cargarTareasDisponibles();
         $this->verificarTareasCompletadas();
         $this->arbolCarpetas = ArbolCarpetas::obtenerArbol($cliente->id);
+
+        // ✅ inicializa filtros
+        $this->filtroEjercicio = now()->year;
+        $this->filtroMes = now()->month;
+    }
+    private function cargarTareasAsignadasFiltradas()
+    {
+        $añoActual = now()->year;
+        $mesActual = now()->month;
+
+        $query = TareaAsignada::with(['tareaCatalogo', 'contador', 'obligacionClienteContador.obligacion'])
+            ->where('cliente_id', $this->cliente->id);
+
+        // === Filtro automático (mes actual o anteriores) ===
+        if (
+            empty($this->filtroEjercicio) || empty($this->filtroMes) ||
+            ((int)$this->filtroEjercicio === $añoActual && (int)$this->filtroMes === $mesActual)
+        ) {
+
+            $query->where(function ($q) use ($añoActual, $mesActual) {
+                $q->whereYear('fecha_limite', $añoActual)
+                    ->whereMonth('fecha_limite', '<=', $mesActual);
+            })
+                ->whereNotIn('estatus', ['terminada', 'cancelada', 'revisada']);
+        }
+
+        // === Filtro manual ===
+        else {
+            $query->whereYear('fecha_limite', $this->filtroEjercicio)
+                ->whereMonth('fecha_limite', $this->filtroMes);
+        }
+
+        // === Ordenar por fecha límite
+        return $query->orderBy('fecha_limite', 'asc')->paginate(10);
+    }
+    public function updatedFiltroEjercicio()
+    {
+        $this->resetPage(); // reinicia paginación
     }
 
+    public function updatedFiltroMes()
+    {
+        $this->resetPage();
+    }
     // === Render del componente ===
     public function render()
     {
         return view('livewire.control.tareas-asignadas', [
-            'tareasAsignadas' => TareaAsignada::where('cliente_id', $this->cliente->id)
-                ->with(['tareaCatalogo', 'contador', 'obligacionClienteContador.obligacion'])
-                ->paginate(10),
+            'tareasAsignadas' => $this->cargarTareasAsignadasFiltradas(),
+
             'contadores' => User::role('contador')->get(),
             'obligacionesAsignadas' => (function () {
                 $base = ObligacionClienteContador::with(['obligacion'])
@@ -147,7 +189,7 @@ class TareasAsignadasCrud extends Component
     public function crear()
     {
         $this->resetForm();
-        $this->modoEdicion = false; 
+        $this->modoEdicion = false;
         $this->modalFormVisible = true;
     }
 
@@ -179,9 +221,9 @@ class TareasAsignadasCrud extends Component
     public function guardar()
     {
         $this->validate();
-    
+
         $fechaAsignacion = $this->contador_id ? now() : null;
-    
+
         TareaAsignada::updateOrCreate(
             ['id' => $this->tareaId],
             [
@@ -195,12 +237,12 @@ class TareasAsignadasCrud extends Component
                 'carpeta_drive_id' => $this->carpeta_drive_id,
             ]
         );
-    
+
         $this->modalFormVisible = false;
         $this->resetForm();
         $this->cargarTareasDisponibles();
         $this->verificarTareasCompletadas();
-    
+
         session()->flash('success', 'Tarea asignada correctamente.');
     }
 
@@ -251,7 +293,7 @@ class TareasAsignadasCrud extends Component
 
     public function cargarTareasAsignadas()
     {
-        $this->resetPage(); 
+        $this->resetPage();
     }
 
     public function withValidator($validator)

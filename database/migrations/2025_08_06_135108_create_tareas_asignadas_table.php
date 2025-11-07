@@ -24,7 +24,7 @@ return new class extends Migration
             $table->dateTime('fecha_limite')->nullable();
             $table->integer('tiempo_estimado')->nullable();
 
-            $table->enum('estatus', ['asignada',  'en_progreso', 'realizada', 'revisada', 'rechazada'])->default('asignada');
+            $table->enum('estatus', ['asignada',  'en_progreso', 'realizada', 'revisada', 'rechazada','cancelada'])->default('asignada');
             $table->dateTime('fecha_inicio')->nullable();
             $table->dateTime('fecha_termino')->nullable();
             $table->year('ejercicio')->nullable()->index();

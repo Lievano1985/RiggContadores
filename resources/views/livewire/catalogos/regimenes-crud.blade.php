@@ -8,29 +8,35 @@
             + Nuevo régimen
         </button>
     </div>
+
     <div class="flex items-center gap-4">
-        <input type="text" wire:model..live.debounce.500ms="search"
-            class="w-1/2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600"
+        <input type="text" wire:model.live.debounce.500ms="search"
+            class="w-1/2 px-3 py-2 border rounded-md 
+                   dark:bg-gray-700 dark:text-white 
+                   border-gray-300 dark:border-gray-600 
+                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                   focus:outline-none"
             placeholder="Buscar por nombre o clave...">
     </div>
+
     <!-- Tabla -->
     <div class="overflow-x-auto rounded shadow">
         <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
             <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
-                    <th class="px-4 py-2 text-left "wire:click="sortBy('nombre')">
+                    <th class="px-4 py-2 text-left " wire:click="sortBy('nombre')">
                         Nombre
                         @if ($sortField === 'nombre')
                             <span>{{ $sortDirection === 'asc' ? '▲' : '▼' }}</span>
                         @endif
                     </th>
-                    <th class="px-4 py-2 text-left "wire:click="sortBy('clave_sat')">
+                    <th class="px-4 py-2 text-left " wire:click="sortBy('clave_sat')">
                         Clave
                         @if ($sortField === 'clave_sat')
                             <span>{{ $sortDirection === 'asc' ? '▲' : '▼' }}</span>
                         @endif
                     </th>
-                    <th class="px-4 py-2 text-left "wire:click="sortBy('tipo_persona')">
+                    <th class="px-4 py-2 text-left " wire:click="sortBy('tipo_persona')">
                         Persona
                         @if ($sortField === 'tipo_persona')
                             <span>{{ $sortDirection === 'asc' ? '▲' : '▼' }}</span>
@@ -43,7 +49,6 @@
                 @foreach ($regimenes as $regimen)
                     <tr>
                         <td class="px-4 py-2">{{ $regimen->nombre }}</td>
-                        
                         <td class="px-4 py-2">{{ $regimen->clave_sat }}</td>
                         <td class="px-4 py-2 capitalize">{{ $regimen->tipo_persona }}</td>
                         <td class="px-4 py-2 space-x-2">
@@ -76,21 +81,33 @@
                     <div>
                         <label class="block text-sm font-medium mb-1">Nombre</label>
                         <input type="text" wire:model.defer="nombre"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                            class="w-full px-3 py-2 border rounded-md 
+                                   dark:bg-gray-700 dark:text-white 
+                                   border-gray-300 dark:border-gray-600 
+                                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                   focus:outline-none">
                         @error('nombre') <div class="text-red-500 text-xs mt-1">{{ $message }}</div> @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-1">Clave SAT</label>
                         <input type="text" wire:model.defer="clave_sat"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                            class="w-full px-3 py-2 border rounded-md 
+                                   dark:bg-gray-700 dark:text-white 
+                                   border-gray-300 dark:border-gray-600 
+                                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                   focus:outline-none">
                         @error('clave_sat') <div class="text-red-500 text-xs mt-1">{{ $message }}</div> @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-1">Tipo de persona</label>
                         <select wire:model.defer="tipo_persona"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                            class="w-full px-3 py-2 border rounded-md 
+                                   dark:bg-gray-700 dark:text-white 
+                                   border-gray-300 dark:border-gray-600 
+                                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                   focus:outline-none">
                             <option value="">Seleccione...</option>
                             <option value="física">Persona Física</option>
                             <option value="moral">Persona Moral</option>

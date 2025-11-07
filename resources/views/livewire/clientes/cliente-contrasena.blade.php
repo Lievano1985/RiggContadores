@@ -64,7 +64,7 @@
 
         <!-- Modal -->
         @if ($modalFormVisible)
-            <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div class="fixed inset-0 bg-stone-600/50 z-50 flex items-center justify-center">
                 <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl space-y-4">
                     <h2 class="text-lg font-bold text-stone-600 dark:text-white">
                         {{ $isEditing ? 'Editar' : 'Nueva' }} contraseña

@@ -12,12 +12,39 @@
             </button>
         </div>
     </div>
-
+    <div class="flex space-x-3 mb-4">
+        <div>
+            <label class="text-sm font-semibold">Ejercicio</label>
+            <select wire:model.live="filtroEjercicio"
+            class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+            border-gray-300 dark:border-gray-600 focus:border-amber-600
+            focus:ring focus:ring-amber-500/40 focus:outline-none">
+                            @foreach(range(now()->year, now()->year - 3) as $year)
+                    <option value="{{ $year }}">{{ $year }}</option>
+                @endforeach
+            </select>
+        </div>
+    
+        <div>
+            <label class="text-sm font-semibold">Mes</label>
+            <select wire:model.live="filtroMes"
+            class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+            border-gray-300 dark:border-gray-600 focus:border-amber-600
+            focus:ring focus:ring-amber-500/40 focus:outline-none">
+                            @foreach(range(1,12) as $m)
+                    <option value="{{ $m }}">
+                        {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+    
     <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700 text-sm">
         <thead class="bg-stone-100 dark:bg-stone-900">
             <tr>
                 <th class="px-4 py-2 text-left">Tarea</th>
-                <th class="px-4 py-2 text-left">Auxiliar</th>
+                <th class="px-4 py-2 text-left">Contador Responsable</th>
                 <th class="px-4 py-2 text-left">Obligación</th>
                 <th class="px-4 py-2 text-left">Vencimiento</th>
                 <th class="px-4 py-2 text-left">Acciones</th>
@@ -25,22 +52,65 @@
         </thead>
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             @foreach ($tareasAsignadas as $tarea)
-                <tr>
-                    <td class="px-4 py-2">{{ $tarea->tareaCatalogo->nombre }}</td>
+                <tr class="@if ($tarea->estatus === 'cancelada') opacity-70 dark:opacity-60 @endif">
+                    <td class="px-4 py-2">
+                        <div class="flex items-center gap-2">
+                            <span>{{ $tarea->tareaCatalogo->nombre }}</span>
+        
+                            {{-- Badge según estatus --}}
+                            @switch($tarea->estatus)
+                                @case('cancelada')
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-600 text-white dark:bg-gray-700 cursor-help"
+                                        title="Tarea cancelada por baja de obligación o cliente">
+                                        Cancelada
+                                    </span>
+                                @break
+        
+                                @case('terminada')
+                                @case('revisada')
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-600 text-white">
+                                        {{ ucfirst($tarea->estatus) }}
+                                    </span>
+                                @break
+        
+                                @case('en_progreso')
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500 text-white">
+                                        En progreso
+                                    </span>
+                                @break
+        
+                                @default
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-400 text-white">
+                                        {{ ucfirst($tarea->estatus) }}
+                                    </span>
+                            @endswitch
+                        </div>
+                    </td>
+        
                     <td class="px-4 py-2">{{ $tarea->contador->name ?? '-' }}</td>
+        
                     <td class="px-4 py-2">
                         {{ $tarea->obligacionClientecontador?->obligacion?->nombre ?? 'Sin obligación' }}
                     </td>
-                    <td class="px-4 py-2">{{ $tarea->fecha_limite }}</td>
+        
+                    <td class="px-4 py-2">
+                        {{ $tarea->fecha_limite ? \Carbon\Carbon::parse($tarea->fecha_limite)->format('Y-m-d') : '—' }}
+                    </td>
+        
                     <td class="px-4 py-2 space-x-2">
-                        <button wire:click="editar({{ $tarea->id }})"
-                            class="text-blue-600 hover:underline">Editar</button>
-                        <button wire:click="eliminar({{ $tarea->id }})"
-                            class="text-red-600 hover:underline">Eliminar</button>
+                        @if ($tarea->estatus !== 'cancelada')
+                            <button wire:click="editar({{ $tarea->id }})"
+                                class="text-blue-600 hover:underline">Editar</button>
+                            <button wire:click="eliminar({{ $tarea->id }})"
+                                class="text-red-600 hover:underline">Eliminar</button>
+                        @else
+                            <span class="text-gray-500 text-sm italic">Sin acciones</span>
+                        @endif
                     </td>
                 </tr>
             @endforeach
         </tbody>
+        
     </table>
 
     <div class="mt-4">
@@ -48,9 +118,8 @@
     </div>
 
     {{-- Modal --}}
-    {{-- Modal --}}
     @if ($modalFormVisible)
-        <div class="fixed inset-0 flex items-center justify-center bg-stone-800/70 z-50 p-4">
+        <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50 p-4">
             <div
                 class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl max-h-[85vh] overflow-y-auto">
                 <h3 class="text-lg font-semibold mb-4 text-stone-700 dark:text-white">
@@ -72,9 +141,13 @@
                             <input type="hidden" wire:model="obligacion_id">
                         @else
                             <select wire:model.live="obligacion_id"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                                class="w-full px-3 py-2 border rounded-md 
+                                       dark:bg-gray-700 dark:text-white 
+                                       border-gray-300 dark:border-gray-600 
+                                       focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                       focus:outline-none">
                                 <option value="">-- Selecciona una opción --</option>
-                                <option value="sin">Sin obligación</option> {{-- 👈 opción extra --}}
+                                <option value="sin">Sin obligación</option>
                                 @foreach ($obligacionesAsignadas as $pivot)
                                     <option value="{{ $pivot->id }}">{{ $pivot->obligacion->nombre }}</option>
                                 @endforeach
@@ -97,15 +170,18 @@
                         @else
                             @if ($tareasDisponibles && $tareasDisponibles->count() > 0)
                                 <select wire:model="tarea_catalogo_id"
-                                    class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                                    class="w-full px-3 py-2 border rounded-md 
+                                           dark:bg-gray-700 dark:text-white 
+                                           border-gray-300 dark:border-gray-600 
+                                           focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                           focus:outline-none">
                                     <option value="">-- Selecciona una tarea --</option>
                                     @foreach ($tareasDisponibles as $tarea)
                                         <option value="{{ $tarea->id }}">{{ $tarea->nombre }}</option>
                                     @endforeach
                                 </select>
                             @else
-                                <p class="text-sm text-gray-500 italic">Selecciona una obligación para ver sus tareas.
-                                </p>
+                                <p class="text-sm text-gray-500 italic">Selecciona una obligación para ver sus tareas.</p>
                             @endif
                             @error('tarea_catalogo_id')
                                 <span class="text-red-600 text-sm">{{ $message }}</span>
@@ -115,9 +191,13 @@
 
                     {{-- Auxiliar --}}
                     <div>
-                        <label class="block text-sm mb-1">Auxiliar asignado</label>
+                        <label class="block text-sm mb-1">Contador Responsable</label>
                         <select wire:model.defer="contador_id"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                            class="w-full px-3 py-2 border rounded-md 
+                                   dark:bg-gray-700 dark:text-white 
+                                   border-gray-300 dark:border-gray-600 
+                                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                   focus:outline-none">
                             <option value="">Selecciona un Auxiliar</option>
                             @foreach ($contadores as $u)
                                 <option value="{{ $u->id }}">{{ $u->name }}</option>
@@ -134,7 +214,11 @@
                             <label class="block text-sm mb-1">Tiempo estimado (minutos)</label>
                             <input type="number" wire:model.defer="tiempo_estimado" min="1" max="1440"
                                 placeholder="Ej. 60"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                                class="w-full px-3 py-2 border rounded-md 
+                                       dark:bg-gray-700 dark:text-white 
+                                       border-gray-300 dark:border-gray-600 
+                                       focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                       focus:outline-none">
                             @error('tiempo_estimado')
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                             @enderror
@@ -144,7 +228,11 @@
                             <label class="block text-sm mb-1">Fecha de Vencimiento</label>
                             <input type="date" wire:model="fecha_limite"
                                 min="{{ \Carbon\Carbon::now()->format('Y-m-d') }}" max="{{ $fechaLimiteMaxima }}"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                                class="w-full px-3 py-2 border rounded-md 
+                                       dark:bg-gray-700 dark:text-white 
+                                       border-gray-300 dark:border-gray-600 
+                                       focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                       focus:outline-none">
                             @error('fecha_limite')
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                             @enderror
@@ -179,6 +267,5 @@
             </div>
         </div>
     @endif
-
 
 </div>

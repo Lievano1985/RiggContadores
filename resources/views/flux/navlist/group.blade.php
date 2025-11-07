@@ -23,7 +23,7 @@
         <span class="text-sm font-medium leading-none">{{ $heading }}</span>
     </button>
 
-    <div class="relative hidden space-y-[2px] ps-7 data-open:block" @if ($expanded === true) data-open @endif>
+    <div class="relative hidden space-y-[2px] ps-6 data-open:block" @if ($expanded === true) data-open @endif>
         <div class="absolute inset-y-[3px] start-0 ms-4 w-px bg-zinc-200 dark:bg-white/30"></div>
 
         {{ $slot }}

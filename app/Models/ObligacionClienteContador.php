@@ -1,25 +1,34 @@
 <?php
 
+/**
+ * Modelo: ObligacionClienteContador
+ * Autor: Luis Liévano - JL3 Digital
+ * Descripción: Representa una obligación asignada a un cliente. Incluye control de vigencia (is_activa, fecha_baja, motivo_baja),
+ * seguimiento de estatus, trazabilidad de tareas y cálculo de progreso.
+ */
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ObligacionClienteContador extends Model
 {
     protected $table = 'obligacion_cliente_contador';
 
- /*    protected $fillable = [
+    protected $fillable = [
         'cliente_id',
         'obligacion_id',
         'contador_id',
+        'carpeta_drive_id',
         'fecha_asignacion',
         'fecha_vencimiento',
-        'carpeta_drive_id',
+        'mes',
+        'ejercicio',
         'estatus',
         'fecha_inicio',
         'fecha_termino',
@@ -30,40 +39,38 @@ class ObligacionClienteContador extends Model
         'comentario',
         'revision',
         'obligacion_padre_id',
-        'ejercicio',
-        'mes',
-     
-    
-    
+        // Nuevos campos administrativos
+        'is_activa',
+        'fecha_baja',
+        'motivo_baja',
     ];
- */
-protected $fillable = [
-    'cliente_id', 
-    'obligacion_id', 
-    'contador_id', 
-    'carpeta_drive_id',
-    'fecha_asignacion', 
-    'fecha_vencimiento', 
-    'mes', 
-    'ejercicio',
-    'estatus', 
-    'fecha_inicio', 
-    'fecha_termino', 
-    'fecha_finalizado',
-    'archivo_resultado',
-     'numero_operacion', 
-     'archivo_cliente',
-    'comentario', 
-    'revision', 
-    'obligacion_padre_id'
-];
 
+    /* --------------------------------------------------------------------------
+     | SCOPES
+     |--------------------------------------------------------------------------*/
 
-
-
-    public function scopeListasParaEnviar(Builder $q): Builder
+    /**
+     * Filtra solo las obligaciones activas.
+     */
+    public function scopeActivas(Builder $query): Builder
     {
-        return $q->where('estatus', 'declaracion_realizada')
+        return $query->where('is_activa', true);
+    }
+
+    /**
+     * Filtra las obligaciones dadas de baja.
+     */
+    public function scopeInactivas(Builder $query): Builder
+    {
+        return $query->where('is_activa', false);
+    }
+
+    /**
+     * Filtra las obligaciones listas para enviar al cliente.
+     */
+    public function scopeListasParaEnviar(Builder $query): Builder
+    {
+        return $query->where('estatus', 'declaracion_realizada')
             ->whereDoesntExist(function ($sub) {
                 $sub->select(DB::raw(1))
                     ->from('tareas_asignadas as t')
@@ -72,42 +79,14 @@ protected $fillable = [
             });
     }
 
+    /* --------------------------------------------------------------------------
+     | RELACIONES
+     |--------------------------------------------------------------------------*/
 
-    public function carpeta()
+    public function carpeta(): BelongsTo
     {
         return $this->belongsTo(CarpetaDrive::class, 'carpeta_drive_id');
     }
-
-
-    // % progreso (0..1)
-    public function getProgresoTareasAttribute(): float
-    {
-        $total = (int) $this->tareasAsignadas()->count();
-        if ($total === 0) return 1.0;
-        $ok = (int) $this->tareasAsignadas()
-            ->whereIn('estatus', ['terminada', 'revisada'])
-            ->count();
-        return $ok / max($total, 1);
-    }
-    // RELACIONES
-    // Accessor de solo lectura (no requiere columna)
-    public function getBloqueadaPorTareasAttribute(): bool
-    {
-        return $this->tieneTareasPendientes();
-    }
-
-    // ¿Tiene tareas ligadas pendientes?
-    public function tieneTareasPendientes(): bool
-    {
-        return $this->tareasAsignadas()
-            ->whereNotIn('estatus', ['terminada', 'revisada']) // deja solo 'terminada' si no usas 'revisada'
-            ->exists();
-    }
-    public function tareasAsignadas()
-    {
-        return $this->hasMany(\App\Models\TareaAsignada::class, 'obligacion_cliente_contador_id');
-    }
-
 
     public function cliente(): BelongsTo
     {
@@ -119,10 +98,14 @@ protected $fillable = [
         return $this->belongsTo(Obligacion::class);
     }
 
-
     public function contador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'contador_id');
+    }
+
+    public function tareasAsignadas(): HasMany
+    {
+        return $this->hasMany(TareaAsignada::class, 'obligacion_cliente_contador_id');
     }
 
     public function obligacionPadre(): BelongsTo
@@ -135,16 +118,79 @@ protected $fillable = [
         return $this->hasMany(self::class, 'obligacion_padre_id');
     }
 
-    // ACCESOR PARA DURACIÓN (en minutos)
+    /* --------------------------------------------------------------------------
+     | MÉTODOS DE APOYO Y ACCESORES
+     |--------------------------------------------------------------------------*/
+
+    /**
+     * Calcula el progreso de las tareas (valor 0.0 a 1.0).
+     */
+    public function getProgresoTareasAttribute(): float
+    {
+        $total = (int) $this->tareasAsignadas()->count();
+        if ($total === 0) return 1.0;
+
+        $ok = (int) $this->tareasAsignadas()
+            ->whereIn('estatus', ['terminada', 'revisada'])
+            ->count();
+
+        return $ok / max($total, 1);
+    }
+
+    /**
+     * Indica si la obligación está bloqueada por tareas pendientes.
+     */
+    public function getBloqueadaPorTareasAttribute(): bool
+    {
+        return $this->tieneTareasPendientes();
+    }
+
+    /**
+     * Verifica si existen tareas no finalizadas.
+     */
+    public function tieneTareasPendientes(): bool
+    {
+        return $this->tareasAsignadas()
+            ->whereNotIn('estatus', ['terminada', 'revisada'])
+            ->exists();
+    }
+
+    /**
+     * Calcula la duración en minutos entre inicio y término.
+     */
     public function getDuracionMinutosAttribute(): ?int
     {
         if ($this->fecha_inicio && $this->fecha_termino) {
-            return Carbon::parse($this->fecha_inicio)->diffInMinutes(Carbon::parse($this->fecha_termino));
+            return Carbon::parse($this->fecha_inicio)
+                ->diffInMinutes(Carbon::parse($this->fecha_termino));
         }
 
         return null;
     }
 
+    /* --------------------------------------------------------------------------
+     | GESTIÓN DE BAJAS
+     |--------------------------------------------------------------------------*/
 
+    /**
+     * Marca la obligación como dada de baja sin eliminarla.
+     */
+    // App/Models/ObligacionClienteContador.php
+    public function darDeBaja(?string $motivo = null): void
+    {
+        // Evita relaciones cacheadas
+        $this->refresh();
 
+        // Marca baja
+        $this->update([
+            'is_activa'   => false,
+            'fecha_baja'  => now(),
+            'motivo_baja' => $motivo,
+        ]);
+
+        // Cancela tareas una por una (evita problemas de fillable/observers)
+        $this->tareasAsignadas()->each(function ($t) {
+            $t->update(['estatus' => 'cancelada']);
+        });
+    }
 }

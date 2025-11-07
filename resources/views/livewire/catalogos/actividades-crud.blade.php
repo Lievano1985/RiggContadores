@@ -7,10 +7,13 @@
             + Nueva actividad
         </button>
     </div>
-
     <div class="flex items-center gap-4">
-        <input type="text" wire:model..live.debounce.500ms="search"
-            class="w-1/2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600"
+        <input type="text" wire:model.live.debounce.500ms="search"
+            class="w-1/2 px-3 py-2 border rounded-md 
+                   dark:bg-gray-700 dark:text-white 
+                   border-gray-300 dark:border-gray-600 
+                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                   focus:outline-none"
             placeholder="Buscar por nombre o clave...">
     </div>
     
@@ -62,7 +65,7 @@
     </div>
 
     @if ($modalFormVisible)
-        <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
+        <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-lg">
                 <h3 class="text-lg font-semibold text-stone-600 dark:text-white mb-4">
                     {{ $isEdit ? 'Editar Actividad' : 'Nueva Actividad Económica' }}

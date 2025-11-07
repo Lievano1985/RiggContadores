@@ -9,15 +9,45 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
     {{-- Encabezado --}}
     <div class="flex justify-between items-center">
         <h2 class="text-xl font-bold text-stone-600 dark:text-white">Obligaciones asignadas</h2>
-    
-        @if (count($obligacionesDisponibles) > 0)
-            <button wire:click="mostrarModalCrear"
-                class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
-                + Asignar obligación
-            </button>
-        @endif
+
+        {{--         @if (count($obligacionesDisponibles) > 0)
+ --}} <button wire:click="mostrarModalCrear"
+            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
+            + Asignar obligación
+        </button>
+        {{--         @endif
+ --}}
     </div>
-    
+<!-- 🔍 Filtros por ejercicio y mes -->
+<div class="flex flex-wrap gap-4 items-center mb-4">
+    <div>
+        <label class="block text-sm font-medium text-stone-600 dark:text-white">Ejercicio</label>
+        <select wire:model.live="filtroEjercicio"
+            class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+                   border-gray-300 dark:border-gray-600 focus:border-amber-600
+                   focus:ring focus:ring-amber-500/40 focus:outline-none">
+            @for ($year = now()->year; $year >= now()->year - 3; $year--)
+                <option value="{{ $year }}">{{ $year }}</option>
+            @endfor
+        </select>
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-stone-600 dark:text-white">Mes</label>
+        <select wire:model.live="filtroMes"
+            class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+                   border-gray-300 dark:border-gray-600 focus:border-amber-600
+                   focus:ring focus:ring-amber-500/40 focus:outline-none">
+            @foreach ([
+                1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+                5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+                9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+            ] as $num => $nombre)
+                <option value="{{ $num }}">{{ $nombre }}</option>
+            @endforeach
+        </select>
+    </div>
+</div>
 
     {{-- Tabla principal --}}
     <div class="overflow-x-auto rounded shadow">
@@ -26,7 +56,7 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
                 <tr>
                     <th class="px-4 py-2 text-left">Obligación</th>
                     <th class="px-4 py-2 text-left">Carpeta en Drive</th>
-                    <th class="px-4 py-2 text-left">Contador asignado</th>
+                    <th class="px-4 py-2 text-left">Contador Responsable</th>
                     <th class="px-4 py-2 text-left">Fecha límite</th>
                     <th class="px-4 py-2 text-center">Acciones</th>
                 </tr>
@@ -34,27 +64,59 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
 
             <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
                 @forelse ($asignaciones as $asignacion)
-                    <tr>
+                    <tr class="@if (!$asignacion->is_activa) opacity-70 dark:opacity-60 @endif">
                         <td class="px-4 py-2">
-                            {{ $asignacion->obligacion->nombre ?? '—' }}
-                            @if (in_array(strtolower($asignacion->obligacion->periodicidad ?? ''), ['unica', 'única']))
-                                <span class="ml-2 text-xs text-amber-600 font-semibold">(Única)</span>
-                            @endif
+                            <div class="flex items-center gap-2">
+                                <span>{{ $asignacion->obligacion->nombre ?? '—' }}</span>
+
+                                {{-- Etiqueta Única --}}
+                                @if (in_array(strtolower($asignacion->obligacion->periodicidad ?? ''), ['unica', 'única']))
+                                    <span class="text-xs text-amber-600 font-semibold">(Única)</span>
+                                @endif
+
+                                {{-- Badge de Baja --}}
+                                @if (!$asignacion->is_activa)
+                                    <span title="{{ $asignacion->motivo_baja ?? 'Obligación dada de baja' }}"
+                                        class="text-xs font-semibold px-2 py-0.5 rounded-full
+                                               bg-stone-600 text-white dark:bg-gray-700 cursor-help">
+                                        Baja
+                                    </span>
+                                @endif
+                            </div>
                         </td>
+
                         <td class="px-4 py-2">
                             {{ $asignacion->carpeta->nombre ?? 'Sin carpeta' }}
                         </td>
+
                         <td class="px-4 py-2">
                             {{ $asignacion->contador->name ?? 'Sin asignar' }}
                         </td>
+
                         <td class="px-4 py-2">
-                            {{ $asignacion->fecha_vencimiento ? \Carbon\Carbon::parse($asignacion->fecha_vencimiento)->format('Y-m-d') : '—' }}
+                            {{ $asignacion->fecha_vencimiento
+                                ? \Carbon\Carbon::parse($asignacion->fecha_vencimiento)->format('Y-m-d')
+                                : '—' }}
                         </td>
+
                         <td class="px-4 py-2 text-center space-x-2">
-                            <button wire:click="editarAsignacion({{ $asignacion->id }})"
-                                class="text-amber-600 hover:underline">Editar</button>
-                            <button wire:click="confirmarEliminacionAsignacion({{ $asignacion->id }})"
-                                class="text-red-600 hover:underline">Eliminar</button>
+                            @if ($asignacion->is_activa)
+                                <button wire:click="editarAsignacion({{ $asignacion->id }})"
+                                    class="text-amber-600 hover:underline">Editar</button>
+
+                                <button wire:click="confirmarBajaAsignacion({{ $asignacion->id }})"
+                                    class="text-red-600 hover:underline">
+                                    Dar de baja
+                                </button>
+                          {{--   @else
+                                <button wire:click="reactivarAsignacion({{ $asignacion->id }})"
+                                    class="text-green-600 hover:underline">
+                                    Reactivar
+                                </button>--}}
+                            @endif 
+
+                         
+
                         </td>
                     </tr>
                 @empty
@@ -65,26 +127,26 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
                     </tr>
                 @endforelse
             </tbody>
+
         </table>
     </div>
 
-    {{-- Modal de creación / edición --}}
     @if ($modalVisible)
-        <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
-            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">
-                <h3 class="text-lg font-semibold text-stone-600 dark:text-white mb-4">
-                    {{ $modoEdicion ? 'Editar obligación' : 'Nueva asignación' }}
-                </h3>
-                <form wire:submit.prevent="guardar" x-data="{ esUnica: false }"
+    <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
+        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">
+            <h3 class="text-lg font-semibold text-stone-600 dark:text-white mb-4">
+                {{ $modoEdicion ? 'Editar obligación' : 'Nueva asignación' }}
+            </h3>
+            <form wire:submit.prevent="guardar" x-data="{ esUnica: false }"
                 x-effect="
                     $wire.obligacion_id &&
                     $wire.call('getPeriodicidad', $wire.obligacion_id)
                         .then(p => esUnica = (p === 'unica' || p === 'única'))">
-            
+        
                 {{-- Obligación --}}
                 <div class="mb-3">
                     <label class="block text-sm font-medium mb-1">Obligación</label>
-            
+        
                     @if ($modoEdicion)
                         <div
                             class="px-3 py-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
@@ -93,24 +155,32 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
                         <input type="hidden" wire:model="obligacion_id">
                     @else
                         <select wire:model="obligacion_id"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 focus:outline-amber-600">
+                            class="w-full px-3 py-2 border rounded-md 
+                                   dark:bg-gray-700 dark:text-white 
+                                   border-gray-300 dark:border-gray-600 
+                                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                   focus:outline-none">
                             <option value="">Seleccione...</option>
                             @foreach ($obligacionesDisponibles as $obligacion)
                                 <option value="{{ $obligacion->id }}">{{ $obligacion->nombre }}</option>
                             @endforeach
                         </select>
                     @endif
-            
+        
                     @error('obligacion_id')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
-            
+        
                 {{-- Contador --}}
                 <div class="mb-3">
-                    <label class="block text-sm font-medium mb-1">Contador asignado</label>
+                    <label class="block text-sm font-medium mb-1">Contador Responsable</label>
                     <select wire:model="contador_id"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 focus:outline-amber-600">
+                        class="w-full px-3 py-2 border rounded-md 
+                               dark:bg-gray-700 dark:text-white 
+                               border-gray-300 dark:border-gray-600 
+                               focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                               focus:outline-none">
                         <option value="">Seleccione...</option>
                         @foreach ($contadores as $contador)
                             <option value="{{ $contador->id }}">{{ $contador->name }}</option>
@@ -120,12 +190,16 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
-            
+        
                 {{-- Fecha límite --}}
                 <div class="mb-3">
                     <label class="block text-sm font-medium mb-1">Fecha límite</label>
                     <input type="date" wire:model="fecha_vencimiento" :required="!esUnica"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 focus:outline-amber-600">
+                        class="w-full px-3 py-2 border rounded-md 
+                               dark:bg-gray-700 dark:text-white 
+                               border-gray-300 dark:border-gray-600 
+                               focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                               focus:outline-none">
                     <p x-show="esUnica" class="text-xs text-gray-500 mt-1 italic">
                         Obligación única: el contador puede definir la fecha límite manualmente.
                     </p>
@@ -133,7 +207,7 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
-            
+        
                 {{-- Carpeta Drive --}}
                 <div class="mt-6">
                     <label class="block text-sm font-semibold text-stone-600 mb-2">Carpeta en Drive</label>
@@ -150,7 +224,7 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
                 </div>
-            
+        
                 {{-- Botones --}}
                 <div class="flex justify-end space-x-2">
                     <button type="button" wire:click="$set('modalVisible', false)"
@@ -159,14 +233,11 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
                         class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">Guardar</button>
                 </div>
             </form>
-            
-            </div>
+        
         </div>
-    @endif
-    <x-confirmacion-eliminacion :confirming-delete="$confirmarEliminacion" action="eliminarAsignacionConfirmada"
-        titulo="Eliminar obligación asignada"
-        mensaje="Esta obligación tiene tareas asignadas. Si la eliminas, también se eliminarán las tareas relacionadas."
-        :tareas="$tareasRelacionadas" />
+    </div>
+@endif
+
 
     {{-- ✅ Alerta de éxito --}}
     @if (session()->has('success'))
@@ -178,4 +249,36 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
             {{ session('success') }}
         </div>
     @endif
+    @if ($confirmarBaja && $asignacionABaja)
+        <div class="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-96">
+                <h2 class="text-lg font-semibold text-gray-700 dark:text-white mb-2">
+                    Dar de baja obligación
+                </h2>
+
+                <p class="text-sm text-gray-500 dark:text-gray-300 mb-3">
+                    Al dar de baja esta obligación, las tareas asociadas se marcarán como <strong>canceladas</strong>,
+                    pero no se eliminarán.
+                </p>
+
+                <label class="block text-sm mb-1">Motivo de baja (opcional):</label>
+                <textarea wire:model.defer="motivoBaja"
+                    class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+                             focus:outline-amber-600 focus:outline"
+                    rows="3"></textarea>
+
+                <div class="mt-4 flex justify-end gap-2">
+                    <button wire:click="$set('confirmarBaja', false)"
+                        class="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-2 rounded hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                    <button wire:click="darDeBajaAsignacionConfirmada"
+                        class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
+                        Confirmar baja
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
 </div>

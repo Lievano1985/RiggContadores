@@ -45,7 +45,7 @@
     </div>
 
     @if ($modalFormVisible)
-        <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
+        <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
             <div class="bg-white dark:bg-gray-900 rounded-lg w-full max-w-lg shadow-lg text-gray-900 dark:text-white max-h-[90vh] overflow-y-auto p-6">
                 <h3 class="text-lg font-semibold mb-4 text-stone-600">
                     {{ $isEdit ? 'Editar Despacho' : 'Crear Despacho' }}

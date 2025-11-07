@@ -39,7 +39,7 @@
     </div>
 
     @if($modalFormVisible)
-        <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
+        <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl overflow-y-auto max-h-[90vh]">
                 <h3 class="text-lg font-bold mb-4 text-stone-600">
                     {{ $modoEdicion ? 'Editar Usuario' : 'Nuevo Usuario' }}

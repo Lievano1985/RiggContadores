@@ -18,7 +18,11 @@ Descripción: CRUD del catálogo de obligaciones. Incluye opción 'Única' y ocu
     <!-- Buscador -->
     <div class="flex items-center gap-4">
         <input type="text" wire:model.live.debounce.500ms="search"
-            class="w-1/2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600"
+        class="w-1/2 px-3 py-2 border rounded-md 
+        dark:bg-gray-700 dark:text-white 
+        border-gray-300 dark:border-gray-600 
+        focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+        focus:outline-none"
             placeholder="Buscar por nombre, tipo o periodicidad...">
     </div>
 

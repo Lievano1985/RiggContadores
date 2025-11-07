@@ -7,7 +7,7 @@
  * - Excluye obligaciones 'únicas'.
  * - Solo genera si el periodo COMIENZA en el mes/año de referencia.
  * - Evita duplicados con la unique(cliente_id, obligacion_id, ejercicio, mes).
- * - Hereda contador_id y carpeta_drive_id del último periodo (si existe).
+ * - Hereda contador_id y carpeta_drive_id del último periodo (si existe y sigue activa).
  * - Crea tareas desde TareaCatalogo (activo = true) para cada obligación generada.
  */
 
@@ -31,15 +31,14 @@ class GeneradorObligaciones
     public function generarParaPeriodo(?Carbon $fechaReferencia = null): array
     {
         $ref = $fechaReferencia?->copy()->startOfMonth() ?? now()->copy()->startOfMonth();
-        $mesActual = (int)$ref->month;
-        $anioActual = (int)$ref->year;
+        $mesActual = (int) $ref->month;
+        $anioActual = (int) $ref->year;
 
         $generadas = 0;
         $omitidas  = 0;
         $yaExist   = 0;
 
-        // 1) Tomamos TODAS las obligaciones activas NO únicas del catálogo
-        //    y buscamos los clientes que las tengan asignadas en pivot.
+        // 1️⃣ Tomamos TODAS las obligaciones activas NO únicas del catálogo
         Obligacion::query()
             ->where('activa', true)
             ->whereNotIn('periodicidad', ['unica', 'única'])
@@ -47,14 +46,14 @@ class GeneradorObligaciones
             ->chunk(200, function ($obligaciones) use (&$generadas, &$omitidas, &$yaExist, $mesActual, $anioActual) {
 
                 foreach ($obligaciones as $ob) {
-                    // 2) Solo si ESTE MES es inicio de ciclo para esta obligación
+                    // 2️⃣ Solo si ESTE MES es inicio de ciclo para esta obligación
                     if (!$this->mesEsInicioDeCiclo($ob, $mesActual)) {
                         $omitidas++;
                         continue;
                     }
 
-                    // 3) Buscar todos los clientes que tienen esta obligación en pivot
-                    $clientes = $ob->clientes()->select('clientes.id')->get(); // relación belongsToMany en tu modelo Obligacion
+                    // 3️⃣ Buscar clientes que tienen esta obligación asignada (pivot)
+                    $clientes = $ob->clientes()->select('clientes.id')->get();
                     if ($clientes->isEmpty()) {
                         $omitidas++;
                         continue;
@@ -63,7 +62,19 @@ class GeneradorObligaciones
                     foreach ($clientes as $cli) {
                         DB::beginTransaction();
                         try {
-                            // 4) Evitar duplicado por índice único
+                            // 🟡 4️⃣ Excluir clientes con obligación dada de baja
+                            $baja = ObligacionClienteContador::where('cliente_id', $cli->id)
+                                ->where('obligacion_id', $ob->id)
+                                ->where('is_activa', false)
+                                ->exists();
+
+                            if ($baja) {
+                                $omitidas++;
+                                DB::rollBack();
+                                continue;
+                            }
+
+                            // 5️⃣ Evitar duplicado (ya existe para este periodo)
                             $existe = ObligacionClienteContador::query()
                                 ->where('cliente_id', $cli->id)
                                 ->where('obligacion_id', $ob->id)
@@ -73,14 +84,15 @@ class GeneradorObligaciones
 
                             if ($existe) {
                                 $yaExist++;
-                                DB::rollBack(); // nada que hacer
+                                DB::rollBack();
                                 continue;
                             }
 
-                            // 5) Heredar ultimo periodo (si existe)
+                            // 6️⃣ Heredar último periodo (solo si estaba activo)
                             $ultimo = ObligacionClienteContador::query()
                                 ->where('cliente_id', $cli->id)
                                 ->where('obligacion_id', $ob->id)
+                                ->where('is_activa', true) // 🟡 Solo hereda si la última sigue activa
                                 ->orderByDesc('ejercicio')
                                 ->orderByDesc('mes')
                                 ->first();
@@ -88,7 +100,7 @@ class GeneradorObligaciones
                             $contadorId     = $ultimo?->contador_id;
                             $carpetaDriveId = $ultimo?->carpeta_drive_id;
 
-                            // 6) Calcular fecha de vencimiento del periodo que inicia
+                            // 7️⃣ Calcular fecha de vencimiento
                             $fechaVenc = $ob->calcularFechaVencimiento($anioActual, $mesActual);
                             $occ = ObligacionClienteContador::create([
                                 'cliente_id'          => $cli->id,
@@ -102,29 +114,31 @@ class GeneradorObligaciones
                                 'fecha_vencimiento'   => $fechaVenc?->toDateString(),
                                 'revision'            => 1,
                                 'obligacion_padre_id' => $ultimo?->id,
+                                'is_activa'           => true, // aseguramos que inicien activas
                             ]);
 
-                            // 7) Crear tareas desde el catálogo activo
+                            // 8️⃣ Crear tareas del catálogo
                             $this->crearTareasPara($occ, $fechaVenc);
 
                             DB::commit();
                             $generadas++;
                         } catch (\Throwable $e) {
                             DB::rollBack();
-                            // Puedes loguear el error si lo deseas:
-                            // \Log::error('GeneradorObligaciones', ['error' => $e->getMessage()]);
                             $omitidas++;
                         }
                     }
                 }
             });
 
-        return ['generadas' => $generadas, 'omitidas' => $omitidas, 'ya_existian' => $yaExist];
+        return [
+            'generadas'  => $generadas,
+            'omitidas'   => $omitidas,
+            'ya_existian' => $yaExist,
+        ];
     }
 
     /**
-     * ¿El mes dado es INICIO de ciclo para esta obligación?
-     * Usa periodicidad y mes_inicio; mensual => siempre.
+     * Determina si el mes dado es INICIO de ciclo según periodicidad.
      */
     protected function mesEsInicioDeCiclo(Obligacion $ob, int $mes): bool
     {
@@ -135,29 +149,25 @@ class GeneradorObligaciones
             'cuatrimestral' => 4,
             'semestral'     => 6,
             'anual'         => 12,
-            default         => 1, // mensual
+            default         => 1,
         };
 
-        // mes_inicio configurable (default 1 en tu modelo)
-        $mesInicio = (int)($ob->mes_inicio ?? 1);
+        $mesInicio = (int) ($ob->mes_inicio ?? 1);
         if ($duracion === 1) {
-            return true; // mensual: inicia cada mes
+            return true;
         }
 
-        // Mes es inicio si (mes - mes_inicio) % duracion == 0 y (mes - mes_inicio) >= 0 (considerando ciclo anual)
         $delta = ($mes - $mesInicio);
-        // normalizamos delta a [0..11] para ciclos cruzando año
         $delta = ($delta % 12 + 12) % 12;
 
         return ($delta % $duracion) === 0;
     }
 
     /**
-     * Crea tareas para la OCC desde el catálogo activo de tareas.
+     * Crea tareas para la OCC desde el catálogo activo.
      */
     protected function crearTareasPara(ObligacionClienteContador $occ, ?Carbon $fechaVenc): void
     {
-        // Tareas del catálogo (solo activas) ligadas a la obligación
         $tareas = TareaCatalogo::query()
             ->where('obligacion_id', $occ->obligacion_id)
             ->where('activo', true)
