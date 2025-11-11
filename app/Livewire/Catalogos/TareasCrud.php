@@ -48,13 +48,17 @@ class TareasCrud extends Component
             ->orderBy('nombre');
     
         // Obligaciones que tienen tareas en catálogo
-        $obligacionesConTareas = \App\Models\Obligacion::whereHas('tareasCatalogo')
+       /*  $obligacionesConTareas = \App\Models\Obligacion::whereHas('tareasCatalogo')
             ->orderBy('nombre')
-            ->get();
+            ->get(); */
     
+$obligaciones = \App\Models\Obligacion::orderBy('nombre')->get();
+
+
+            
         return view('livewire.catalogos.tareas-crud', [
             'tareas' => $query->paginate(10),
-            'obligaciones' => $obligacionesConTareas,
+            'obligaciones' => $obligaciones,
         ]);
     }
     

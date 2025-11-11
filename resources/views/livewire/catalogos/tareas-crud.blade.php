@@ -23,7 +23,7 @@
                    focus:outline-none">
             <option value="">-- Todas --</option>
             <option value="sin">Sin obligación</option>
-            @foreach($obligaciones as $obligacion)
+            @foreach ($obligaciones as $obligacion)
                 <option value="{{ $obligacion->id }}">{{ $obligacion->nombre }}</option>
             @endforeach
         </select>
@@ -105,17 +105,22 @@
 
                 <div>
                     <label>Obligación relacionada (opcional)</label>
-                    <select wire:model.defer="form.obligacion_id"
+                    <select wire:model="obligacion_id"
                         class="w-full px-3 py-2 border rounded-md 
-                               dark:bg-gray-700 dark:text-white 
-                               border-gray-300 dark:border-gray-600 
-                               focus:border-amber-600 focus:ring focus:ring-amber-500/40 
-                               focus:outline-none">
-                        <option value="">Sin obligación</option>
+                           dark:bg-gray-700 dark:text-white 
+                           border-gray-300 dark:border-gray-600
+                           focus:border-amber-600 focus:ring focus:ring-amber-500/40">
+
+                        <option value="sin">Sin obligación</option>
+
                         @foreach ($obligaciones as $obligacion)
-                            <option value="{{ $obligacion->id }}">{{ $obligacion->nombre }}</option>
+                            <option value="{{ $obligacion->id }}">
+                                {{ $obligacion->nombre }}
+                            </option>
                         @endforeach
                     </select>
+
+
                     @error('form.obligacion_id')
                         <span class="text-red-600 text-sm">{{ $message }}</span>
                     @enderror
