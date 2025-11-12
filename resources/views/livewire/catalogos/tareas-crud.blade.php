@@ -105,20 +105,18 @@
 
                 <div>
                     <label>Obligación relacionada (opcional)</label>
-                    <select wire:model="obligacion_id"
-                        class="w-full px-3 py-2 border rounded-md 
+                    <select wire:model="form.obligacion_id"
+                    class="w-full px-3 py-2 border rounded-md 
                            dark:bg-gray-700 dark:text-white 
                            border-gray-300 dark:border-gray-600
                            focus:border-amber-600 focus:ring focus:ring-amber-500/40">
-
-                        <option value="sin">Sin obligación</option>
-
-                        @foreach ($obligaciones as $obligacion)
-                            <option value="{{ $obligacion->id }}">
-                                {{ $obligacion->nombre }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <option value="sin">Sin obligación</option>
+                
+                    @foreach ($obligaciones as $obligacion)
+                        <option value="{{ $obligacion->id }}">{{ $obligacion->nombre }}</option>
+                    @endforeach
+                </select>
+                
 
 
                     @error('form.obligacion_id')
