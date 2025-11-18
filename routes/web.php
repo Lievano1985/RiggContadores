@@ -12,6 +12,7 @@ use App\Livewire\Control\ObligacionesAsignadas;
 use App\Livewire\Catalogos\RegimenesCrud;
 use App\Livewire\Catalogos\ObligacionesCrud;
 use App\Livewire\Catalogos\ActividadesCrud;
+use App\Livewire\Catalogos\ObligacionesTareas;
 use App\Livewire\Catalogos\TareasCrud;
 use App\Livewire\Clientes\ClientesPortal;
 use App\Livewire\Contador\MisTareasIndex;
@@ -35,6 +36,7 @@ Route::middleware(['auth', 'role:admin_despacho||super_admin'])->group(function 
     Route::get('/usuarios/index',UsuariosIndex::class)->name('Usuarios.index');
     Route::get('/control/obligaciones-asignadas',ObligacionesAsignadas::class)->name('control.obligaciones-asignadas');
     Route::get('/control/tareas-asignadas-crud',TareasAsignadasCrud::class)->name('control.tareas-asignadas-crud');
+    Route::get('/catalogos/Obligaciones-tareas',ObligacionesTareas::class)->name('catalogos.obligaciones-tareas');
 
 
 });

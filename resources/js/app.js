@@ -1,10 +1,11 @@
-import Alpine from 'alpinejs';
 
-window.Alpine = Alpine;
 
 // Inicializa los íconos Lucide (debes asegurarte de que la librería Lucide ya esté cargada)
-lucide.createIcons();
+import { createIcons, icons } from "lucide";
 
+document.addEventListener("DOMContentLoaded", () => {
+    createIcons({ icons });
+});
 // Slides del Hero
 const slides = [
   {
@@ -30,6 +31,7 @@ function updateSlide() {
   const slideImage = document.getElementById('slide-image');
   const slideTitle = document.getElementById('slide-title');
   const slideDescription = document.getElementById('slide-description');
+  if (!slideImage || !slideTitle || !slideDescription) return;
 
   // Transición de salida
   slideImage.classList.remove('visible');
@@ -88,6 +90,10 @@ const stats = [
 
 function initializeStats() {
   const statsGrid = document.getElementById('stats-grid');
+
+  // 🚨 si no existe, salte (así no rompe en otras páginas)
+  if (!statsGrid) return;
+
   stats.forEach(stat => {
     const statCard = document.createElement('div');
     statCard.className = 'text-center text-white';
@@ -98,6 +104,7 @@ function initializeStats() {
     statsGrid.appendChild(statCard);
   });
 }
+
 
 // Toggle de párrafos “Mostrar Más / Mostrar Menos”
 document.addEventListener('DOMContentLoaded', () => {
