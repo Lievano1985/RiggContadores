@@ -10,8 +10,11 @@ Descripción: Muestra un título y una lista simple de elementos en modo lectura
     @if (!empty($items) && count($items) > 0)
         <ul class="list-disc list-inside text-sm text-gray-800 dark:text-gray-200">
             @foreach ($items as $item)
-                <li>{{ $item }}</li>
-            @endforeach
+            <li class="{{ isset($item['activa']) && !$item['activa'] ? 'text-gray-400' : '' }}">
+                {{ is_array($item) ? $item['nombre'] : $item }}
+            </li>
+        @endforeach
+        
         </ul>
     @else
         <p class="text-sm text-gray-500">Sin seleccionar</p>

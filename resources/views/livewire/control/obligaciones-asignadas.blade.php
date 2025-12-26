@@ -26,9 +26,9 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
             class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
                    border-gray-300 dark:border-gray-600 focus:border-amber-600
                    focus:ring focus:ring-amber-500/40 focus:outline-none">
-            @for ($year = now()->year; $year >= now()->year - 3; $year--)
-                <option value="{{ $year }}">{{ $year }}</option>
-            @endfor
+                   @foreach ($aniosDisponibles as $year)
+                   <option value="{{ $year }}">{{ $year }}</option>
+               @endforeach
         </select>
     </div>
 

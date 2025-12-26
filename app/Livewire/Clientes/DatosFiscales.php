@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Componente Livewire: DatosFiscales
  * Autor: Luis Liévano - JL3 Digital
@@ -9,6 +10,7 @@
  */
 
 namespace App\Livewire\Clientes;
+use App\Livewire\Control\ObligacionesAsignadas;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -67,6 +69,7 @@ class DatosFiscales extends Component
         $this->initializeLists();
     }
 
+
     public function CargarDatosFiscales()
     {
         $this->initializeLists();
@@ -76,52 +79,52 @@ class DatosFiscales extends Component
      * Inicializa todas las listas disponibles y las selecciones actuales.
      * ✅ Solo carga obligaciones activas (ya no mezcla bajas ni pivote base).
      */
-   /**
- * Inicializa todas las listas (actividades, regímenes y obligaciones)
- * mostrando tanto las obligaciones activas como las dadas de baja.
- */
-protected function initializeLists(): void
-{
-    /* ============================================================
+    /**
+     * Inicializa todas las listas (actividades, regímenes y obligaciones)
+     * mostrando tanto las obligaciones activas como las dadas de baja.
+     */
+    protected function initializeLists(): void
+    {
+        /* ============================================================
      | 🔹 ACTIVIDADES
      |============================================================ */
-    $this->actividadesDisponibles = ActividadEconomica::orderBy('nombre')->get();
-    $this->actividadesSeleccionadas = $this->cliente->actividadesEconomicas()
-        ->pluck('actividad_economica_id')
-        ->toArray();
+        $this->actividadesDisponibles = ActividadEconomica::orderBy('nombre')->get();
+        $this->actividadesSeleccionadas = $this->cliente->actividadesEconomicas()
+            ->pluck('actividad_economica_id')
+            ->toArray();
 
-    /* ============================================================
+        /* ============================================================
      | 🔹 REGÍMENES
      |============================================================ */
-    $this->loadRegimenesDisponibles();
-    $this->regimenesSeleccionados = $this->cliente->regimenes()
-        ->pluck('regimenes.id')
-        ->toArray();
+        $this->loadRegimenesDisponibles();
+        $this->regimenesSeleccionados = $this->cliente->regimenes()
+            ->pluck('regimenes.id')
+            ->toArray();
 
-    /* ============================================================
+        /* ============================================================
      | 🔹 OBLIGACIONES (periodicidad, tipo, estado)
      |============================================================ */
-    $this->loadObligacionesDisponibles();
+        $this->loadObligacionesDisponibles();
 
-    // 🧩 Obtenemos todas las obligaciones del cliente (activas e inactivas)
-    $obligacionesCliente = ObligacionClienteContador::where('cliente_id', $this->cliente->id)
-        ->select('obligacion_id', 'is_activa')
-        ->get();
+        // 🧩 Obtenemos todas las obligaciones del cliente (activas e inactivas)
+        $obligacionesCliente = ObligacionClienteContador::where('cliente_id', $this->cliente->id)
+            ->select('obligacion_id', 'is_activa')
+            ->get();
 
-    // 🟢 IDs de todas las obligaciones (para que se muestren todas)
-    $this->obligacionesSeleccionadas = $obligacionesCliente
-        ->pluck('obligacion_id')
-        ->unique()
-        ->toArray();
+        // 🟢 IDs de todas las obligaciones (para que se muestren todas)
+        $this->obligacionesSeleccionadas = $obligacionesCliente
+            ->pluck('obligacion_id')
+            ->unique()
+            ->toArray();
 
-    // 🟡 Creamos un arreglo auxiliar con su estado (true=activa / false=baja)
-    $this->obligacionesEstado = $obligacionesCliente
-        ->pluck('is_activa', 'obligacion_id')
-        ->toArray();
+        // 🟡 Creamos un arreglo auxiliar con su estado (true=activa / false=baja)
+        $this->obligacionesEstado = $obligacionesCliente
+            ->pluck('is_activa', 'obligacion_id')
+            ->toArray();
 
-    // 🧾 Limpiar únicas seleccionadas
-    $this->obligacionesUnicasSeleccionadas = [];
-}
+        // 🧾 Limpiar únicas seleccionadas
+        $this->obligacionesUnicasSeleccionadas = [];
+    }
 
 
     /* ============================================================
@@ -160,36 +163,72 @@ protected function initializeLists(): void
         $this->cliente->regimenes()->sync($this->regimenesSeleccionados);
         $this->cliente->actividadesEconomicas()->sync($this->actividadesSeleccionadas);
 
-        // 🔸 Sincronizar obligaciones del cliente (solo pivot)
-        $sincronizacion = $this->cliente->obligaciones()->sync($this->obligacionesSeleccionadas);
+        /**
+         * ✅ OBLIGACIONES:
+         * Ya NO usamos ->sync() para "attached/detached" porque eso reinterpreta checkboxes
+         * y termina reactivando obligaciones inactivas.
+         *
+         * La fuente real es obligacion_cliente_contador:
+         * - nuevas (no existen) => crear asignación activa
+         * - removidas (se desmarcan) => baja lógica
+         * - existentes (aunque estén inactivas) => NO reactivar automáticamente
+         */
 
-        // Crear nuevas asignaciones si se agregaron
-        if (!empty($sincronizacion['attached'])) {
-            $this->crearAsignacionesYtareasIniciales($sincronizacion['attached']);
+        // 1) IDs actuales existentes (activas o inactivas) en obligacion_cliente_contador
+        $existentes = ObligacionClienteContador::where('cliente_id', $this->cliente->id)
+            ->select('obligacion_id')
+            ->distinct()
+            ->pluck('obligacion_id')
+            ->toArray();
+
+        // 2) IDs que el usuario dejó seleccionados en el UI
+        $seleccionadas = collect($this->obligacionesSeleccionadas)->map(fn($v) => (int) $v)->unique()->values()->toArray();
+
+        // 3) Nuevas => estaban NO existentes y ahora están seleccionadas
+        $nuevas = array_values(array_diff($seleccionadas, $existentes));
+
+        // 4) Quitadas => estaban existentes y ahora NO están seleccionadas
+        $quitadas = array_values(array_diff($existentes, $seleccionadas));
+
+        // ✅ Crear asignaciones iniciales solo para NUEVAS
+        if (!empty($nuevas)) {
+            $this->crearAsignacionesYtareasIniciales($nuevas);
         }
 
-        // Dar de baja si se quitaron
-        if (!empty($sincronizacion['detached'])) {
-            foreach ($sincronizacion['detached'] as $id) {
+        // ✅ Dar de baja solo las QUITADAS
+        if (!empty($quitadas)) {
+            foreach ($quitadas as $id) {
                 $this->darDeBajaObligacion($id);
             }
         }
 
-        // ⚠️ Eliminado: ya no se reactivan automáticamente todas las seleccionadas.
-        // Este bloque causaba la reactivación global.
+        // ✅ Mantener el pivote (si aún lo necesitas para otros módulos)
+        // IMPORTANTE: esto NO debe reactivar nada en obligacion_cliente_contador.
+        // Solo asegura que el cliente "tiene" esa obligación (aunque esté baja).
+        $this->cliente->obligaciones()->sync($seleccionadas);
 
         // Crear obligaciones únicas si se seleccionaron
         if (!empty($this->obligacionesUnicasSeleccionadas)) {
             $this->crearUnicasYtareas($this->obligacionesUnicasSeleccionadas);
+            $this->cliente->obligaciones()->syncWithoutDetaching(
+                collect($this->obligacionesUnicasSeleccionadas)->map(fn($v)=>(int)$v)->toArray()
+            );
+            
             $this->obligacionesUnicasSeleccionadas = [];
         }
 
-        // Mensaje y refresco visual
         session()->flash('message', 'Datos fiscales actualizados correctamente.');
+        // ✅ Recargar el cliente y sus relaciones para que el modo lectura muestre lo nuevo
+        $this->cliente->refresh();
+        $this->cliente->load(['regimenes', 'actividadesEconomicas', 'obligaciones']);
         $this->modoEdicion = false;
         $this->modoKey++;
+
         $this->dispatch('obligacionActualizada');
+        // ✅ Recargar el cliente y sus relaciones para que el modo lectura muestre lo nuevo
+
     }
+
 
     /* ============================================================
      | 🔹 CREACIÓN DE ASIGNACIONES Y TAREAS
@@ -217,7 +256,7 @@ protected function initializeLists(): void
                 [
                     'estatus'          => 'asignada',
                     'fecha_asignacion' => now(),
-                    'fecha_vencimiento'=> $fechaVenc?->toDateString(),
+                    'fecha_vencimiento' => $fechaVenc?->toDateString(),
                     'is_activa'        => true,
                     'fecha_baja'       => null,
                     'motivo_baja'      => null,
@@ -234,7 +273,7 @@ protected function initializeLists(): void
                     [
                         'cliente_id'                    => $this->cliente->id,
                         'tarea_catalogo_id'             => $t->id,
-                        'obligacion_cliente_contador_id'=> $asignacion->id,
+                        'obligacion_cliente_contador_id' => $asignacion->id,
                         'ejercicio'                     => $anioActual,
                         'mes'                           => $mesActual,
                     ],
@@ -269,7 +308,7 @@ protected function initializeLists(): void
                 [
                     'estatus'          => 'asignada',
                     'fecha_asignacion' => now(),
-                    'fecha_vencimiento'=> null,
+                    'fecha_vencimiento' => null,
                     'is_activa'        => true,
                 ]
             );
@@ -283,7 +322,7 @@ protected function initializeLists(): void
                     [
                         'cliente_id'                    => $this->cliente->id,
                         'tarea_catalogo_id'             => $t->id,
-                        'obligacion_cliente_contador_id'=> $asignacion->id,
+                        'obligacion_cliente_contador_id' => $asignacion->id,
                         'ejercicio'                     => $anioActual,
                         'mes'                           => $mesActual,
                     ],
@@ -367,7 +406,6 @@ protected function initializeLists(): void
             session()->flash('success', 'Obligación reactivada correctamente.');
             $this->dispatch('mantenerModoEdicion');
             $this->dispatch('obligacionActualizada');
-
         } catch (\Throwable $e) {
             DB::rollBack();
             session()->flash('error', 'Error al reactivar la obligación: ' . $e->getMessage());
@@ -391,10 +429,17 @@ protected function initializeLists(): void
 
         $this->cliente->obligaciones()->detach($obligacionId);
 
+        // ✅ IMPORTANTÍSIMO: sacar la obligación del estado Livewire para que no se vuelva a anexar
+        $this->obligacionesSeleccionadas = array_values(
+            array_diff($this->obligacionesSeleccionadas, [(int)$obligacionId])
+        );
+        unset($this->obligacionesEstado[$obligacionId]);
+
         $this->modoEdicion = true;
         $this->dispatch('mantenerModoEdicion');
-        $this->dispatch('obligacionActualizada');
+        $this->dispatch('obligacionActualizada')->to(ObligacionesAsignadas::class);
     }
+
 
     /* ============================================================
      | 🔹 RENDERIZADO
@@ -405,7 +450,7 @@ protected function initializeLists(): void
         return view('livewire.clientes.datos-fiscales', [
             'regimenesFiltrados'            => $this->regimenesDisponibles,
             'actividadesFiltradas'          => $this->actividadesDisponibles,
-            'obligacionesPeriodicasFiltradas'=> $this->obligacionesPeriodicasDisponibles,
+            'obligacionesPeriodicasFiltradas' => $this->obligacionesPeriodicasDisponibles,
             'obligacionesUnicasFiltradas'   => $this->obligacionesUnicasDisponibles,
         ]);
     }

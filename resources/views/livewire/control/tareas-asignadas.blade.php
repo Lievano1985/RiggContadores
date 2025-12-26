@@ -16,30 +16,42 @@
         <div>
             <label class="text-sm font-semibold">Ejercicio</label>
             <select wire:model.live="filtroEjercicio"
-            class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
-            border-gray-300 dark:border-gray-600 focus:border-amber-600
-            focus:ring focus:ring-amber-500/40 focus:outline-none">
-                            @foreach(range(now()->year, now()->year - 3) as $year)
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+                   border-gray-300 dark:border-gray-600 focus:border-amber-600
+                   focus:ring focus:ring-amber-500/40 focus:outline-none">
+                @foreach ($aniosDisponibles as $year)
                     <option value="{{ $year }}">{{ $year }}</option>
                 @endforeach
             </select>
         </div>
-    
         <div>
             <label class="text-sm font-semibold">Mes</label>
             <select wire:model.live="filtroMes"
-            class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
             border-gray-300 dark:border-gray-600 focus:border-amber-600
             focus:ring focus:ring-amber-500/40 focus:outline-none">
-                            @foreach(range(1,12) as $m)
+                @foreach (range(1, 12) as $m)
                     <option value="{{ $m }}">
                         {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}
                     </option>
                 @endforeach
             </select>
         </div>
+        <div class="mb-4 flex items-center gap-3">
+            <div>
+                <label class="text-sm font-semibold">Buscar tarea</label>
+                <input type="text" wire:model.live="buscarTarea" placeholder="Nombre de la tarea"
+                    class="px-3 py-2 border rounded-md 
+                               dark:bg-gray-700 dark:text-white 
+                               border-gray-300 dark:border-gray-600 
+                               focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                               focus:outline-none">
+            </div>
+        </div>
     </div>
-    
+
+
+
     <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700 text-sm">
         <thead class="bg-stone-100 dark:bg-stone-900">
             <tr>
@@ -56,29 +68,30 @@
                     <td class="px-4 py-2">
                         <div class="flex items-center gap-2">
                             <span>{{ $tarea->tareaCatalogo->nombre }}</span>
-        
+
                             {{-- Badge según estatus --}}
                             @switch($tarea->estatus)
                                 @case('cancelada')
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-600 text-white dark:bg-gray-700 cursor-help"
+                                    <span
+                                        class="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-600 text-white dark:bg-gray-700 cursor-help"
                                         title="Tarea cancelada por baja de obligación o cliente">
                                         Cancelada
                                     </span>
                                 @break
-        
+
                                 @case('terminada')
                                 @case('revisada')
                                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-600 text-white">
                                         {{ ucfirst($tarea->estatus) }}
                                     </span>
                                 @break
-        
+
                                 @case('en_progreso')
                                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500 text-white">
                                         En progreso
                                     </span>
                                 @break
-        
+
                                 @default
                                     <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-400 text-white">
                                         {{ ucfirst($tarea->estatus) }}
@@ -86,17 +99,17 @@
                             @endswitch
                         </div>
                     </td>
-        
+
                     <td class="px-4 py-2">{{ $tarea->contador->name ?? '-' }}</td>
-        
+
                     <td class="px-4 py-2">
                         {{ $tarea->obligacionClientecontador?->obligacion?->nombre ?? 'Sin obligación' }}
                     </td>
-        
+
                     <td class="px-4 py-2">
                         {{ $tarea->fecha_limite ? \Carbon\Carbon::parse($tarea->fecha_limite)->format('Y-m-d') : '—' }}
                     </td>
-        
+
                     <td class="px-4 py-2 space-x-2">
                         @if ($tarea->estatus !== 'cancelada')
                             <button wire:click="editar({{ $tarea->id }})"
@@ -110,7 +123,7 @@
                 </tr>
             @endforeach
         </tbody>
-        
+
     </table>
 
     <div class="mt-4">
@@ -181,7 +194,8 @@
                                     @endforeach
                                 </select>
                             @else
-                                <p class="text-sm text-gray-500 italic">Selecciona una obligación para ver sus tareas.</p>
+                                <p class="text-sm text-gray-500 italic">Selecciona una obligación para ver sus tareas.
+                                </p>
                             @endif
                             @error('tarea_catalogo_id')
                                 <span class="text-red-600 text-sm">{{ $message }}</span>

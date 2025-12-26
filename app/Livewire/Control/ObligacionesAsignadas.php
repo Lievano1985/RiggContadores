@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\ArbolCarpetas;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
+use Carbon\Carbon;
 
 class ObligacionesAsignadas extends Component
 {
@@ -24,6 +25,7 @@ class ObligacionesAsignadas extends Component
     public $fecha_vencimiento;
     public $carpeta_drive_id;
 
+    public $aniosDisponibles = [];
 
     public $filtroEjercicio;
     public $filtroMes;
@@ -161,16 +163,37 @@ class ObligacionesAsignadas extends Component
 
     public function mount($cliente)
     {
+/*           Carbon::setTestNow(Carbon::create(2026, 1, 1));
+ */
+
         $this->cliente    = $cliente;
         $this->clienteId  = $cliente->id;
+
+        $this->aniosDisponibles = ObligacionClienteContador::where('cliente_id', $this->clienteId)
+            ->selectRaw('DISTINCT COALESCE(YEAR(fecha_vencimiento), ejercicio, YEAR(created_at)) as year')
+            ->whereNotNull(DB::raw('COALESCE(YEAR(fecha_vencimiento), ejercicio, YEAR(created_at))'))
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        // Asegurar que el año actual exista en el combo
+        $anioActual = now()->year;
+        if (!in_array($anioActual, $this->aniosDisponibles)) {
+            array_unshift($this->aniosDisponibles, $anioActual);
+        }
+        $this->filtroEjercicio = now()->year;
+        $this->filtroMes = now()->month;
 
         $this->cargarObligacionesDisponibles();
         $this->contadores        = User::role('contador')->orderBy('name')->get();
         $this->verificarAsignacionesCompletas();
         $this->cargarAsignaciones();
         $this->cargarArbolCarpetas();
-        $this->filtroEjercicio = now()->year;
-        $this->filtroMes = now()->month;
+
+
+      
+
+
     }
 
     public function actualizarAsignaciones()
@@ -205,36 +228,74 @@ class ObligacionesAsignadas extends Component
     }
     private function cargarAsignaciones()
     {
-        $añoActual = now()->year;
-        $mesActual = now()->month;
+        $anioActual = now()->year;
+        $mesActual  = now()->month;
     
         $query = ObligacionClienteContador::with(['obligacion', 'contador', 'carpeta'])
             ->where('cliente_id', $this->clienteId)
-            ->where('is_activa', true); // solo las activas
+            ->where('is_activa', true);
     
-        // === FILTRO AUTOMÁTICO (inicio o mes actual) ===
-        if (empty($this->filtroEjercicio) || empty($this->filtroMes) ||
-            ((int)$this->filtroEjercicio === $añoActual && (int)$this->filtroMes === $mesActual)) {
+        // === FILTRO AUTOMÁTICO (mes/año actual) ===
+        if (
+            empty($this->filtroEjercicio) || empty($this->filtroMes) ||
+            ((int)$this->filtroEjercicio === $anioActual && (int)$this->filtroMes === $mesActual)
+        ) {
+            $inicioMes = now()->startOfMonth()->toDateString();
+            $finMes    = now()->endOfMonth()->toDateString();
     
-            $query->where(function ($q) use ($añoActual, $mesActual) {
-                $q->whereYear('fecha_vencimiento', $añoActual)
-                  ->whereMonth('fecha_vencimiento', '<=', $mesActual);
-            })
-            ->where('estatus', '!=', 'finalizado');
+            $query->where(function ($q) use ($inicioMes, $finMes) {
+    
+                // 1) Del mes actual (cualquiera, aunque sea futura dentro del mes)
+                $q->whereBetween('fecha_vencimiento', [$inicioMes, $finMes])
+    
+                // 2) Vencidas (antes de fin de mes) y NO finalizadas
+                ->orWhere(function ($q2) use ($finMes) {
+                    $q2->whereNotNull('fecha_vencimiento')
+                       ->whereDate('fecha_vencimiento', '<=', $finMes)
+                       ->where('estatus', '!=', 'finalizado');
+                })
+    
+                // 3) Únicas sin fecha (NULL) -> SIEMPRE visibles
+                ->orWhereNull('fecha_vencimiento');
+            });
         }
-    
         // === FILTRO MANUAL (cuando el usuario elige año/mes) ===
         else {
-            $query->whereYear('fecha_vencimiento', $this->filtroEjercicio)
+            $query->where(function ($q) {
+                $q->whereYear('fecha_vencimiento', $this->filtroEjercicio)
                   ->whereMonth('fecha_vencimiento', $this->filtroMes);
+    
+                // ✅ Si quieres que también aparezcan las NULL aun en filtro manual, deja esto:
+                $q->orWhereNull('fecha_vencimiento');
+            });
         }
     
-        // === Ordenar por más próximas primero ===
         $this->asignaciones = $query
+            ->orderByRaw('fecha_vencimiento IS NULL DESC') // primero las NULL
             ->orderBy('fecha_vencimiento', 'asc')
             ->get();
     }
     
+    
+
+
+
+    private function cargarAniosDisponibles(): void
+    {
+        $this->aniosDisponibles = ObligacionClienteContador::where('cliente_id', $this->clienteId)
+            ->select('ejercicio')
+            ->distinct()
+            ->orderBy('ejercicio', 'desc')
+            ->pluck('ejercicio')
+            ->filter()
+            ->values()
+            ->toArray();
+
+        // Si el filtro actual no existe en la lista, pon el más reciente (o el año actual)
+        if (!empty($this->aniosDisponibles) && !in_array((int)$this->filtroEjercicio, $this->aniosDisponibles, true)) {
+            $this->filtroEjercicio = $this->aniosDisponibles[0];
+        }
+    }
 
 
     public function updatedFiltroEjercicio()

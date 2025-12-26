@@ -148,7 +148,27 @@ class ObligacionesTareas extends Component
 
         $this->sidebarVisible = true;
     }
-
+    protected function reglasObligacion(): array
+    {
+        return [
+            'formObligacion.nombre'       => ['required', 'string', 'min:3', 'max:255'],
+            'formObligacion.periodicidad' => ['required', Rule::in(array_keys($this->periodicidades))],
+            'formObligacion.mes_inicio'   => ['nullable', 'integer', 'min:1', 'max:12'],
+            'formObligacion.desfase_meses'=> ['nullable', 'integer', 'min:0', 'max:12'],
+            'formObligacion.dia_corte'    => ['nullable', 'integer', 'min:1', 'max:31'],
+            'formObligacion.activa'       => ['boolean'],
+        ];
+    }
+    
+    protected function reglasTarea(): array
+    {
+        return [
+            'formTarea.obligacion_id' => ['required', 'exists:obligaciones,id'],
+            'formTarea.nombre'        => ['required', 'string', 'min:3', 'max:255'],
+            'formTarea.descripcion'   => ['nullable', 'string', 'max:2000'],
+        ];
+    }
+    
     
     public function guardarObligacion(): void
     {
