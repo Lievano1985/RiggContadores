@@ -18,6 +18,7 @@ use App\Livewire\Clientes\ClientesPortal;
 use App\Livewire\Contador\MisTareasIndex;
 use App\Livewire\Contador\ObligacionesIndex;
 use App\Livewire\Control\TareasAsignadasCrud;
+use App\Livewire\Control\ValidacionesIndex;
 use App\Livewire\Usuarios\UsuariosIndex;
 
 Route::get('/', function () { return view('welcome');})->name('home');
@@ -37,6 +38,7 @@ Route::middleware(['auth', 'role:admin_despacho||super_admin'])->group(function 
     Route::get('/control/obligaciones-asignadas',ObligacionesAsignadas::class)->name('control.obligaciones-asignadas');
     Route::get('/control/tareas-asignadas-crud',TareasAsignadasCrud::class)->name('control.tareas-asignadas-crud');
     Route::get('/catalogos/Obligaciones-tareas',ObligacionesTareas::class)->name('catalogos.obligaciones-tareas');
+    Route::get('/control/validaciones',ValidacionesIndex::class)->name('control.validaciones.index');
 
 
 });

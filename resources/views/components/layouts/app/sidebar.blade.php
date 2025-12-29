@@ -114,12 +114,22 @@
                             {{ __('Clientes') }}
                         </flux:navlist.item>
 
-                        <flux:navlist.item icon="clipboard-document-list" :href="route('contadores.asignaciones.index')"
+                        <flux:navlist.item icon="paper-airplane" :href="route('contadores.asignaciones.index')"
                             :current="request()->routeIs('contadores.asignaciones.index')" wire:navigate
                             class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                             {{ __('Mis Asignaciones') }}
                         </flux:navlist.item>
                         @hasrole('admin_despacho')
+
+
+
+                        <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
+                            :current="request()->routeIs('control.validaciones.index')" wire:navigate
+                            class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
+                            {{ __('Validaciones') }}
+                        </flux:navlist.item>
+
+
                             <flux:navlist.item icon="user-group" :href="route('Usuarios.index')"
                                 :current="request()->routeIs('Usuarios.index')" wire:navigate
                                 class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
