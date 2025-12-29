@@ -121,9 +121,7 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
                                     @endphp
 
                                     <input type="checkbox" value="{{ $o->id }}"
-                                        wire:model.live="obligacionesSeleccionadas"
-                                        @disabled($estaBaja)
-                                        
+                                        wire:model.live="obligacionesSeleccionadas" @disabled($estaBaja)
                                         class="rounded border-gray-300 dark:bg-gray-700 text-amber-600 focus:ring-amber-500">
                                     <span class="ml-2">{{ $o->nombre }}</span>
 
@@ -209,16 +207,68 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
                         </div>
                     </div>
 
+                    <!-- Columna derecha: Previsualización de únicas -->
                     <div>
                         <label class="block text-sm font-medium mb-2">Seleccionadas (previsualización)</label>
-                        <ul class="list-disc list-inside text-sm space-y-1">
-                            @forelse ($obligacionesUnicasDisponibles->whereIn('id', $obligacionesUnicasSeleccionadas) as $o)
-                                <li>{{ $o->nombre }}</li>
+                        <ul class="list-disc list-inside text-sm space-y-2">
+                            @forelse ($obligacionesUnicasDisponibles->whereIn('id', $obligacionesSeleccionadas) as $o)
+                                @php
+                                    $asignacion = \App\Models\ObligacionClienteContador::where(
+                                        'cliente_id',
+                                        $cliente->id,
+                                    )
+                                        ->where('obligacion_id', $o->id)
+                                        ->latest()
+                                        ->first();
+                                    $estaRegistrada = array_key_exists($o->id, $obligacionesEstado);
+                                    $estaActiva = $obligacionesEstado[$o->id] ?? false;
+                                    $estaBaja = $estaRegistrada && !$estaActiva;
+                                    $esFinalizada = $asignacion && $asignacion->estatus === 'finalizado';
+                                @endphp
+
+                                <li class="flex justify-between items-center">
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ $o->nombre }}</span>
+
+                                        @if ($estaBaja)
+                                            <span
+                                                class="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-800 rounded-full">
+                                                Baja
+                                            </span>
+                                        @endif
+
+                                        @if ($esFinalizada)
+                                            <span
+                                                class="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                                                Finalizada
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <div class="flex items-center gap-2 text-xs">
+                                        @if ($estaBaja && !$esFinalizada)
+                                            <button type="button"
+                                                wire:click.stop.prevent="reactivarObligacion({{ $o->id }})"
+                                                class="text-green-600 hover:underline">
+                                                Reactivar
+                                            </button>
+
+                                            @hasrole('admin_despacho')
+                                                <button type="button"
+                                                    wire:click.stop.prevent="eliminarAsignacionTotal({{ $o->id }})"
+                                                    class="text-red-600 hover:underline">
+                                                    Eliminar
+                                                </button>
+                                            @endhasrole
+                                        @endif
+                                    </div>
+                                </li>
                             @empty
                                 <li class="text-gray-500">Ninguna seleccionada</li>
                             @endforelse
                         </ul>
                     </div>
+
                 </div>
             </x-seccion-acordeon>
 
@@ -231,7 +281,7 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
     @else
         <x-lista-resumen titulo="Regímenes fiscales" :items="$cliente->regimenes->pluck('nombre')" />
         <x-lista-resumen titulo="Actividades económicas" :items="$cliente->actividadesEconomicas->pluck('nombre')" />
-            @php
+        @php
             $obligacionesResumen = \App\Models\ObligacionClienteContador::where('cliente_id', $cliente->id)
                 ->with('obligacion:id,nombre')
                 ->get()
@@ -240,15 +290,12 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
                     return [
                         'nombre' => $rows->first()->obligacion->nombre,
                         // activa si existe al menos una activa
-                        'activa' => $rows->contains(fn ($r) => $r->is_activa),
+                        'activa' => $rows->contains(fn($r) => $r->is_activa),
                     ];
                 })
                 ->values();
         @endphp
-        
-        <x-lista-resumen 
-            titulo="Obligaciones fiscales" 
-            :items="$obligacionesResumen" 
-        />
-            @endif
+
+        <x-lista-resumen titulo="Obligaciones fiscales" :items="$obligacionesResumen" />
+    @endif
 </div>

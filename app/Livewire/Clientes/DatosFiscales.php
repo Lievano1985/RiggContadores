@@ -342,6 +342,24 @@ class DatosFiscales extends Component
 
     public function darDeBajaObligacion($obligacionId): void
     {
+
+        if (
+            ObligacionClienteContador::where('cliente_id', $this->cliente->id)
+                ->where('obligacion_id', $obligacionId)
+                ->where('estatus', 'finalizado')
+                ->exists()
+        ) {
+            session()->flash(
+                'error',
+                'No se puede dar de baja esta obligación porque ya está finalizada.'
+            );
+        
+            $this->dispatch('mantenerModoEdicion');
+            return;
+        }
+        
+
+
         $asignaciones = ObligacionClienteContador::where('cliente_id', $this->cliente->id)
             ->where('obligacion_id', $obligacionId)
             ->get();
@@ -416,30 +434,44 @@ class DatosFiscales extends Component
      | 🗑️ ELIMINACIÓN DEFINITIVA (solo admin)
      |============================================================ */
 
-    public function eliminarAsignacionTotal($obligacionId): void
-    {
-        $asignaciones = ObligacionClienteContador::where('cliente_id', $this->cliente->id)
-            ->where('obligacion_id', $obligacionId)
-            ->get();
-
-        foreach ($asignaciones as $a) {
-            TareaAsignada::where('obligacion_cliente_contador_id', $a->id)->delete();
-            $a->delete();
-        }
-
-        $this->cliente->obligaciones()->detach($obligacionId);
-
-        // ✅ IMPORTANTÍSIMO: sacar la obligación del estado Livewire para que no se vuelva a anexar
-        $this->obligacionesSeleccionadas = array_values(
-            array_diff($this->obligacionesSeleccionadas, [(int)$obligacionId])
-        );
-        unset($this->obligacionesEstado[$obligacionId]);
-
-        $this->modoEdicion = true;
-        $this->dispatch('mantenerModoEdicion');
-        $this->dispatch('obligacionActualizada')->to(ObligacionesAsignadas::class);
-    }
-
+     public function eliminarAsignacionTotal($obligacionId): void
+     {
+         $obligacion = Obligacion::find($obligacionId);
+     
+         // 🔒 Solo aplicar la restricción si es una obligación única
+         if ($obligacion && $obligacion->periodicidad === 'unica') {
+             $instancias = ObligacionClienteContador::where('cliente_id', $this->cliente->id)
+                 ->where('obligacion_id', $obligacionId)
+                 ->get();
+     
+             if ($instancias->contains(fn($a) => $a->estatus === 'finalizado')) {
+                 session()->flash('error', 'No se puede eliminar esta obligación única porque ya fue finalizada.');
+                 return;
+             }
+         }
+     
+         // 🔁 Eliminar normalmente
+         $asignaciones = ObligacionClienteContador::where('cliente_id', $this->cliente->id)
+             ->where('obligacion_id', $obligacionId)
+             ->get();
+     
+         foreach ($asignaciones as $a) {
+             TareaAsignada::where('obligacion_cliente_contador_id', $a->id)->delete();
+             $a->delete();
+         }
+     
+         $this->cliente->obligaciones()->detach($obligacionId);
+     
+         $this->obligacionesSeleccionadas = array_values(
+             array_diff($this->obligacionesSeleccionadas, [(int) $obligacionId])
+         );
+         unset($this->obligacionesEstado[$obligacionId]);
+     
+         $this->modoEdicion = true;
+         $this->dispatch('mantenerModoEdicion');
+         $this->dispatch('obligacionActualizada')->to(ObligacionesAsignadas::class);
+     }
+     
 
     /* ============================================================
      | 🔹 RENDERIZADO

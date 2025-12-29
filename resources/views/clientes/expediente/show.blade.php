@@ -78,26 +78,33 @@
                 </button>
 
                 @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
+                    <button id="tab-regularizaciones" role="tab" :aria-selected="tab === 'tareas'"
+                        :tabindex="tab === 'regularizaciones' ? 0 : -1" @click="tab = 'regularizaciones'"
+                        @keydown.arrow-right.prevent="move(1)" @keydown.arrow-left.prevent="move(-1)"
+                        :class="tab === 'regularizaciones' ? 'font-bold border-b-2 border-amber-800' : ''"
+                        class="pb-1 focus:outline-none ">
+                        Regularizaciones
+                    </button>
+
+
                     <button id="tab-obligaciones" role="tab" :aria-selected="tab === 'obligaciones'"
                         :tabindex="tab === 'obligaciones' ? 0 : -1" @click="tab = 'obligaciones'"
                         @keydown.arrow-right.prevent="move(1)" @keydown.arrow-left.prevent="move(-1)"
                         :class="tab === 'obligaciones' ? 'font-bold border-b-2 border-amber-800' : ''"
-                        class="pb-1 focus:outline-none border-b-2
+                        class="pb-1 focus:outline-none
                                {{ $obligacionesCompletadas ? 'text-green-600 border-green-600' : 'text-red-600 border-red-600' }}">
                         Asignar Obligaciones
                     </button>
-                @endif
 
-                @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
                     <button id="tab-tareas" role="tab" :aria-selected="tab === 'tareas'"
                         :tabindex="tab === 'tareas' ? 0 : -1" @click="tab = 'tareas'"
                         @keydown.arrow-right.prevent="move(1)" @keydown.arrow-left.prevent="move(-1)"
                         :class="tab === 'tareas' ? 'font-bold border-b-2 border-amber-800' : ''"
-                        class="pb-1 focus:outline-none border-b-2
-                               {{ $tareasCompletadas ? 'text-green-600 border-green-600' : 'text-yellow-600 border-yellow-600' }}">
+                        class="pb-1 focus:outline-none ">
                         Asignar Tareas
                     </button>
                 @endif
+
             </nav>
 
             {{-- Contenidos --}}
@@ -110,6 +117,12 @@
                 aria-labelledby="tab-obligaciones">
                 @livewire('control.obligaciones-asignadas', ['cliente' => $cliente], key('obligaciones-' . $cliente->id))
             </section>
+
+            <section x-show="tab === 'regularizaciones'" x-cloak x-transition.opacity role="tabpanel"
+                aria-labelledby="tab-regularizaciones">
+                @livewire('clientes.regularizacion-obligaciones', ['cliente' => $cliente], key('regularizaciones-' . $cliente->id))
+            </section>
+
 
             <section x-show="tab === 'fiscales'" x-cloak x-transition.opacity role="tabpanel"
                 aria-labelledby="tab-fiscales">
@@ -142,27 +155,25 @@
             }
         });
 
-      
-document.addEventListener('estado-tareas', e => { 
-    const tab = document.getElementById('tab-tareas');
-    if (!tab) return;
 
-    // Quita cualquier color previo
-    tab.classList.remove(
-        'text-green-600','border-green-600',
-        'text-red-600','border-red-600',
-        'text-yellow-600','border-yellow-600'
-    );
+        document.addEventListener('estado-tareas', e => {
+            const tab = document.getElementById('tab-tareas');
+            if (!tab) return;
 
-    if (e.detail.completed) {
-        // ✅ Completado → verde
-        tab.classList.add('text-green-600','border-green-600');
-    } else {
-        // ⚠️ Incompleto → amarillo (coincide con tu clase inicial del Blade)
-        tab.classList.add('text-yellow-600','border-yellow-600');
-    }
-});
+            // Quita cualquier color previo
+            tab.classList.remove(
+                'text-green-600', 'border-green-600',
+                'text-red-600', 'border-red-600',
+                'text-yellow-600', 'border-yellow-600'
+            );
 
-
+            if (e.detail.completed) {
+                // ✅ Completado → verde
+                tab.classList.add('text-green-600', 'border-green-600');
+            } else {
+                // ⚠️ Incompleto → amarillo (coincide con tu clase inicial del Blade)
+                tab.classList.add('text-yellow-600', 'border-yellow-600');
+            }
+        });
     </script>
 </x-layouts.app>

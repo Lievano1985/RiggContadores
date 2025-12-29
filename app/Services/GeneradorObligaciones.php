@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Servicio: GeneradorObligaciones
  * Autor: Luis Liévano - JL3 Digital
@@ -189,5 +190,87 @@ class GeneradorObligaciones
                 ]
             );
         }
+    }
+
+
+    /**
+     * Genera manualmente obligaciones específicas para un cliente, en un mes/año determinado.
+     * No afecta la lógica de CRON. Usado desde componente Livewire.
+     * Autor: Luis Liévano - JL3 Digital
+     */
+    public function generarManualClienteObligaciones(Cliente $cliente, array $obligacionIds, int $anio, int $mes): array
+    {
+        $generadas = [];
+        $omitidas = [];
+        $yaExistian = [];
+
+        foreach ($obligacionIds as $obligacionId) {
+            $obligacion = Obligacion::find($obligacionId);
+            if (!$obligacion || $obligacion->esUnica()) {
+                $omitidas[] = $obligacionId;
+                continue;
+            }
+
+            // Verificar si ya existe esa obligación para ese periodo
+            $existe = ObligacionClienteContador::where([
+                'cliente_id' => $cliente->id,
+                'obligacion_id' => $obligacionId,
+                'mes' => $mes,
+                'ejercicio' => $anio,
+            ])->first();
+
+            if ($existe) {
+                $yaExistian[] = $obligacionId;
+                continue;
+            }
+
+            // Calcular vencimiento
+            $fechaVenc = $obligacion->calcularFechaVencimiento($anio, $mes);
+
+            // Heredar último periodo si existe
+            $ultimo = ObligacionClienteContador::query()
+                ->where('cliente_id', $cliente->id)
+                ->where('obligacion_id', $obligacionId)
+                ->where('is_activa', true)
+                ->orderByDesc('ejercicio')
+                ->orderByDesc('mes')
+                ->first();
+
+            $contadorId     = $ultimo?->contador_id ?? $cliente->contador_id;
+            $carpetaDriveId = $ultimo?->carpeta_drive_id;
+
+            // Crear obligación completa
+            $occ = ObligacionClienteContador::create([
+                'cliente_id'         => $cliente->id,
+                'obligacion_id'      => $obligacionId,
+                'contador_id'        => $contadorId,
+                'carpeta_drive_id'   => $carpetaDriveId,
+                'mes'                => $mes,
+                'ejercicio'          => $anio,
+                'estatus'            => 'asignada',
+                'fecha_asignacion'   => now(),
+                'fecha_vencimiento'  => $fechaVenc,
+                'obligacion_padre_id' => $ultimo?->id,
+                'revision'           => 1,
+                'is_activa'          => true,
+            ]);
+
+            // Registrar en cliente_obligacion (si no existía)
+            $cliente->obligaciones()->syncWithoutDetaching([$obligacionId]);
+
+            // Crear tareas asociadas
+            $this->crearTareasPara($occ, $fechaVenc);
+
+            $generadas[] = $occ->id;
+        }
+
+        return [
+            'generadas'    => count($generadas),
+            'omitidas'     => count($omitidas),
+            'ya_existian'  => count($yaExistian),
+            'ids_generadas' => $generadas,
+            'omitidas_ids' => $omitidas,
+            'ya_existian_ids' => $yaExistian,
+        ];
     }
 }
