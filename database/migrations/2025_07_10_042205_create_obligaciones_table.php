@@ -12,6 +12,7 @@ class CreateObligacionesTable extends Migration
             $table->id();
             $table->string('nombre');
             $table->string('tipo'); // federal, estatal, local, patronal
+            $table->enum('categoria',['proceso','obligacion'])->default('obligacion'); 
             $table->string('periodicidad'); // mensual, bimestral, trimestral, anual, etc.
 
             // Nuevos campos de control de calendario

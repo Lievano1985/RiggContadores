@@ -240,8 +240,7 @@
 
                         <div>
                             <label class="block text-sm mb-1">Fecha de Vencimiento</label>
-                            <input type="date" wire:model="fecha_limite"
-                                min="{{ \Carbon\Carbon::now()->format('Y-m-d') }}" max="{{ $fechaLimiteMaxima }}"
+                            <input type="date" wire:model.defer="fecha_limite"
                                 class="w-full px-3 py-2 border rounded-md 
                                        dark:bg-gray-700 dark:text-white 
                                        border-gray-300 dark:border-gray-600 

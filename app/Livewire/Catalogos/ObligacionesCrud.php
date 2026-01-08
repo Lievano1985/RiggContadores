@@ -21,6 +21,7 @@ class ObligacionesCrud extends Component
     public $obligacionId;
     public $nombre;
     public $tipo;
+    public $categoria; // 🔹 NUEVO
     public $periodicidad = 'mensual';
     public $mes_inicio = 1;
     public $desfase_meses = 1;
@@ -34,10 +35,16 @@ class ObligacionesCrud extends Component
     public $sortDirection = 'asc';
     public $mesesPermitidos = [];
 
+    // 🔹 ENUM categorías
+    public array $categorias = [
+        'obligacion' => 'Obligación',
+        'proceso'    => 'Proceso',
+    ];
+
     protected $rules = [
         'nombre'         => 'required|string|min:3',
         'tipo'           => 'required|string|in:federal,estatal,local,patronal',
-        // Incluye 'unica'
+        'categoria'      => 'required|in:obligacion,proceso', // 🔹 NUEVO
         'periodicidad'   => 'required|in:mensual,bimestral,trimestral,cuatrimestral,semestral,anual,unica',
         'mes_inicio'     => 'required|integer|min:1|max:12',
         'desfase_meses'  => 'required|integer|min:0|max:12',
@@ -50,7 +57,6 @@ class ObligacionesCrud extends Component
         $this->mesesPermitidos = Obligacion::mesInicioPermitido($value);
         $this->mes_inicio = $this->mesesPermitidos[0] ?? 1;
 
-        // Para 'unica' podemos sugerir desfase 0 (no se usa en cálculo)
         if (strtolower($value) === 'unica') {
             $this->desfase_meses = 0;
         }
@@ -67,6 +73,7 @@ class ObligacionesCrud extends Component
             ->where(function ($q) {
                 $q->where('nombre', 'like', "%{$this->search}%")
                   ->orWhere('tipo', 'like', "%{$this->search}%")
+                  ->orWhere('categoria', 'like', "%{$this->search}%")
                   ->orWhere('periodicidad', 'like', "%{$this->search}%");
             })
             ->orderBy($this->sortField, $this->sortDirection)
@@ -87,14 +94,15 @@ class ObligacionesCrud extends Component
     public function showEditForm(Obligacion $obligacion)
     {
         $this->fill([
-            'obligacionId'   => $obligacion->id,
-            'nombre'         => $obligacion->nombre,
-            'tipo'           => $obligacion->tipo,
-            'periodicidad'   => $obligacion->periodicidad,
-            'mes_inicio'     => $obligacion->mes_inicio,
-            'desfase_meses'  => $obligacion->desfase_meses,
-            'dia_corte'      => $obligacion->dia_corte,
-            'activa'         => $obligacion->activa,
+            'obligacionId'  => $obligacion->id,
+            'nombre'        => $obligacion->nombre,
+            'tipo'          => $obligacion->tipo,
+            'categoria'     => $obligacion->categoria, // 🔹 NUEVO
+            'periodicidad'  => $obligacion->periodicidad,
+            'mes_inicio'    => $obligacion->mes_inicio,
+            'desfase_meses' => $obligacion->desfase_meses,
+            'dia_corte'     => $obligacion->dia_corte,
+            'activa'        => $obligacion->activa,
         ]);
 
         $this->mesesPermitidos = Obligacion::mesInicioPermitido($this->periodicidad);
@@ -106,7 +114,6 @@ class ObligacionesCrud extends Component
     {
         $this->validate();
 
-        // Validación de mes_inicio solo si NO es única
         $permitidos = Obligacion::mesInicioPermitido($this->periodicidad);
         if (strtolower($this->periodicidad) !== 'unica' && !in_array($this->mes_inicio, $permitidos, true)) {
             $this->addError('mes_inicio', 'El mes de inicio no es válido para la periodicidad seleccionada.');
@@ -114,7 +121,14 @@ class ObligacionesCrud extends Component
         }
 
         $data = $this->only([
-            'nombre', 'tipo', 'periodicidad', 'mes_inicio', 'desfase_meses', 'dia_corte', 'activa'
+            'nombre',
+            'tipo',
+            'categoria', // 🔹 NUEVO
+            'periodicidad',
+            'mes_inicio',
+            'desfase_meses',
+            'dia_corte',
+            'activa'
         ]);
 
         if ($this->isEdit && $this->obligacionId) {
@@ -152,8 +166,15 @@ class ObligacionesCrud extends Component
     public function resetForm()
     {
         $this->reset([
-            'obligacionId', 'nombre', 'tipo', 'periodicidad',
-            'mes_inicio', 'desfase_meses', 'dia_corte', 'activa'
+            'obligacionId',
+            'nombre',
+            'tipo',
+            'categoria', // 🔹 NUEVO
+            'periodicidad',
+            'mes_inicio',
+            'desfase_meses',
+            'dia_corte',
+            'activa'
         ]);
 
         $this->periodicidad = 'mensual';
@@ -164,7 +185,10 @@ class ObligacionesCrud extends Component
         $this->activa = true;
     }
 
-    public function updatingSearch() { $this->resetPage(); }
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
 
     public function sortBy($field)
     {

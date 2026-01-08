@@ -14,10 +14,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
-
+use Carbon\Carbon;use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\ArchivoAdjunto;
 class ObligacionClienteContador extends Model
 {
+    protected $casts = [
+        'id' => 'integer',
+    ];
     protected $table = 'obligacion_cliente_contador';
 
     protected $fillable = [
@@ -193,4 +196,10 @@ class ObligacionClienteContador extends Model
             $t->update(['estatus' => 'cancelada']);
         });
     }
+
+    public function archivos(): MorphMany
+    {
+        return $this->morphMany(ArchivoAdjunto::class, 'archivoable');
+    }
+
 }

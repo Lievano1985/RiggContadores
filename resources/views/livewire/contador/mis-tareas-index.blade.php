@@ -143,7 +143,8 @@
                             </td>
 
                             <td class="px-4 py-2 space-x-2">
-                                {{-- Acción rápida: iniciar --}}
+
+                                {{-- ASIGNADA --}}
                                 @if ($t->estatus === 'asignada')
                                     <button wire:click="iniciar({{ $t->id }})"
                                         class="px-3 py-1 bg-stone-600 text-white rounded hover:bg-stone-700">
@@ -151,12 +152,27 @@
                                     </button>
                                 @endif
 
-                                {{-- Seguimiento (siempre disponible) --}}
-                                <button wire:click="abrirSeguimiento({{ $t->id }})"
-                                    class="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700">
-                                    Seguimiento
-                                </button>
+                                {{-- EN PROGRESO --}}
+                                @if ($t->estatus === 'en_progreso')
+                                    <button wire:click="terminar({{ $t->id }})"
+                                        class="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700">
+                                        Terminar
+                                    </button>
+                                @endif
+
+
+                                {{-- RECHAZADA --}}
+                                @if ($t->estatus === 'rechazada')
+                                    <button wire:click="verRechazo({{ $t->id }})"
+                                        class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
+                                        Ver rechazo
+                                    </button>
+
+                                
+                                @endif
+
                             </td>
+
                         </tr>
                     @empty
                         <tr>
@@ -174,86 +190,69 @@
         {{-- =========================
             MODAL SEGUIMIENTO
         ========================== --}}
-        @if ($openModal)
-            <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
-                <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-lg">
-                    <h4 class="text-lg font-bold mb-4 text-stone-600">Seguimiento de tarea</h4>
-
-                    <div class="space-y-4">
-
-                        {{-- Cambiar estatus --}}
-                        <div>
-                            <label class="block text-sm mb-1">Cambiar estatus</label>
-                            <select wire:model.defer="nuevoEstatus"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
-                                <option value="">(Sin cambio)</option>
-                                <option value="asignada">Asignada</option>
-                                <option value="en_progreso">En progreso</option>
-                                <option value="realizada">Realizada</option>
-                                <option value="revisada">Revisada</option>
-                                <option value="rechazada">Rechazada</option>
-                                <option value="cancelada">Cancelada</option>
-                                <option value="cerrada">Cerrada</option>
-                                <option value="reabierta">Reabierta</option>
-                            </select>
-                            @error('nuevoEstatus')
-                                <span class="text-red-600 text-sm">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        {{-- Comentario --}}
-                        <div>
-                            <label class="block text-sm mb-1">Comentario (opcional)</label>
-                            <textarea wire:model.defer="comentario" rows="3"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline"></textarea>
-                            @error('comentario')
-                                <span class="text-red-600 text-sm">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        {{-- Archivo --}}
-                        {{-- Archivo --}}
-                        <div>
-                            <label class="block text-sm mb-1">Archivo (opcional)</label>
-                            <input type="file" wire:model="archivo"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
-                            @error('archivo')
-                                <span class="text-red-600 text-sm">{{ $message }}</span>
-                            @enderror
-
-                            @if ($tareaId && ($tarea = \App\Models\TareaAsignada::find($tareaId)) && $tarea->archivo)
-                                <div class="mt-2 space-y-1 text-sm">
-                                    @if ($tarea->archivo)
-                                        <a href="{{ Storage::disk('public')->url($tarea->archivo) }}"
-                                            class="text-blue-600 hover:underline" target="_blank">📄 Ver archivo
-                                            (Storage)</a>
-                                    @endif
-
-                                    @if ($tarea->archivo_drive_url)
-                                        <a href="{{ $tarea->archivo_drive_url }}"
-                                            class="text-green-600 hover:underline" target="_blank">📁 Ver en Google
-                                            Drive</a>
-                                    @endif
-                                </div>
-                            @endif
-                        </div>
-
-
-                        <div class="flex justify-end space-x-2 mt-6">
-                            <button wire:click="$set('openModal', false)"
-                                class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded text-black dark:text-white hover:bg-gray-400">
-                                Cancelar
-                            </button>
-
-                            <button wire:click="guardarSeguimiento"
-                                class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded text-white">
-                                Guardar
-                            </button>
+        @if ($openModal && $tareaSeleccionada)
+        <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
+            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">
+    
+                <h4 class="text-lg font-bold mb-4 text-stone-600">
+                    Finalizar tarea
+                </h4>
+    
+                {{-- Comentario si está en estatus rechazado --}}
+                @if ($tareaSeleccionada->estatus === 'rechazada')
+                    <div class="mb-4">
+                        <label class="block text-sm mb-1 text-stone-600">Comentario del rechazo</label>
+                        <div class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded text-gray-800 dark:text-white">
+                            {{ $tareaSeleccionada->comentario ?? '—' }}
                         </div>
                     </div>
+                @endif
+    
+                {{-- Archivos y comentario solo si está en progreso --}}
+                @if ($tareaSeleccionada->estatus === 'en_progreso')
+                    {{-- COMPONENTE DE ARCHIVOS --}}
+                    @livewire('shared.archivos-adjuntos-crud', ['modelo' => $tareaSeleccionada], key('archivos-tarea-' . $tareaSeleccionada->id))
+    
+                    {{-- COMENTARIO --}}
+                    <div class="mt-4">
+                        <label class="block text-sm mb-1 text-stone-600">Comentario</label>
+                        <textarea wire:model.defer="comentario" rows="3"
+                            placeholder="Describe el resultado o notas adicionales..."
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        </textarea>
+                    </div>
+                @endif
+    
+                {{-- ACCIONES --}}
+                <div class="flex justify-end space-x-2 mt-6">
+                    {{-- Cerrar modal --}}
+                    <button wire:click="$set('openModal', false)"
+                        class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded text-black dark:text-white hover:bg-gray-400">
+                        Cerrar
+                    </button>
+    
+                    {{-- Botón "Realizar" si está en rechazado --}}
+                    @if ($tareaSeleccionada->estatus === 'rechazada')
+                        <button wire:click="corregir({{ $tareaSeleccionada->id }})"
+                            class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded text-white">
+                            Corregir
+                        </button>
+                    @endif
+    
+                    {{-- Botón "Finalizar" si ya está en progreso --}}
+                    @if ($tareaSeleccionada->estatus === 'en_progreso')
+                        <button wire:click="cerrarTarea"
+                            class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">
+                            Marcar como realizada
+                        </button>
+                    @endif
                 </div>
-        @endif
+            </div>
+        </div>
+    @endif
+    
 
         <x-spinner target="guardarSeguimiento" />
+
     </div>
 </div>

@@ -83,24 +83,24 @@
                                 class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Actividades Economicas') }}
                             </flux:navlist.item>
-
+{{-- 
                             <flux:navlist.item icon="banknotes" :href="route('catalogos.obligaciones-crud')"
                                 :current="request()->routeIs('catalogos.obligaciones-crud')" wire:navigate
                                 class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Obligaciones') }}
-                            </flux:navlist.item>
+                            </flux:navlist.item> --}}
                             <flux:navlist.item icon="banknotes" :href="route('catalogos.obligaciones-tareas')"
                             :current="request()->routeIs('catalogos.obligaciones-tareas')" wire:navigate
                             class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
-                            {{ __('Catalogo') }}
+                            {{ __('Obligaciones/Tareas') }}
                         </flux:navlist.item>
 
-                            <flux:navlist.item icon="briefcase" :href="route('catalogos.tareas-crud')"
+                            {{-- <flux:navlist.item icon="briefcase" :href="route('catalogos.tareas-crud')"
                                 :current="request()->routeIs('catalogos.tareas-crud')" wire:navigate
                                 class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Tareas') }}
                             </flux:navlist.item>
-
+ --}}
                             <flux:navlist.item icon="pencil-square" :href="route('despacho.perfil')"
                                 :current="request()->routeIs('despacho.perfil')" wire:navigate
                                 class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
@@ -121,14 +121,11 @@
                         </flux:navlist.item>
                         @hasrole('admin_despacho')
 
-
-
                         <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
                             :current="request()->routeIs('control.validaciones.index')" wire:navigate
                             class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                             {{ __('Validaciones') }}
                         </flux:navlist.item>
-
 
                             <flux:navlist.item icon="user-group" :href="route('Usuarios.index')"
                                 :current="request()->routeIs('Usuarios.index')" wire:navigate
@@ -136,13 +133,10 @@
                                 {{ __('Usuarios') }}
                             </flux:navlist.item>
                         @endhasrole
-
                     </flux:navlist.group>
                 </flux:navlist>
             @endhasrole
-
             <flux:spacer />
-
             <!-- User Menu -->
             <flux:dropdown position="bottom" align="start">
                 <flux:profile :name="auth()->user()->name" :initials="auth()->user()->initials()"

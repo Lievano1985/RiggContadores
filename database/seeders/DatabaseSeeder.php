@@ -19,9 +19,9 @@ class DatabaseSeeder extends Seeder
             RoleAndPermissionsSeeder::class,
             UserSeeder::class,
             RegimenSeeder::class,
-            ObligacionSeeder::class,
+            //ObligacionSeeder::class,
             ActividadEconomicaSeeder::class,
-            TareaCatalogoSeeder::class,
+            //TareaCatalogoSeeder::class,
 
         ]);
 

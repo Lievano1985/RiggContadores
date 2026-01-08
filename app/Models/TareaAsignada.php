@@ -5,11 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
+use App\Models\ArchivoAdjunto;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class TareaAsignada extends Model
 {
     protected $table = 'tareas_asignadas';
-
+    protected $casts = [
+        'obligacion_cliente_contador_id' => 'integer',
+    ];
     protected $fillable = [
         'cliente_id',
         'tarea_catalogo_id',
@@ -32,10 +36,11 @@ class TareaAsignada extends Model
         return $this->belongsTo(Cliente::class);
     }
 
-    public function tareaCatalogo(): BelongsTo
+    public function tareaCatalogo()
     {
-        return $this->belongsTo(TareaCatalogo::class);
+        return $this->belongsTo(TareaCatalogo::class, 'tarea_catalogo_id');
     }
+    
 
     public function contador(): BelongsTo
     {
@@ -65,4 +70,9 @@ class TareaAsignada extends Model
         }
         return null;
     }
+
+    public function archivos(): MorphMany
+{
+    return $this->morphMany(ArchivoAdjunto::class, 'archivoable');
+}
 }

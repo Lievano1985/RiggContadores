@@ -20,6 +20,7 @@ class Obligacion extends Model
     protected $fillable = [
         'nombre',
         'tipo',
+        'categoria',
         'periodicidad',
         'mes_inicio',
         'desfase_meses',

@@ -47,8 +47,8 @@ class TareasAsignadasCrud extends Component
     protected $rules = [
         'tarea_catalogo_id' => 'required|exists:tareas_catalogo,id',
         'contador_id' => 'required|exists:users,id',
-        'fecha_limite' => 'required|date|after_or_equal:fecha_asignacion',
-        'tiempo_estimado' => 'required|integer|min:1|max:1440',
+/*         'fecha_limite' => 'required|date|after_or_equal:fecha_asignacion',
+ */        'tiempo_estimado' => 'required|integer|min:1|max:1440',
         'carpeta_drive_id' => 'nullable|exists:carpeta_drives,id',
     ];
 
