@@ -19,7 +19,9 @@ use Livewire\WithFileUploads;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ArchivoAdjunto;
-
+use App\Services\DriveService;
+use Illuminate\Support\Facades\Auth;
+use App\Models\CarpetaDrive;
 class ArchivosAdjuntosCrud extends Component
 {
     use WithFileUploads;
@@ -80,33 +82,100 @@ class ArchivosAdjuntosCrud extends Component
         $this->dispatch('toast', type: 'success', message: 'Archivo eliminado.');
     }
 
+
+    
     public function guardar(): void
     {
         $this->validate();
-
+    
+        $modelo = $this->modelo;
+    
+        // Detectar despacho (tarea u obligación)
+        $cliente = $modelo->cliente ?? $modelo->obligacionClienteContador?->cliente;
+        $despacho = $cliente->despacho;
+    
+        $politica = $despacho->politica_almacenamiento; // 👈 CORRECTO
+    
         foreach ($this->nuevosArchivos as $item) {
+    
+            $extension = $item['file']->getClientOriginalExtension();
 
-            $nombreFinal = now()->format('Ymd_His') . '_' . $item['file']->getClientOriginalName();
-
-            $rutaStorage = $item['file']->storeAs(
-                'adjuntos',
-                $nombreFinal,
-                'public'
-            );
-
+            $nombreFinal = /* now()->format('Ymd_His') . '_' .  */
+                           \Str::slug($item['nombre']) . 
+                           '.' . $extension;
+                
+            $rutaStorage = null;
+            $urlDrive = null;
+    
+            /* ============================
+             | STORAGE
+            ============================ */
+            if (in_array($politica, ['storage_only', 'both'])) {
+    
+                $rutaStorage = $item['file']->storeAs(
+                    'adjuntos',
+                    $nombreFinal,
+                    'public'
+                );
+            }
+    
+            /* ============================
+             | DRIVE
+            ============================ */
+            if (in_array($politica, ['drive_only', 'both'])) {
+    
+                $folderId = null;
+    
+                // Buscar carpeta real en tabla carpetas_drive
+                if ($modelo->carpeta_drive_id) {
+                    $cd = CarpetaDrive::find($modelo->carpeta_drive_id);
+                    $folderId = $cd?->drive_folder_id;
+                }
+    
+                if ($folderId) {
+                    try {
+    
+                        $drive = app(DriveService::class);
+    
+                        $res = $drive->subirArchivo(
+                            $nombreFinal,
+                            $item['file'], // objeto completo
+                            $folderId,
+                            $item['file']->getMimeType()
+                        );
+    
+                        if (is_string($res)) {
+                            $urlDrive = $res;
+                        } elseif (is_array($res) && isset($res['webViewLink'])) {
+                            $urlDrive = $res['webViewLink'];
+                        }
+    
+                    } catch (\Exception $e) {
+    
+                        \Log::error('❌ Error Drive: ' . $e->getMessage());
+                        $this->addError('archivo', 'Error al subir archivo a Google Drive.');
+                    }
+                } else {
+                    $this->addError('archivo', 'No se encontró carpeta de destino en Drive.');
+                }
+            }
+    
             $this->modelo->archivos()->create([
                 'nombre' => $item['nombre'],
                 'archivo' => $rutaStorage,
-                'archivo_drive_url' => null, // Drive se puede integrar después
+                'archivo_drive_url' => $urlDrive,
             ]);
         }
-
+    
         $this->reset('nuevosArchivos');
         $this->mount();
-
+    
         $this->dispatch('toast', type: 'success', message: 'Archivos guardados.');
     }
+    
 
+
+  
     public function render()
     {
         return view('livewire.shared.archivos-adjuntos-crud', [

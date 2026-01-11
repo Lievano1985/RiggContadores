@@ -56,6 +56,7 @@
         <thead class="bg-stone-100 dark:bg-stone-900">
             <tr>
                 <th class="px-4 py-2 text-left">Tarea</th>
+                <th class="px-4 py-2 text-left">Carpeta Drive</th> {{-- 👈 NUEVO --}}
                 <th class="px-4 py-2 text-left">Contador Responsable</th>
                 <th class="px-4 py-2 text-left">Obligación</th>
                 <th class="px-4 py-2 text-left">Vencimiento</th>
@@ -99,7 +100,21 @@
                             @endswitch
                         </div>
                     </td>
-
+                    <td class="px-4 py-2 text-sm">
+                        @php
+                            $carpeta = $tarea->carpeta_drive_id 
+                                ? \App\Models\CarpetaDrive::find($tarea->carpeta_drive_id) 
+                                : null;
+                        @endphp
+                    
+                        @if ($carpeta)
+                           
+                                {{ $carpeta->nombre }}
+                         
+                        @else
+                            Sin carpeta
+                        @endif
+                    </td>
                     <td class="px-4 py-2">{{ $tarea->contador->name ?? '-' }}</td>
 
                     <td class="px-4 py-2">

@@ -137,7 +137,7 @@ class RegularizacionObligaciones extends Component
         $this->resumen = $resultado;
 
         // Por si otro tab depende de ello
-        $this->dispatch('obligacionActualizada');
+        $this->dispatch('DatosFiscalesActualizados');
     }
 
     /* ============================================================
@@ -156,7 +156,13 @@ class RegularizacionObligaciones extends Component
             ->orderBy('nombre')
             ->get();
     }
-
+    public function quitarObligacion($id)
+    {
+        $this->obligacionesSeleccionadas = array_values(
+            array_diff($this->obligacionesSeleccionadas, [$id])
+        );
+    }
+    
     public function render()
     {
         return view('livewire.clientes.regularizacion-obligaciones');

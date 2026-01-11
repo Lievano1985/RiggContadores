@@ -8,23 +8,23 @@
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div class="flex flex-wrap items-center gap-2">
 
-            <select wire:model.live="ejercicioSeleccionado" 
-            class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+            <select wire:model.live="ejercicioSeleccionado"
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
                 <option value="">Ejercicio (todos)</option>
-                @foreach($ejerciciosDisponibles as $ej)
+                @foreach ($ejerciciosDisponibles as $ej)
                     <option value="{{ $ej }}">{{ $ej }}</option>
                 @endforeach
             </select>
-            
-            <select wire:model.live="mesSeleccionado"                    
-             class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+
+            <select wire:model.live="mesSeleccionado"
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
                 @disabled(empty($mesesDisponibles))>
                 <option value="">Mes (todos)</option>
-                @foreach($mesesDisponibles as $m)
-                    <option value="{{ $m }}">{{ $meses[(int)$m] ?? $m }}</option>
+                @foreach ($mesesDisponibles as $m)
+                    <option value="{{ $m }}">{{ $meses[(int) $m] ?? $m }}</option>
                 @endforeach
             </select>
-            
+
 
             {{-- Estatus --}}
             <select wire:model.live="estatus"
@@ -41,9 +41,7 @@
             </select>
 
             {{-- Buscar --}}
-            <input type="text"
-                placeholder="Buscar (cliente / obligación)"
-                wire:model.live="buscar"
+            <input type="text" placeholder="Buscar (cliente / obligación)" wire:model.live="buscar"
                 class="w-72 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
         </div>
     </div>
@@ -103,7 +101,7 @@
                                 </button>
                             @endif
 
-                            @if (in_array($item->estatus, ['en_progreso','realizada'], true))
+                            @if (in_array($item->estatus, ['en_progreso', 'realizada'], true))
                                 <button wire:click="openResultModal({{ $item->id }})"
                                     class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
                                     {{ $item->estatus === 'realizada' ? 'Editar resultados' : 'Subir resultados' }}
@@ -127,15 +125,15 @@
     {{-- =========================
         MODAL RESULTADOS
     ========================== --}}
-    @if($openModal)
-    <div class="fixed inset-0 flex items-center justify-center bg-stone-800/70 z-50 p-4">
-        <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-lg">
-            <h3 class="text-lg font-bold mb-4 text-stone-700 dark:text-white">Resultados de obligación</h3>
+    @if ($openModal)
+        <div class="fixed inset-0 flex items-center justify-center bg-stone-800/70 z-50 p-4">
+            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-lg">
+                <h3 class="text-lg font-bold mb-4 text-stone-700 dark:text-white">Resultados de obligación</h3>
 
-            <div class="space-y-4">
-            
-                {{-- Subir archivo --}}
-                <div>
+                <div class="space-y-4">
+
+                    {{-- Subir archivo --}}
+                    {{-- <div>
                     <label class="block text-sm mb-1">Archivo (PDF, ZIP, JPG, PNG)</label>
                     <input type="file" wire:model="archivo"
                         class="w-full border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" />
@@ -149,40 +147,51 @@
                             </a>
                         </div>
                     @endif
-                </div>
-            
-                {{-- Número de operación --}}
-                <div>
-                    <label class="block text-sm mb-1">Número de operación</label>
-                    <input type="text" wire:model.defer="numero_operacion"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" />
-                    @error('numero_operacion') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                </div>
-            
-                {{-- Fecha oficial que arroja el documento (fecha_finalizado) --}}
-                <div>
-                    <label class="block text-sm mb-1">Fecha oficial del documento / línea de captura</label>
-                    <input type="date" wire:model.defer="fecha_finalizado"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" />
-                    @error('fecha_finalizado') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                </div>
-            </div>
-            
+                </div> --}}
+                    {{-- Archivos múltiples --}}
+                    @if ($selectedId)
+                        <div class="mt-4 border-t pt-4">
+                            <livewire:shared.archivos-adjuntos-crud :modelo="\App\Models\ObligacionClienteContador::find($selectedId)"
+                                wire:key="archivos-obligacion-{{ $selectedId }}" />
+                        </div>
+                    @endif
 
-            <div class="flex justify-end space-x-2 mt-6">
-                <button wire:click="$set('openModal', false)"
-                    class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded hover:bg-gray-400">
-                    Cancelar
-                </button>
+                    {{-- Número de operación --}}
+                    <div>
+                        <label class="block text-sm mb-1">Número de operación</label>
+                        <input type="text" wire:model.defer="numero_operacion"
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" />
+                        @error('numero_operacion')
+                            <span class="text-red-600 text-sm">{{ $message }}</span>
+                        @enderror
+                    </div>
 
-                <button wire:click="saveResult"
-                    class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
-                    Guardar
-                </button>
+                    {{-- Fecha oficial que arroja el documento (fecha_finalizado) --}}
+                    <div>
+                        <label class="block text-sm mb-1">Fecha oficial del documento / línea de captura</label>
+                        <input type="date" wire:model.defer="fecha_finalizado"
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" />
+                        @error('fecha_finalizado')
+                            <span class="text-red-600 text-sm">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+
+
+                <div class="flex justify-end space-x-2 mt-6">
+                    <button wire:click="$set('openModal', false)"
+                        class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded hover:bg-gray-400">
+                        Cancelar
+                    </button>
+
+                    <button wire:click="saveResult"
+                        class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
+                        Guardar
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-@endif
+    @endif
 
     <x-spinner target="saveResult" />
     <x-notification />

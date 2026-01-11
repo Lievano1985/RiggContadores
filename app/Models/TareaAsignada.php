@@ -24,6 +24,8 @@ class TareaAsignada extends Model
         'fecha_limite',
         'fecha_inicio',
         'fecha_termino',
+        'ejercicio',
+        'mes',
         'estatus',
         'archivo',
         'archivo_drive_url',
@@ -40,14 +42,14 @@ class TareaAsignada extends Model
     {
         return $this->belongsTo(TareaCatalogo::class, 'tarea_catalogo_id');
     }
-    
+
 
     public function contador(): BelongsTo
     {
         return $this->belongsTo(User::class, 'contador_id');
     }
 
- /*    public function obligacion(): BelongsTo
+    /*    public function obligacion(): BelongsTo
     {
         return $this->belongsTo(ObligacionClienteContador::class, 'obligacion_cliente_contador_id');
     } */
@@ -72,7 +74,7 @@ class TareaAsignada extends Model
     }
 
     public function archivos(): MorphMany
-{
-    return $this->morphMany(ArchivoAdjunto::class, 'archivoable');
-}
+    {
+        return $this->morphMany(ArchivoAdjunto::class, 'archivoable');
+    }
 }

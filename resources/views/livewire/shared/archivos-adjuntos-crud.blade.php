@@ -40,20 +40,20 @@
             <h4 class="font-semibold text-sm text-stone-600 mb-2">Agregar archivos</h4>
     
             @foreach ($nuevosArchivos as $i => $item)
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-2 mb-2">
+                <div class="grid grid-cols-1 md:grid-cols-10 gap-2 mb-2">
     
                     <input type="text"
                            wire:model.defer="nuevosArchivos.{{ $i }}.nombre"
                            placeholder="Nombre del archivo"
-                           class="md:col-span-2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                           class="md:col-span-4 px-3 py-2 border text-sm rounded dark:bg-gray-700 dark:text-white">
     
                     <input type="file"
                            wire:model="nuevosArchivos.{{ $i }}.file"
-                           class="md:col-span-2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                           class="md:col-span-5 px-3 py-2 border text-sm rounded dark:bg-gray-700 dark:text-white">
     
                     <button wire:click="quitarArchivo({{ $i }})"
-                            class="bg-red-600 text-white rounded px-3 py-2 hover:bg-red-700">
-                        ✕
+                            class="sm bg-red-600 text-white rounded   hover:bg-red-700">
+                            ✕
                     </button>
                 </div>
             @endforeach
@@ -73,6 +73,7 @@
                 Guardar archivos
             </button>
         </div>
-    
+        <x-spinner target="guardar" />
+
     </div>
     </div>
