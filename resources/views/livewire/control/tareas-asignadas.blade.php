@@ -14,11 +14,14 @@
     </div>
     <div class="flex space-x-3 mb-4">
         <div>
+
             <label class="text-sm font-semibold">Ejercicio</label>
             <select wire:model.live="filtroEjercicio"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
                    border-gray-300 dark:border-gray-600 focus:border-amber-600
                    focus:ring focus:ring-amber-500/40 focus:outline-none">
+                   <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+
                 @foreach ($aniosDisponibles as $year)
                     <option value="{{ $year }}">{{ $year }}</option>
                 @endforeach
@@ -30,6 +33,7 @@
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
             border-gray-300 dark:border-gray-600 focus:border-amber-600
             focus:ring focus:ring-amber-500/40 focus:outline-none">
+            <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
                 @foreach (range(1, 12) as $m)
                     <option value="{{ $m }}">
                         {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}

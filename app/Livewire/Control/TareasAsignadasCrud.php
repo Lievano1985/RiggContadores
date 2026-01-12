@@ -84,8 +84,8 @@ class TareasAsignadasCrud extends Component
         }
     
         // ✅ inicializa filtros (mismo patrón)
-        $this->filtroEjercicio = $this->aniosDisponibles[0] ?? now()->year;
-        $this->filtroMes = now()->month;
+        $this->filtroEjercicio = null;
+        $this->filtroMes = null;
     
         // Carga inicial
         $this->cargarTareasDisponibles();
@@ -94,57 +94,63 @@ class TareasAsignadasCrud extends Component
     }
     
     private function cargarTareasAsignadasFiltradas()
-{
-    $query = TareaAsignada::with([
-            'tareaCatalogo',
-            'contador',
-            'obligacionClienteContador.obligacion'
-        ])
-        ->where('cliente_id', $this->cliente->id);
-
-    // 🔍 Búsqueda
-    if (!empty($this->buscarTarea)) {
-        $texto = trim($this->buscarTarea);
-        $query->whereHas('tareaCatalogo', function ($q) use ($texto) {
-            $q->where('nombre', 'like', "%{$texto}%");
-        });
-    }
-
-    /* ===========================
-     | AUTOMÁTICO
-     =========================== */
-    if ($this->modoAutomatico) {
-
-        $inicioMes = now()->startOfMonth();
-        $finMes    = now()->endOfMonth();
-
-        $query->where(function ($q) use ($inicioMes, $finMes) {
-
-            // Mes actual
-            $q->whereBetween('fecha_limite', [$inicioMes, $finMes])
-
-            // Vencidas NO cerradas
-            ->orWhere(function ($q2) use ($inicioMes) {
-                $q2->whereNotNull('fecha_limite')
-                   ->whereDate('fecha_limite', '<', $inicioMes)
-                   ->whereNotIn('estatus', ['terminada','cancelada','revisada']);
+    {
+        $query = TareaAsignada::with([
+                'tareaCatalogo',
+                'contador',
+                'obligacionClienteContador.obligacion'
+            ])
+            ->where('cliente_id', $this->cliente->id)
+    
+            // 🔴 FILTRO CLAVE
+            ->where(function ($q) {
+                $q->whereNull('obligacion_cliente_contador_id') // tareas sin obligación
+                  ->orWhereHas('obligacionClienteContador.obligacion', function ($o) {
+                      $o->where('is_activa', 1); // solo obligaciones activas
+                  });
             });
-        });
+    
+        // 🔍 Búsqueda
+        if (!empty($this->buscarTarea)) {
+            $texto = trim($this->buscarTarea);
+            $query->whereHas('tareaCatalogo', function ($q) use ($texto) {
+                $q->where('nombre', 'like', "%{$texto}%");
+            });
+        }
+    
+        /* ===========================
+         | AUTOMÁTICO
+         =========================== */
+        if ($this->modoAutomatico) {
+    
+            $inicioMes = now()->startOfMonth();
+            $finMes    = now()->endOfMonth();
+    
+            $query->where(function ($q) use ($inicioMes, $finMes) {
+    
+                $q->whereBetween('fecha_limite', [$inicioMes, $finMes])
+    
+                ->orWhere(function ($q2) use ($inicioMes) {
+                    $q2->whereNotNull('fecha_limite')
+                       ->whereDate('fecha_limite', '<', $inicioMes)
+                       ->whereNotIn('estatus', ['terminada','cancelada','revisada']);
+                });
+            });
+        }
+    
+        /* ===========================
+         | MANUAL
+         =========================== */
+        else {
+            $query->where('ejercicio', $this->filtroEjercicio)
+                  ->where('mes', $this->filtroMes);
+        }
+    
+        return $query
+            ->orderBy('fecha_limite','asc')
+            ->paginate(10);
     }
-
-    /* ===========================
-     | MANUAL POR PERIODO
-     =========================== */
-    else {
-
-        $query->where('ejercicio', $this->filtroEjercicio)
-              ->where('mes', $this->filtroMes);
-    }
-
-    return $query
-        ->orderBy('fecha_limite','asc')
-        ->paginate(10);
-}
+    
 
     
 

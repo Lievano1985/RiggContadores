@@ -255,8 +255,6 @@ class GeneradorObligaciones
                 'is_activa'          => true,
             ]);
 
-            // Registrar en cliente_obligacion (si no existía)
-            $cliente->obligaciones()->syncWithoutDetaching([$obligacionId]);
 
             // Crear tareas asociadas
             $this->crearTareasPara($occ, $fechaVenc);

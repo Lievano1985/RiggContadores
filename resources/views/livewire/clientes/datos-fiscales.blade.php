@@ -114,16 +114,6 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
                     as $o
                 )
 
-                    @php
-                        $asignacion = \App\Models\ObligacionClienteContador::where(
-                            'cliente_id',
-                            $cliente->id
-                        )
-                            ->where('obligacion_id', $o->id)
-                            ->latest()
-                            ->first();
-                    @endphp
-
                     <label
                         wire:key="obl-periodica-{{ $o->id }}"
                         class="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
@@ -149,27 +139,27 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
             </label>
 
             @php
-                // IDs seleccionados en true
-                $idsSeleccionados = collect($obligacionesSeleccionadas)
-                    ->filter()
-                    ->keys();
+                $idsSeleccionados = collect($obligacionesEstado)->keys();
             @endphp
 
             <ul class="list-disc list-inside text-sm space-y-2">
 
                 @forelse (
-                    $obligacionesPeriodicasDisponibles->whereIn('id', $idsSeleccionados)
+                    $obligacionesPeriodicasDisponibles
+                        ->whereIn('id', $idsSeleccionados)
                     as $o
                 )
 
                     @php
+                        // ⚠️ IMPORTANTE: recalcular aquí
                         $asignacion = \App\Models\ObligacionClienteContador::where(
                             'cliente_id',
                             $cliente->id
                         )
-                            ->where('obligacion_id', $o->id)
-                            ->latest()
-                            ->first();
+                        ->where('obligacion_id', $o->id)
+                        ->orderBy('is_activa')   // primero bajas
+                        ->orderByDesc('id')     // más reciente
+                        ->first();
                     @endphp
 
                     <li class="flex justify-between items-center">
@@ -221,7 +211,6 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
 </x-seccion-acordeon>
 
 
-
 <!-- Obligaciones únicas -->
 <x-seccion-acordeon titulo="Obligaciones únicas (se crean una sola vez)">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -264,6 +253,9 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
 @else
 <x-lista-resumen titulo="Regímenes fiscales" :items="$cliente->regimenes->pluck('nombre')" />
 <x-lista-resumen titulo="Actividades económicas" :items="$cliente->actividadesEconomicas->pluck('nombre')" />
-<x-lista-resumen titulo="Obligaciones fiscales" :items="$cliente->obligaciones->pluck('nombre')" />
+    <x-lista-resumen 
+    titulo="Obligaciones fiscales"
+    :items="$this->getObligacionesVigentes()->pluck('obligacion.nombre')" 
+/>
 @endif
 </div>
