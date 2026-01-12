@@ -42,6 +42,7 @@ class TareasAsignadasCrud extends Component
     public $fechaLimiteMaxima = null;
     public $aniosDisponibles = [];
     public $buscarTarea = '';
+    public bool $modoAutomatico = true;
 
     // === Reglas de validación base ===
     protected $rules = [
@@ -61,18 +62,20 @@ class TareasAsignadasCrud extends Component
     public function mount($cliente)
     {
 /*         Carbon::setTestNow(Carbon::create(2026, 1, 1));
- */
+ */$this->modoAutomatico = true;
+
         $this->cliente = $cliente;
     
         // ✅ AÑOS DISPONIBLES:
         // - YEAR(fecha_limite) cuando exista
         // - si fecha_limite es NULL, usar YEAR(created_at) como fallback
         $this->aniosDisponibles = TareaAsignada::where('cliente_id', $this->cliente->id)
-            ->selectRaw('DISTINCT COALESCE(YEAR(fecha_limite), YEAR(created_at)) as year')
-            ->whereNotNull(DB::raw('COALESCE(YEAR(fecha_limite), YEAR(created_at))'))
-            ->orderBy('year', 'desc')
-            ->pluck('year')
-            ->toArray();
+        ->whereNotNull('ejercicio')
+        ->distinct()
+        ->orderBy('ejercicio', 'desc')
+        ->pluck('ejercicio')
+        ->toArray();
+    
     
         // ✅ Asegurar que el año actual exista en el combo
         $anioActual = now()->year;
@@ -81,7 +84,7 @@ class TareasAsignadasCrud extends Component
         }
     
         // ✅ inicializa filtros (mismo patrón)
-        $this->filtroEjercicio = $anioActual;
+        $this->filtroEjercicio = $this->aniosDisponibles[0] ?? now()->year;
         $this->filtroMes = now()->month;
     
         // Carga inicial
@@ -91,77 +94,73 @@ class TareasAsignadasCrud extends Component
     }
     
     private function cargarTareasAsignadasFiltradas()
-    {
-        $anioActual = now()->year;
-        $mesActual  = now()->month;
+{
+    $query = TareaAsignada::with([
+            'tareaCatalogo',
+            'contador',
+            'obligacionClienteContador.obligacion'
+        ])
+        ->where('cliente_id', $this->cliente->id);
 
-        $query = TareaAsignada::with(['tareaCatalogo', 'contador', 'obligacionClienteContador.obligacion'])
-            ->where('cliente_id', $this->cliente->id);
-
-        // ✅ búsqueda por nombre (tarea catálogo)
-        if (!empty($this->buscarTarea)) {
-            $texto = trim($this->buscarTarea);
-
-            $query->whereHas('tareaCatalogo', function ($q) use ($texto) {
-                $q->where('nombre', 'like', "%{$texto}%");
-            });
-        }
-
-        $esFiltroAutomatico =
-            empty($this->filtroEjercicio) || empty($this->filtroMes) ||
-            ((int) $this->filtroEjercicio === (int) $anioActual && (int) $this->filtroMes === (int) $mesActual);
-
-        // ==========================================================
-        // ✅ FILTRO AUTOMÁTICO (al entrar)
-        // - tareas con fecha_limite NULL (siempre)
-        // - tareas vencidas (<= fin de mes actual) que NO estén cerradas
-        // ==========================================================
-        if ($esFiltroAutomatico) {
-            $finDelMes = now()->endOfMonth()->toDateString();
-
-            $query->where(function ($q) use ($finDelMes) {
-                $q->whereNull('fecha_limite')
-                    ->orWhere(function ($q2) use ($finDelMes) {
-                        $q2->whereNotNull('fecha_limite')
-                            ->whereDate('fecha_limite', '<=', $finDelMes)
-                            ->whereNotIn('estatus', ['terminada', 'cancelada', 'revisada']);
-                    });
-            });
-        }
-
-        // ==========================================================
-        // ✅ FILTRO MANUAL (cuando eliges año/mes)
-        // - mostrar SOLO las del mes/año seleccionado (sin importar estatus)
-        // - + (opcional) incluir NULL siempre (porque tú lo pediste)
-        // ==========================================================
-        else {
-            $anio = (int) $this->filtroEjercicio;
-            $mes  = (int) $this->filtroMes;
-
-            $query->where(function ($q) use ($anio, $mes) {
-                $q->whereYear('fecha_limite', $anio)
-                    ->whereMonth('fecha_limite', $mes)
-                    ->orWhereNull('fecha_limite'); // ✅ si NO quieres ver NULL en manual, quita esta línea
-            });
-        }
-
-        // ✅ orden: primero las NULL, luego por fecha asc
-        return $query
-            ->orderByRaw('fecha_limite IS NULL DESC')
-            ->orderBy('fecha_limite', 'asc')
-            ->paginate(10);
+    // 🔍 Búsqueda
+    if (!empty($this->buscarTarea)) {
+        $texto = trim($this->buscarTarea);
+        $query->whereHas('tareaCatalogo', function ($q) use ($texto) {
+            $q->where('nombre', 'like', "%{$texto}%");
+        });
     }
+
+    /* ===========================
+     | AUTOMÁTICO
+     =========================== */
+    if ($this->modoAutomatico) {
+
+        $inicioMes = now()->startOfMonth();
+        $finMes    = now()->endOfMonth();
+
+        $query->where(function ($q) use ($inicioMes, $finMes) {
+
+            // Mes actual
+            $q->whereBetween('fecha_limite', [$inicioMes, $finMes])
+
+            // Vencidas NO cerradas
+            ->orWhere(function ($q2) use ($inicioMes) {
+                $q2->whereNotNull('fecha_limite')
+                   ->whereDate('fecha_limite', '<', $inicioMes)
+                   ->whereNotIn('estatus', ['terminada','cancelada','revisada']);
+            });
+        });
+    }
+
+    /* ===========================
+     | MANUAL POR PERIODO
+     =========================== */
+    else {
+
+        $query->where('ejercicio', $this->filtroEjercicio)
+              ->where('mes', $this->filtroMes);
+    }
+
+    return $query
+        ->orderBy('fecha_limite','asc')
+        ->paginate(10);
+}
+
+    
 
 
     public function updatedFiltroEjercicio()
     {
-        $this->resetPage(); // reinicia paginación
-    }
-
-    public function updatedFiltroMes()
-    {
+        $this->modoAutomatico = false;
         $this->resetPage();
     }
+    
+    public function updatedFiltroMes()
+    {
+        $this->modoAutomatico = false;
+        $this->resetPage();
+    }
+    
     public function updatedBuscarTarea()
     {
         $this->resetPage();

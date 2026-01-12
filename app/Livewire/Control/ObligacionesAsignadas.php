@@ -14,12 +14,17 @@ use Livewire\WithPagination;
 
 class ObligacionesAsignadas extends Component
 {
+    use WithPagination;
+
+    protected $paginationTheme = 'tailwind';
+
     public $cliente;
     public $clienteId;
     public bool $asignacionCompleta = false;
     public $motivoBaja = '';
     public $asignacionABaja = null;
     public $confirmarBaja = false;
+
     // Inputs del formulario
     public $obligacion_id;
     public $contador_id;
@@ -27,34 +32,31 @@ class ObligacionesAsignadas extends Component
     public $carpeta_drive_id;
 
     public $aniosDisponibles = [];
-
     public $filtroEjercicio;
     public $filtroMes;
-    // Para saber si estamos en modo edición
+
+    // Edición
     public $modoEdicion = false;
     public $asignacionIdEditando = null;
     public $obligacionSeleccionada = null;
-    //paginacion
-    protected $paginationTheme = 'tailwind';
-    public $perPage = 10;
+
     // Listas
     public $obligacionesDisponibles = [];
-    public $contadores             = [];
-    public array $arbolCarpetas    = [];
+    public $contadores = [];
+    public array $arbolCarpetas = [];
+
     public $obligacionesCompletadas;
     public int $formKey = 0;
     public bool $modalVisible = false;
-    public $obligacionOriginalId; // Guarda la obligación original al editar
+    public $obligacionOriginalId;
 
     protected $listeners = [
         'obligacionActualizada' => 'actualizarAsignaciones'
     ];
 
-    use WithPagination;
-
-    /**
-     * Mostrar modal de baja lógica
-     */
+    /* =======================================================
+     | BAJA LÓGICA
+     ======================================================= */
     public function confirmarBajaAsignacion($id)
     {
         $this->asignacionABaja = ObligacionClienteContador::findOrFail($id);
@@ -62,9 +64,6 @@ class ObligacionesAsignadas extends Component
         $this->confirmarBaja = true;
     }
 
-    /**
-     * Confirmar y ejecutar baja lógica
-     */
     public function darDeBajaAsignacionConfirmada()
     {
         $this->validate([
@@ -76,18 +75,15 @@ class ObligacionesAsignadas extends Component
 
             $asignacion = ObligacionClienteContador::findOrFail($this->asignacionABaja->id);
 
-            // 1️⃣ Dar de baja la asignación seleccionada
             $asignacion->update([
                 'is_activa'   => false,
                 'fecha_baja'  => now(),
                 'motivo_baja' => $this->motivoBaja ?: 'Baja manual desde interfaz.',
             ]);
 
-            // 1.1️⃣ Cancelar sus tareas
             TareaAsignada::where('obligacion_cliente_contador_id', $asignacion->id)
                 ->update(['estatus' => 'cancelada']);
 
-            // 2️⃣ Dar de baja TODAS las demás asignaciones activas del mismo cliente y obligación
             $otrasAsignaciones = ObligacionClienteContador::where('cliente_id', $asignacion->cliente_id)
                 ->where('obligacion_id', $asignacion->obligacion_id)
                 ->where('id', '!=', $asignacion->id)
@@ -98,39 +94,30 @@ class ObligacionesAsignadas extends Component
                 $otra->update([
                     'is_activa'   => false,
                     'fecha_baja'  => now(),
-                    'motivo_baja' => 'Baja automática al dar de baja otra instancia de la misma obligación.',
+                    'motivo_baja' => 'Baja automática al dar de baja otra instancia.',
                 ]);
 
-                // 2.1️⃣ Cancelar también las tareas de esas asignaciones
                 TareaAsignada::where('obligacion_cliente_contador_id', $otra->id)
                     ->update(['estatus' => 'cancelada']);
             }
 
-            // 3️⃣ Si existe el vínculo pivote cliente_obligacion, se mantiene
-            // (no se elimina, para que el checkbox siga mostrándose como seleccionado en Datos Fiscales)
-
             DB::commit();
 
-            // 4️⃣ Reset de estados del componente
             $this->confirmarBaja = false;
             $this->asignacionABaja = null;
             $this->motivoBaja = '';
 
-            //$this->cargarAsignaciones();
-            $this->cargarObligacionesDisponibles();
-            $this->verificarAsignacionesCompletas();
+            $this->resetPage();
 
-            session()->flash('success', 'Obligación dada de baja correctamente (todas las instancias actualizadas).');
+            session()->flash('success', 'Obligación dada de baja correctamente.');
             $this->dispatch('obligacionesCambiadas');
+
         } catch (\Throwable $e) {
             DB::rollBack();
-            session()->flash('error', 'Error al dar de baja: ' . $e->getMessage());
+            session()->flash('error', 'Error: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Reactiva una obligación dada de baja.
-     */
     public function reactivarAsignacion($id)
     {
         try {
@@ -144,64 +131,61 @@ class ObligacionesAsignadas extends Component
                 'motivo_baja' => null,
             ]);
 
-            // Opcional: también podrías reabrir tareas canceladas si lo deseas:
-            // $asignacion->tareasAsignadas()->where('estatus', 'cancelada')->update(['estatus' => 'asignada']);
-            // ✅ Reactivar tareas canceladas
             $asignacion->tareasAsignadas()
                 ->where('estatus', 'cancelada')
                 ->update(['estatus' => 'asignada']);
+
             DB::commit();
 
-            //$this->cargarAsignaciones();
-            $this->cargarObligacionesDisponibles();
-            $this->verificarAsignacionesCompletas();
+            $this->resetPage();
 
-            session()->flash('success', 'Obligación reactivada correctamente.');
+            session()->flash('success', 'Obligación reactivada.');
             $this->dispatch('obligacionesCambiadas');
+
         } catch (\Throwable $e) {
             DB::rollBack();
-            session()->flash('error', 'Error al reactivar la obligación: ' . $e->getMessage());
+            session()->flash('error', 'Error: ' . $e->getMessage());
         }
     }
 
-
+    /* =======================================================
+     | INIT
+     ======================================================= */
     public function mount($cliente)
     {
-        /*           Carbon::setTestNow(Carbon::create(2026, 1, 1));
- */
+        $this->modoAutomatico = true;
 
-        $this->cliente    = $cliente;
-        $this->clienteId  = $cliente->id;
+/*         Carbon::setTestNow(Carbon::create(2026, 2, 2));
+ */        $this->cliente   = $cliente;
+        $this->clienteId = $cliente->id;
 
         $this->aniosDisponibles = ObligacionClienteContador::where('cliente_id', $this->clienteId)
-            ->selectRaw('DISTINCT COALESCE(YEAR(fecha_vencimiento), ejercicio, YEAR(created_at)) as year')
-            ->whereNotNull(DB::raw('COALESCE(YEAR(fecha_vencimiento), ejercicio, YEAR(created_at))'))
-            ->orderBy('year', 'desc')
-            ->pluck('year')
-            ->toArray();
+        ->whereNotNull('ejercicio')
+        ->distinct()
+        ->orderBy('ejercicio', 'desc')
+        ->pluck('ejercicio')
+        ->toArray();
+    
 
-        // Asegurar que el año actual exista en el combo
-        $anioActual = now()->year;
-        if (!in_array($anioActual, $this->aniosDisponibles)) {
-            array_unshift($this->aniosDisponibles, $anioActual);
-        }
         $this->filtroEjercicio = now()->year;
         $this->filtroMes = now()->month;
 
+        $this->contadores = User::role('contador')->orderBy('name')->get();
         $this->cargarObligacionesDisponibles();
-        $this->contadores        = User::role('contador')->orderBy('name')->get();
         $this->verificarAsignacionesCompletas();
-        //$this->cargarAsignaciones();
         $this->cargarArbolCarpetas();
     }
 
     public function actualizarAsignaciones()
     {
+        $this->resetPage();
         $this->cargarObligacionesDisponibles();
-        //$this->cargarAsignaciones();
         $this->verificarAsignacionesCompletas();
     }
 
+    /* =======================================================
+     | OBLIGACIONES DISPONIBLES
+     ======================================================= */
     private function cargarObligacionesDisponibles()
     {
         $obligacionesCliente = Cliente::find($this->clienteId)
@@ -214,141 +198,111 @@ class ObligacionesAsignadas extends Component
             ->pluck('obligacion_id')
             ->toArray();
 
-        // ✅ Si estamos editando, permitimos que la obligación actual se muestre
         if ($this->modoEdicion && $this->asignacionIdEditando) {
-            $obligacionActual = ObligacionClienteContador::find($this->asignacionIdEditando);
-            if ($obligacionActual) {
-                $yaAsignadas = array_diff($yaAsignadas, [$obligacionActual->obligacion_id]);
+            $actual = ObligacionClienteContador::find($this->asignacionIdEditando);
+            if ($actual) {
+                $yaAsignadas = array_diff($yaAsignadas, [$actual->obligacion_id]);
             }
         }
 
         $this->obligacionesDisponibles = $obligacionesCliente
             ->filter(fn($o) => !in_array($o->id, $yaAsignadas));
     }
-    private function cargarAsignaciones()
-    {
-        $anioActual = now()->year;
-        $mesActual  = now()->month;
-    
-        $query = ObligacionClienteContador::with(['obligacion', 'contador', 'carpeta'])
-            ->where('cliente_id', $this->clienteId)
-            ->where('is_activa', true);
-    
-        // === FILTRO AUTOMÁTICO ===
-        if (
-            empty($this->filtroEjercicio) || empty($this->filtroMes) ||
-            ((int)$this->filtroEjercicio === $anioActual && (int)$this->filtroMes === $mesActual)
-        ) {
-            $inicioMes = now()->startOfMonth()->toDateString();
-            $finMes    = now()->endOfMonth()->toDateString();
-    
-            $query->where(function ($q) use ($inicioMes, $finMes) {
-    
-                $q->whereBetween('fecha_vencimiento', [$inicioMes, $finMes])
-    
-                  ->orWhere(function ($q2) use ($finMes) {
-                      $q2->whereNotNull('fecha_vencimiento')
-                         ->whereDate('fecha_vencimiento', '<=', $finMes)
-                         ->where('estatus', '!=', 'finalizado');
-                  })
-    
-                  ->orWhereNull('fecha_vencimiento');
+
+    /* =======================================================
+     | QUERY BASE PAGINADA
+     ======================================================= */
+     private function queryAsignaciones()
+{
+    $query = ObligacionClienteContador::with(['obligacion','contador','carpeta'])
+        ->where('cliente_id', $this->clienteId)
+        ->where('is_activa', true);
+
+    if ($this->modoAutomatico) {
+
+        $inicioMes = now()->startOfMonth();
+        $finMes    = now()->endOfMonth();
+
+        $query->where(function ($q) use ($inicioMes, $finMes) {
+
+            // Mes actual
+            $q->whereBetween('fecha_vencimiento', [$inicioMes, $finMes])
+
+            // Vencidas
+            ->orWhere(function ($q2) use ($inicioMes) {
+                $q2->whereNotNull('fecha_vencimiento')
+                   ->whereDate('fecha_vencimiento', '<', $inicioMes)
+                   ->where('estatus','!=','finalizado');
             });
-        }
-        // === FILTRO MANUAL ===
-        else {
-            $query->where(function ($q) {
-                $q->where('ejercicio', $this->filtroEjercicio)
-                  ->where('mes', $this->filtroMes)
-                  ->orWhereNull('fecha_vencimiento');
-            });
-        }
-    
-        return $query
-            ->orderByRaw('fecha_vencimiento IS NULL DESC')
-            ->orderBy('fecha_vencimiento', 'asc')
-            ->paginate($this->perPage);
-    }
-    
+        });
 
+    } else {
 
-
-
-    private function cargarAniosDisponibles(): void
-    {
-        $this->aniosDisponibles = ObligacionClienteContador::where('cliente_id', $this->clienteId)
-            ->select('ejercicio')
-            ->distinct()
-            ->orderBy('ejercicio', 'desc')
-            ->pluck('ejercicio')
-            ->filter()
-            ->values()
-            ->toArray();
-
-        // Si el filtro actual no existe en la lista, pon el más reciente (o el año actual)
-        if (!empty($this->aniosDisponibles) && !in_array((int)$this->filtroEjercicio, $this->aniosDisponibles, true)) {
-            $this->filtroEjercicio = $this->aniosDisponibles[0];
-        }
+        // MODO MANUAL REAL
+        $query->where('ejercicio', $this->filtroEjercicio)
+              ->where('mes', $this->filtroMes);
     }
 
+    return $query->orderBy('fecha_vencimiento','asc');
+}
 
+     
+    /* =======================================================
+     | FILTROS
+     ======================================================= */
     public function updatedFiltroEjercicio()
-    {
-        $this->resetPage();
+    {    $this->modoAutomatico = false;
 
-        //$this->cargarAsignaciones();
+        $this->resetPage();
     }
 
     public function updatedFiltroMes()
-    {
-        $this->resetPage();
+    {    $this->modoAutomatico = false;
 
-        //$this->cargarAsignaciones();
+        $this->resetPage();
     }
+
     private function cargarArbolCarpetas()
     {
         $servicio = new ArbolCarpetas();
         $this->arbolCarpetas = $servicio->obtenerArbol($this->clienteId);
     }
 
-    // === Mostrar modal para crear ===
+    /* =======================================================
+     | MODALES
+     ======================================================= */
     public function mostrarModalCrear()
     {
         $this->resetFormulario();
         $this->modalVisible = true;
     }
 
-    // === Mostrar modal para editar ===
     public function editarAsignacion($id)
     {
         $asignacion = ObligacionClienteContador::with('obligacion')->findOrFail($id);
 
-        $this->modoEdicion          = true;
-        $this->asignacionIdEditando = $asignacion->id;
+        $this->modoEdicion = true;
+        $this->asignacionIdEditando = $id;
 
-        // ✅ Cargar obligaciones disponibles considerando la actual
         $this->cargarObligacionesDisponibles();
 
-        $this->obligacion_id          = $asignacion->obligacion_id;
-        $this->obligacionOriginalId   = $asignacion->obligacion_id; // ✅ CLAVE: guarda la original
+        $this->obligacion_id = $asignacion->obligacion_id;
+        $this->obligacionOriginalId = $asignacion->obligacion_id;
         $this->obligacionSeleccionada = $asignacion->obligacion;
 
-        $this->contador_id        = $asignacion->contador_id;
-        $this->carpeta_drive_id   = $asignacion->carpeta_drive_id;
-        $this->fecha_vencimiento  = $asignacion->fecha_vencimiento;
+        $this->contador_id = $asignacion->contador_id;
+        $this->carpeta_drive_id = $asignacion->carpeta_drive_id;
+        $this->fecha_vencimiento = $asignacion->fecha_vencimiento;
 
         $this->modalVisible = true;
         $this->cargarArbolCarpetas();
     }
 
-
-
-    // === Guardar (crear o editar) ===
+    /* =======================================================
+     | GUARDAR
+     ======================================================= */
     public function guardar()
     {
-        /* ============================================================
-         | 1️⃣ VALIDACIÓN BÁSICA DE CAMPOS
-         |============================================================ */
         $this->validate([
             'obligacion_id'     => 'required|exists:obligaciones,id',
             'contador_id'       => 'required|exists:users,id',
@@ -356,24 +310,11 @@ class ObligacionesAsignadas extends Component
             'carpeta_drive_id'  => 'nullable|exists:carpeta_drives,id',
         ]);
 
-        /* ============================================================
-         | 2️⃣ OBTENER OBLIGACIÓN BASE (catálogo)
-         |============================================================ */
         $obligacionBase = \App\Models\Obligacion::findOrFail($this->obligacion_id);
-
-        // Normalizamos la periodicidad para evitar errores por acentos
         $periodicidad = strtolower($obligacionBase->periodicidad ?? 'mensual');
 
-        /* ============================================================
-         | 3️⃣ VALIDACIÓN DE DUPLICADOS (SOLO CUANDO APLICA)
-         |
-         | REGLA:
-         | - Al CREAR → siempre validar
-         | - Al EDITAR → solo validar si cambió la obligación
-         |============================================================ */
         $validarDuplicado = true;
 
-        // Si estoy editando y la obligación NO cambió, no valido duplicados
         if (
             $this->modoEdicion &&
             $this->asignacionIdEditando &&
@@ -385,65 +326,42 @@ class ObligacionesAsignadas extends Component
         if ($validarDuplicado) {
             $existe = ObligacionClienteContador::where('cliente_id', $this->clienteId)
                 ->where('obligacion_id', $this->obligacion_id)
-                ->where('is_activa', true) // solo obligaciones activas
-                ->when($this->modoEdicion, function ($query) {
-                    // excluir el registro que estoy editando
-                    $query->where('id', '!=', $this->asignacionIdEditando);
-                })
+                ->where('is_activa', true)
+                ->when($this->modoEdicion, fn($q) =>
+                    $q->where('id', '!=', $this->asignacionIdEditando)
+                )
                 ->exists();
 
             if ($existe) {
-                $this->addError(
-                    'obligacion_id',
-                    'Esta obligación ya fue asignada y sigue activa.'
-                );
+                $this->addError('obligacion_id','Ya está asignada.');
                 return;
             }
         }
 
-        /* ============================================================
-         | 4️⃣ EDICIÓN DE ASIGNACIÓN EXISTENTE
-         |============================================================ */
-        if ($this->modoEdicion && $this->asignacionIdEditando) {
+        if ($this->modoEdicion) {
 
             $asignacion = ObligacionClienteContador::findOrFail($this->asignacionIdEditando);
 
-            // Si no es obligación única y no se manda fecha, se recalcula
-            if (!in_array($periodicidad, ['unica', 'única', 'eventual'], true) && empty($this->fecha_vencimiento)) {
-                $fechaVenc = $obligacionBase
-                    ->calcularFechaVencimiento(now()->year, now()->month)
-                    ?->toDateString();
-            } else {
-                $fechaVenc = $this->fecha_vencimiento
-                    ? \Carbon\Carbon::parse($this->fecha_vencimiento)->toDateString()
-                    : null;
-            }
+            $fechaVenc = (!in_array($periodicidad,['unica','única','eventual'],true) && empty($this->fecha_vencimiento))
+                ? $obligacionBase->calcularFechaVencimiento(now()->year, now()->month)?->toDateString()
+                : ($this->fecha_vencimiento ? Carbon::parse($this->fecha_vencimiento)->toDateString() : null);
 
-            // Actualizamos SOLO los campos editables
             $asignacion->update([
                 'contador_id'       => $this->contador_id,
                 'fecha_vencimiento' => $fechaVenc,
                 'carpeta_drive_id'  => $this->carpeta_drive_id,
             ]);
 
-            session()->flash('success', 'Asignación actualizada correctamente.');
-        }
+            session()->flash('success','Asignación actualizada.');
 
-        /* ============================================================
-         | 5️⃣ CREACIÓN DE NUEVA ASIGNACIÓN
-         |============================================================ */ else {
+        } else {
 
-            if (!in_array($periodicidad, ['unica', 'única', 'eventual'], true)) {
-                $fechaVenc = $this->fecha_vencimiento
-                    ? \Carbon\Carbon::parse($this->fecha_vencimiento)->toDateString()
-                    : $obligacionBase
-                    ->calcularFechaVencimiento(now()->year, now()->month)
-                    ?->toDateString();
-            } else {
-                $fechaVenc = $this->fecha_vencimiento
-                    ? \Carbon\Carbon::parse($this->fecha_vencimiento)->toDateString()
-                    : null;
-            }
+            $fechaVenc = (!in_array($periodicidad,['unica','única','eventual'],true))
+                ? ($this->fecha_vencimiento
+                    ? Carbon::parse($this->fecha_vencimiento)->toDateString()
+                    : $obligacionBase->calcularFechaVencimiento(now()->year, now()->month)?->toDateString()
+                  )
+                : ($this->fecha_vencimiento ? Carbon::parse($this->fecha_vencimiento)->toDateString() : null);
 
             ObligacionClienteContador::create([
                 'cliente_id'        => $this->clienteId,
@@ -456,42 +374,31 @@ class ObligacionesAsignadas extends Component
                 'is_activa'         => true,
             ]);
 
-            session()->flash('success', 'Obligación asignada correctamente.');
+            session()->flash('success','Obligación asignada.');
         }
 
-        /* ============================================================
-         | 6️⃣ LIMPIEZA Y REFRESCO DE ESTADO
-         |============================================================ */
         $this->resetFormulario();
-        //$this->cargarAsignaciones();
+        $this->resetPage();
         $this->cargarObligacionesDisponibles();
         $this->verificarAsignacionesCompletas();
 
-        // Notifica a otros componentes (tabs, contadores, etc.)
         $this->dispatch('obligacionesCambiadas');
     }
 
-    public function getPeriodicidad($id)
-    {
-        return \App\Models\Obligacion::find($id)?->periodicidad ?? '';
-    }
-
-
-
-
-
-
+    /* =======================================================
+     | UTILIDADES
+     ======================================================= */
     private function resetFormulario(): void
     {
-        $this->obligacion_id        = '';
-        $this->contador_id          = '';
-        $this->fecha_vencimiento    = null;
-        $this->carpeta_drive_id     = null;
+        $this->obligacion_id = '';
+        $this->contador_id = '';
+        $this->fecha_vencimiento = null;
+        $this->carpeta_drive_id = null;
 
         $this->modoEdicion = false;
         $this->asignacionIdEditando = null;
         $this->obligacionSeleccionada = null;
-        $this->obligacionOriginalId = null; // ✅ limpiar
+        $this->obligacionOriginalId = null;
 
         $this->formKey++;
         $this->resetErrorBag();
@@ -499,26 +406,24 @@ class ObligacionesAsignadas extends Component
         $this->modalVisible = false;
     }
 
-
     private function verificarAsignacionesCompletas()
     {
-        $totalObligaciones = Cliente::find($this->clienteId)
-            ->obligaciones()
-            ->count();
+        $total = Cliente::find($this->clienteId)->obligaciones()->count();
+        $asignadas = ObligacionClienteContador::where('cliente_id',$this->clienteId)->count();
 
-        $obligacionesAsignadas = ObligacionClienteContador::where('cliente_id', $this->clienteId)
-            ->count();
-
-        $this->asignacionCompleta = ($totalObligaciones > 0 && $obligacionesAsignadas >= $totalObligaciones);
+        $this->asignacionCompleta = ($total>0 && $asignadas >= $total);
         $this->obligacionesCompletadas = $this->asignacionCompleta;
 
         $this->dispatch('estado-obligaciones', completed: $this->obligacionesCompletadas);
     }
 
+    /* =======================================================
+     | RENDER
+     ======================================================= */
     public function render()
     {
-        return view('livewire.control.obligaciones-asignadas', [
-            'asignaciones' => $this->cargarAsignaciones()
+        return view('livewire.control.obligaciones-asignadas',[
+            'asignaciones' => $this->queryAsignaciones()->paginate(10)
         ]);
     }
 }

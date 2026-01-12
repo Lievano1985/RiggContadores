@@ -60,7 +60,7 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
 
     {{-- Tabla principal --}}
     <div class="overflow-x-auto rounded shadow">
-        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+        <table class="min-w-full text-sm divide-y divide-gray-300 dark:divide-gray-700">
             <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
                     <th class="px-4 py-2 text-left">Obligación</th>
@@ -157,11 +157,10 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
             </tbody>
 
         </table>
-        <div class="mt-4">
-            {{ $asignaciones->links() }}
-        </div>
     </div>
-
+    <div class="mt-4">
+        {{ $asignaciones->links() }}
+    </div>
     @if ($modalVisible)
         <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">

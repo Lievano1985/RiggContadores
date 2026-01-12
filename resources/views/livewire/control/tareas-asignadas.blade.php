@@ -56,7 +56,8 @@
         <thead class="bg-stone-100 dark:bg-stone-900">
             <tr>
                 <th class="px-4 py-2 text-left">Tarea</th>
-                <th class="px-4 py-2 text-left">Carpeta Drive</th> {{-- 👈 NUEVO --}}
+                <th class="px-4 py-2 text-left">Periodo</th> <!-- 👈 NUEVO -->
+                <th class="px-4 py-2 text-left">Carpeta Drive</th>
                 <th class="px-4 py-2 text-left">Contador Responsable</th>
                 <th class="px-4 py-2 text-left">Obligación</th>
                 <th class="px-4 py-2 text-left">Vencimiento</th>
@@ -69,48 +70,24 @@
                     <td class="px-4 py-2">
                         <div class="flex items-center gap-2">
                             <span>{{ $tarea->tareaCatalogo->nombre }}</span>
-
-                            {{-- Badge según estatus --}}
-                            @switch($tarea->estatus)
-                                @case('cancelada')
-                                    <span
-                                        class="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-600 text-white dark:bg-gray-700 cursor-help"
-                                        title="Tarea cancelada por baja de obligación o cliente">
-                                        Cancelada
-                                    </span>
-                                @break
-
-                                @case('terminada')
-                                @case('revisada')
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-600 text-white">
-                                        {{ ucfirst($tarea->estatus) }}
-                                    </span>
-                                @break
-
-                                @case('en_progreso')
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500 text-white">
-                                        En progreso
-                                    </span>
-                                @break
-
-                                @default
-                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-400 text-white">
-                                        {{ ucfirst($tarea->estatus) }}
-                                    </span>
-                            @endswitch
                         </div>
+                    </td>
+                    <td class="px-4 py-2">
+                        @if ($tarea->ejercicio && $tarea->mes)
+                            {{ $tarea->ejercicio }}-{{ str_pad($tarea->mes, 2, '0', STR_PAD_LEFT) }}
+                        @else
+                            —
+                        @endif
                     </td>
                     <td class="px-4 py-2 text-sm">
                         @php
-                            $carpeta = $tarea->carpeta_drive_id 
-                                ? \App\Models\CarpetaDrive::find($tarea->carpeta_drive_id) 
+                            $carpeta = $tarea->carpeta_drive_id
+                                ? \App\Models\CarpetaDrive::find($tarea->carpeta_drive_id)
                                 : null;
                         @endphp
-                    
+
                         @if ($carpeta)
-                           
-                                {{ $carpeta->nombre }}
-                         
+                            {{ $carpeta->nombre }}
                         @else
                             Sin carpeta
                         @endif
