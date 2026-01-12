@@ -10,6 +10,7 @@ use App\Services\ArbolCarpetas;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Carbon\Carbon;
+use Livewire\WithPagination;
 
 class ObligacionesAsignadas extends Component
 {
@@ -33,11 +34,12 @@ class ObligacionesAsignadas extends Component
     public $modoEdicion = false;
     public $asignacionIdEditando = null;
     public $obligacionSeleccionada = null;
-
+    //paginacion
+    protected $paginationTheme = 'tailwind';
+    public $perPage = 10;
     // Listas
     public $obligacionesDisponibles = [];
     public $contadores             = [];
-    public $asignaciones           = [];
     public array $arbolCarpetas    = [];
     public $obligacionesCompletadas;
     public int $formKey = 0;
@@ -48,6 +50,7 @@ class ObligacionesAsignadas extends Component
         'obligacionActualizada' => 'actualizarAsignaciones'
     ];
 
+    use WithPagination;
 
     /**
      * Mostrar modal de baja lógica
@@ -113,7 +116,7 @@ class ObligacionesAsignadas extends Component
             $this->asignacionABaja = null;
             $this->motivoBaja = '';
 
-            $this->cargarAsignaciones();
+            //$this->cargarAsignaciones();
             $this->cargarObligacionesDisponibles();
             $this->verificarAsignacionesCompletas();
 
@@ -149,7 +152,7 @@ class ObligacionesAsignadas extends Component
                 ->update(['estatus' => 'asignada']);
             DB::commit();
 
-            $this->cargarAsignaciones();
+            //$this->cargarAsignaciones();
             $this->cargarObligacionesDisponibles();
             $this->verificarAsignacionesCompletas();
 
@@ -188,14 +191,14 @@ class ObligacionesAsignadas extends Component
         $this->cargarObligacionesDisponibles();
         $this->contadores        = User::role('contador')->orderBy('name')->get();
         $this->verificarAsignacionesCompletas();
-        $this->cargarAsignaciones();
+        //$this->cargarAsignaciones();
         $this->cargarArbolCarpetas();
     }
 
     public function actualizarAsignaciones()
     {
         $this->cargarObligacionesDisponibles();
-        $this->cargarAsignaciones();
+        //$this->cargarAsignaciones();
         $this->verificarAsignacionesCompletas();
     }
 
@@ -226,56 +229,47 @@ class ObligacionesAsignadas extends Component
     {
         $anioActual = now()->year;
         $mesActual  = now()->month;
-
+    
         $query = ObligacionClienteContador::with(['obligacion', 'contador', 'carpeta'])
             ->where('cliente_id', $this->clienteId)
             ->where('is_activa', true);
-
-        // === FILTRO AUTOMÁTICO (mes/año actual) ===
+    
+        // === FILTRO AUTOMÁTICO ===
         if (
             empty($this->filtroEjercicio) || empty($this->filtroMes) ||
             ((int)$this->filtroEjercicio === $anioActual && (int)$this->filtroMes === $mesActual)
         ) {
             $inicioMes = now()->startOfMonth()->toDateString();
             $finMes    = now()->endOfMonth()->toDateString();
-
+    
             $query->where(function ($q) use ($inicioMes, $finMes) {
-
-                // 1) Del mes actual (cualquiera, aunque sea futura dentro del mes)
+    
                 $q->whereBetween('fecha_vencimiento', [$inicioMes, $finMes])
-
-                    // 2) Vencidas (antes de fin de mes) y NO finalizadas
-                    ->orWhere(function ($q2) use ($finMes) {
-                        $q2->whereNotNull('fecha_vencimiento')
-                            ->whereDate('fecha_vencimiento', '<=', $finMes)
-                            ->where('estatus', '!=', 'finalizado');
-                    })
-
-                    // 3) Únicas sin fecha (NULL) -> SIEMPRE visibles
-                    ->orWhereNull('fecha_vencimiento');
+    
+                  ->orWhere(function ($q2) use ($finMes) {
+                      $q2->whereNotNull('fecha_vencimiento')
+                         ->whereDate('fecha_vencimiento', '<=', $finMes)
+                         ->where('estatus', '!=', 'finalizado');
+                  })
+    
+                  ->orWhereNull('fecha_vencimiento');
             });
         }
-        // === FILTRO MANUAL (cuando el usuario elige año/mes) ===
-        // === FILTRO MANUAL (cuando el usuario elige año/mes) ===
+        // === FILTRO MANUAL ===
         else {
             $query->where(function ($q) {
-
-                // 🔥 AHORA FILTRA POR PERIODO
                 $q->where('ejercicio', $this->filtroEjercicio)
-                    ->where('mes', $this->filtroMes);
-
-                // mantener únicas visibles
-                $q->orWhereNull('fecha_vencimiento');
+                  ->where('mes', $this->filtroMes)
+                  ->orWhereNull('fecha_vencimiento');
             });
         }
-
-
-        $this->asignaciones = $query
-            ->orderByRaw('fecha_vencimiento IS NULL DESC') // primero las NULL
+    
+        return $query
+            ->orderByRaw('fecha_vencimiento IS NULL DESC')
             ->orderBy('fecha_vencimiento', 'asc')
-            ->get();
+            ->paginate($this->perPage);
     }
-
+    
 
 
 
@@ -300,12 +294,16 @@ class ObligacionesAsignadas extends Component
 
     public function updatedFiltroEjercicio()
     {
-        $this->cargarAsignaciones();
+        $this->resetPage();
+
+        //$this->cargarAsignaciones();
     }
 
     public function updatedFiltroMes()
     {
-        $this->cargarAsignaciones();
+        $this->resetPage();
+
+        //$this->cargarAsignaciones();
     }
     private function cargarArbolCarpetas()
     {
@@ -465,7 +463,7 @@ class ObligacionesAsignadas extends Component
          | 6️⃣ LIMPIEZA Y REFRESCO DE ESTADO
          |============================================================ */
         $this->resetFormulario();
-        $this->cargarAsignaciones();
+        //$this->cargarAsignaciones();
         $this->cargarObligacionesDisponibles();
         $this->verificarAsignacionesCompletas();
 
@@ -519,6 +517,8 @@ class ObligacionesAsignadas extends Component
 
     public function render()
     {
-        return view('livewire.control.obligaciones-asignadas');
+        return view('livewire.control.obligaciones-asignadas', [
+            'asignaciones' => $this->cargarAsignaciones()
+        ]);
     }
 }

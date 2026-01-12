@@ -89,90 +89,138 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
                 </div>
             </x-seccion-acordeon>
 
+<!-- Obligaciones periódicas -->
+<x-seccion-acordeon titulo="Obligaciones fiscales periódicas">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            <!-- Obligaciones periódicas -->
-            <x-seccion-acordeon titulo="Obligaciones fiscales periódicas">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Buscar y seleccionar obligaciones
-                            periódicas</label>
-                        <input type="text" placeholder="Escribe para filtrar..."
-                            wire:model.live="buscarObligacionPeriodica"
-                            class="w-full px-3 py-2 mb-2 border rounded dark:bg-gray-700 dark:text-white">
+        {{-- Columna izquierda: lista --}}
+        <div>
+            <label class="block text-sm font-medium mb-2">
+                Buscar y seleccionar obligaciones periódicas
+            </label>
 
-                        <div class="border rounded bg-white dark:bg-gray-800 shadow-inner p-2 max-h-60 overflow-y-auto">
-                            @foreach ($obligacionesPeriodicasFiltradas->filter(fn($o) => str_contains(strtolower($o->nombre), strtolower($buscarObligacionPeriodica))) as $o)
-                                @php
-                                    $asignacion = \App\Models\ObligacionClienteContador::where(
-                                        'cliente_id',
-                                        $cliente->id,
-                                    )
-                                        ->where('obligacion_id', $o->id)
-                                        ->latest()
-                                        ->first();
-                                @endphp
+            <input type="text"
+                placeholder="Escribe para filtrar..."
+                wire:model.live="buscarObligacionPeriodica"
+                class="w-full px-3 py-2 mb-2 border rounded dark:bg-gray-700 dark:text-white">
 
-                                <label
-                                    class="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                                    <input type="checkbox" value="{{ $o->id }}"
-                                        wire:model.live="obligacionesSeleccionadas"
-                                        class="rounded border-gray-300 dark:bg-gray-700 text-amber-600 focus:ring-amber-500">
-                                    <span class="ml-2">{{ $o->nombre }}</span>
-                                </label>
-                            @endforeach
+            <div class="border rounded bg-white dark:bg-gray-800 shadow-inner p-2 max-h-60 overflow-y-auto">
+
+                @foreach (
+                    $obligacionesPeriodicasFiltradas
+                        ->filter(fn($o) =>
+                            str_contains(strtolower($o->nombre),
+                            strtolower($buscarObligacionPeriodica)))
+                    as $o
+                )
+
+                    @php
+                        $asignacion = \App\Models\ObligacionClienteContador::where(
+                            'cliente_id',
+                            $cliente->id
+                        )
+                            ->where('obligacion_id', $o->id)
+                            ->latest()
+                            ->first();
+                    @endphp
+
+                    <label
+                        wire:key="obl-periodica-{{ $o->id }}"
+                        class="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+
+                        <input
+                            type="checkbox"
+                            wire:model.live="obligacionesSeleccionadas.{{ $o->id }}"
+                            class="rounded border-gray-300 dark:bg-gray-700 text-amber-600 focus:ring-amber-500">
+
+                        <span class="ml-2">
+                            {{ $o->nombre }}
+                        </span>
+                    </label>
+
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Columna derecha: previsualización --}}
+        <div>
+            <label class="block text-sm font-medium mb-2">
+                Seleccionadas (previsualización)
+            </label>
+
+            @php
+                // IDs seleccionados en true
+                $idsSeleccionados = collect($obligacionesSeleccionadas)
+                    ->filter()
+                    ->keys();
+            @endphp
+
+            <ul class="list-disc list-inside text-sm space-y-2">
+
+                @forelse (
+                    $obligacionesPeriodicasDisponibles->whereIn('id', $idsSeleccionados)
+                    as $o
+                )
+
+                    @php
+                        $asignacion = \App\Models\ObligacionClienteContador::where(
+                            'cliente_id',
+                            $cliente->id
+                        )
+                            ->where('obligacion_id', $o->id)
+                            ->latest()
+                            ->first();
+                    @endphp
+
+                    <li class="flex justify-between items-center">
+
+                        <div class="flex items-center gap-2">
+                            <span>{{ $o->nombre }}</span>
+
+                            @if ($asignacion && !$asignacion->is_activa)
+                                <span
+                                    class="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-800 rounded-full">
+                                    Baja
+                                </span>
+                            @endif
                         </div>
-                    </div>
 
-                    <!-- Columna derecha: Previsualización -->
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Seleccionadas (previsualización)</label>
-                        <ul class="list-disc list-inside text-sm space-y-2">
-                            @forelse ($obligacionesPeriodicasDisponibles->whereIn('id', $obligacionesSeleccionadas) as $o)
-                                @php
-                                    $asignacion = \App\Models\ObligacionClienteContador::where(
-                                        'cliente_id',
-                                        $cliente->id,
-                                    )
-                                        ->where('obligacion_id', $o->id)
-                                        ->latest()
-                                        ->first();
-                                @endphp
+                        <div class="flex items-center gap-2 text-xs">
 
-                                <li class="flex justify-between items-center">
-                                    <div class="flex items-center gap-2">
-                                        <span>{{ $o->nombre }}</span>
-                                        @if ($asignacion && !$asignacion->is_activa)
-                                            <span
-                                                class="px-2 py-0.5 text-xs font-semibold bg-red-100 text-red-800 rounded-full">
-                                                Baja
-                                            </span>
-                                        @endif
-                                    </div>
+                            @if ($asignacion && !$asignacion->is_activa)
+                                <button
+                                    type="button"
+                                    wire:click.stop.prevent="reactivarObligacion({{ $o->id }})"
+                                    class="text-green-600 hover:underline">
+                                    Reactivar
+                                </button>
 
-                                    <div class="flex items-center gap-2 text-xs">
-                                        @if ($asignacion && !$asignacion->is_activa)
-                                            <button wire:click="reactivarObligacion({{ $o->id }})"
-                                                class="text-green-600 hover:underline">
-                                                Reactivar
-                                            </button>
-                                            @hasrole('admin_despacho')
-                                                <button wire:click="eliminarAsignacionTotal({{ $o->id }})"
-                                                    class="text-red-600 hover:underline">
-                                                    Eliminar
-                                                </button>
-                                            @endhasrole
-                                    </div>
+                                @hasrole('admin_despacho')
+                                    <button
+                                        type="button"
+                                        wire:click.stop.prevent="eliminarAsignacionTotal({{ $o->id }})"
+                                        class="text-red-600 hover:underline">
+                                        Eliminar
+                                    </button>
+                                @endhasrole
                             @endif
 
+                        </div>
+                    </li>
 
-                            </li>
-                        @empty
-                            <li class="text-gray-500">Ninguna seleccionada</li>
-    @endforelse
-    </ul>
-</div>
-</div>
+                @empty
+                    <li class="text-gray-500">
+                        Ninguna seleccionada
+                    </li>
+                @endforelse
+
+            </ul>
+        </div>
+
+    </div>
 </x-seccion-acordeon>
+
+
 
 <!-- Obligaciones únicas -->
 <x-seccion-acordeon titulo="Obligaciones únicas (se crean una sola vez)">

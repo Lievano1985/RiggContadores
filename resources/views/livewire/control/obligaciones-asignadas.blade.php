@@ -157,6 +157,9 @@ Descripción: Muestra las obligaciones del cliente, permite asignar contador, ca
             </tbody>
 
         </table>
+        <div class="mt-4">
+            {{ $asignaciones->links() }}
+        </div>
     </div>
 
     @if ($modalVisible)
