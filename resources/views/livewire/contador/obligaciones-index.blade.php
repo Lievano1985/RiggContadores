@@ -10,6 +10,7 @@
 
             <select wire:model.live="ejercicioSeleccionado"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
                 <option value="">Ejercicio (todos)</option>
                 @foreach ($ejerciciosDisponibles as $ej)
                     <option value="{{ $ej }}">{{ $ej }}</option>
@@ -18,10 +19,10 @@
 
             <select wire:model.live="mesSeleccionado"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
-                @disabled(empty($mesesDisponibles))>
+                <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
                 <option value="">Mes (todos)</option>
-                @foreach ($mesesDisponibles as $m)
-                    <option value="{{ $m }}">{{ $meses[(int) $m] ?? $m }}</option>
+                @foreach ($mesesDisponibles as $num => $texto)
+                    <option value="{{ $num }}">{{ $texto }}</option>
                 @endforeach
             </select>
 
@@ -54,6 +55,7 @@
             <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
                     <th class="px-4 py-2 text-left">Cliente</th>
+                    <th class="px-4 py-2 text-left">Ejercicio</th>
                     <th class="px-4 py-2 text-left">Obligación</th>
                     <th class="px-4 py-2 text-left">Periodicidad</th>
                     <th class="px-4 py-2 text-left">Estatus</th>
@@ -73,13 +75,26 @@
                             'respuesta_cliente' => 'bg-indigo-600',
                             'respuesta_revisada' => 'bg-purple-600',
                             'finalizado' => 'bg-emerald-700',
+                            'rechazada' => 'bg-red-600',
+
                             'reabierta' => 'bg-red-600',
                             default => 'bg-gray-500',
                         };
                     @endphp
 
-                    <tr>
+                    @php
+                        $vencida =
+                            $item->fecha_vencimiento &&
+                            \Carbon\Carbon::parse($item->fecha_vencimiento)->isPast() &&
+                            $item->estatus !== 'finalizado';
+                    @endphp
+
+
+                    <tr class="{{ $vencida ? 'bg-red-50 dark:bg-red-900' : '' }}">
                         <td class="px-4 py-2">{{ $item->cliente->nombre ?? ($item->cliente->razon_social ?? '—') }}</td>
+                        <td class="px-4 py-2">
+                            {{ $item->ejercicio }} - {{ str_pad($item->mes, 2, '0', STR_PAD_LEFT) }}
+                        </td>
                         <td class="px-4 py-2">{{ $item->obligacion->nombre ?? '—' }}</td>
                         <td class="px-4 py-2">{{ ucfirst($item->obligacion->periodicidad ?? '—') }}</td>
 
@@ -90,7 +105,7 @@
                         </td>
 
                         <td class="px-4 py-2">
-                            {{ $item->fecha_vencimiento ? \Carbon\Carbon::parse($item->fecha_vencimiento)->format('d/m/Y') : '—' }}
+                            {{ $item->fecha_vencimiento ? \Carbon\Carbon::parse($item->fecha_vencimiento)->format('Y-m-d') : '—' }}
                         </td>
 
                         <td class="px-4 py-2 space-x-2">

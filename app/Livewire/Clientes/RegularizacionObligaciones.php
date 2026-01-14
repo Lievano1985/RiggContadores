@@ -138,6 +138,9 @@ class RegularizacionObligaciones extends Component
 
         // Por si otro tab depende de ello
         $this->dispatch('DatosFiscalesActualizados');
+        $this->dispatch('obligacionActualizada');
+
+        
     }
 
     /* ============================================================

@@ -87,6 +87,8 @@ class ObligacionesAsignadas extends Component
     {
         $this->resetPage();
         $this->cargarAniosDisponibles();
+        $this->dispatch('$refresh'); // 👈 fuerza render
+
     }
 
     /* =====================================================
@@ -197,6 +199,8 @@ class ObligacionesAsignadas extends Component
         $this->motivoBaja = '';
 
         $this->refrescarComponente();
+        $this->dispatch("obligacionEliminada");
+        
 
         session()->flash('success','Obligación dada de baja correctamente.');
     }

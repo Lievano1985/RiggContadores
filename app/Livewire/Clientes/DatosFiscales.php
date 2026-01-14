@@ -57,7 +57,8 @@ class DatosFiscales extends Component
     public int $modoKey = 0;
 
     protected $listeners = [
-        'DatosFiscalesActualizados' => 'cargarDatos'
+        'DatosFiscalesActualizados' => 'cargarDatos',
+       'obligacionEliminada'=> 'cargarDatos'
     ];
 
     /* ============================================================
@@ -318,29 +319,37 @@ class DatosFiscales extends Component
     public function reactivarObligacion($id): void
     {
         DB::transaction(function () use ($id) {
-
+    
             $asignaciones = ObligacionClienteContador::where('cliente_id', $this->cliente->id)
                 ->where('obligacion_id', $id)
                 ->where('is_activa', false)
                 ->get();
-
+    
             foreach ($asignaciones as $a) {
-
+    
                 $a->update([
                     'is_activa' => true,
                     'fecha_baja' => null,
                     'motivo_baja' => null,
                 ]);
-
+    
                 $a->tareasAsignadas()
                     ->where('estatus', 'cancelada')
                     ->update(['estatus' => 'asignada']);
             }
         });
-
+    
+        /* ===================================================
+           🔥 ACTUALIZAR ESTADO DEL CHECKBOX
+        =================================================== */
+        $this->obligacionesSeleccionadas[$id] = true;
+        $this->obligacionesEstado[$id] = 1;
+    
+        $this->modoEdicion = true;
+    
         $this->dispatch('mantenerModoEdicion');
-        $this->dispatch('obligacionActualizada');
     }
+    
 
     public function eliminarAsignacionTotal($id): void
     {
@@ -362,13 +371,18 @@ class DatosFiscales extends Component
      | CONSULTAS
      |============================================================ */
 
-    public function getObligacionesVigentes()
-    {
-        return ObligacionClienteContador::where('cliente_id', $this->cliente->id)
-            ->where('is_activa', true)
-            ->with('obligacion')
-            ->get();
-    }
+ public function getObligacionesVigentes()
+     {
+         return ObligacionClienteContador::where('cliente_id', $this->cliente->id)
+             ->where('is_activa', true)
+     
+             // 🔹 Nos quedamos solo con UNA por obligación
+             ->select('obligacion_id')
+             ->groupBy('obligacion_id')
+     
+             ->with('obligacion')
+             ->get();
+     }
 
     /* ============================================================
      | RENDER

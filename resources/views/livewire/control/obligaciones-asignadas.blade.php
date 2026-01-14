@@ -9,9 +9,11 @@
     <div class="flex flex-wrap gap-4 items-center mb-4">
     
     <div>
-    <label class="block text-sm font-medium">Ejercicio</label>
+    <label class="block text-sm font-semibold">Ejercicio</label>
     <select wire:model.live="filtroEjercicio"
-    class="px-3 py-2 border rounded dark:bg-gray-700">
+    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+    border-gray-300 dark:border-gray-600 focus:border-amber-600
+    focus:ring focus:ring-amber-500/40 focus:outline-none">
     <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
     @foreach($aniosDisponibles as $year)
         <option value="{{ $year }}">{{ $year }}</option>
@@ -22,7 +24,9 @@
     <div>
     <label class="block text-sm font-medium">Mes</label>
     <select wire:model.live="filtroMes"
-    class="px-3 py-2 border rounded dark:bg-gray-700">
+    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+    border-gray-300 dark:border-gray-600 focus:border-amber-600
+    focus:ring focus:ring-amber-500/40 focus:outline-none">
     <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
     
     @foreach([
@@ -190,12 +194,7 @@
 @endif
 
     
-    {{-- MENSAJE --}}
-    @if(session()->has('success'))
-    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-green-200 text-green-900 p-3 rounded shadow">
-    {{ session('success') }}
-    </div>
-    @endif
+   
     
     {{-- CONFIRMAR BAJA --}}
     @if($confirmarBaja)
@@ -219,6 +218,7 @@
     </div>
     </div>
     @endif
-    
+    <x-notification />
+
     </div>
     

@@ -18,7 +18,7 @@ class ClientesIndex extends Component
 {
     use WithPagination;
     public BrevoService $brevoService;
-   
+
 
     public $modalFormVisible = false;
     public $confirmingDelete = false;
@@ -67,30 +67,82 @@ class ClientesIndex extends Component
             'tiene_trabajadores' => 'boolean',
         ];
     }
-    
+
 
 
     public function __construct()
     {
         // Inyectar el servicio DriveService
         $this->driveService = app(DriveService::class);
-
     }
 
     public function render()
     {
-/*         dd(now()->toDateTimeString(), now()->timestamp);
- */
-        $clientes = Cliente::with('despacho');
+        $clientes = Cliente::with('despacho')
+            ->withCount([
+
+                // TOTAL obligaciones activas
+                'obligacionesAsignadas as total_obligaciones' => function ($q) {
+                    $q->where('is_activa', true);
+                },
+
+                // Obligaciones activas SIN contador
+                'obligacionesAsignadas as obligaciones_pendientes' => function ($q) {
+
+                    $q->where('is_activa', true)
+                        ->whereIn('id', function ($sub) {
+                            $sub->selectRaw('MAX(id)')
+                                ->from('obligacion_cliente_contador')
+                                ->groupBy('obligacion_id');
+                        })
+                        ->where(function ($q2) {
+                            $q2->whereNull('contador_id')
+                                ->orWhere('contador_id', 0);
+                        });
+                },
+
+
+                // TAREAS vigentes SIN contador
+                'tareasAsignadas as tareas_pendientes' => function ($q) {
+
+                    $q->whereNotIn('estatus', ['cancelada', 'finalizada'])
+
+                        ->where(function ($q2) {
+                            $q2->whereNull('contador_id')
+                                ->orWhere('contador_id', 0);
+                        });
+                }
+
+            ]);
 
         if (!auth()->user()->hasRole('super_admin')) {
             $clientes->where('despacho_id', auth()->user()->despacho_id);
         }
 
-        return view('livewire.clientes.clientes-index', [
-            'clientes' => $clientes->latest()->paginate(10),
-        ]);
+        $clientes = $clientes->latest()->paginate(10);
+
+        foreach ($clientes as $c) {
+
+            $c->asignaciones_completas =
+                $c->total_obligaciones > 0 &&
+                $c->obligaciones_pendientes == 0 &&
+                $c->tareas_pendientes == 0;
+        }
+        foreach ($clientes as $c) {
+
+            $c->asignaciones_completas =
+                $c->total_obligaciones > 0 &&
+                $c->obligaciones_pendientes == 0 &&
+                $c->tareas_pendientes == 0;
+
+            // 👇 SOLO llamamos la función
+            $c->pendientes_detalle = $this->Tooltip($c);
+        }
+        return view('livewire.clientes.clientes-index', compact('clientes'));
     }
+
+
+
 
     public function abrirModalCrear()
     {
@@ -269,5 +321,32 @@ class ClientesIndex extends Component
         $this->resetPage();
 
         session()->flash('message', 'Cliente y usuario eliminados correctamente.');
+    }
+
+    public function tooltip($cliente)
+    {
+        return [
+            'obligaciones' => $cliente->obligacionesAsignadas()
+                ->where('is_activa', true)
+                ->where(function ($q) {
+                    $q->whereNull('contador_id')
+                        ->orWhere('contador_id', 0);
+                })
+                ->with('obligacion')
+                ->get()
+                ->pluck('obligacion.nombre')
+                ->toArray(),
+
+            'tareas' => $cliente->tareasAsignadas()
+                ->whereNotIn('estatus', ['cancelada', 'finalizada'])
+                ->where(function ($q) {
+                    $q->whereNull('contador_id')
+                        ->orWhere('contador_id', 0);
+                })
+                ->with('tareaCatalogo')
+                ->get()
+                ->pluck('tareaCatalogo.nombre')
+                ->toArray(),
+        ];
     }
 }

@@ -13,6 +13,7 @@
                 {{-- Filtro ejercicio (solo años con datos) --}}
                 <select wire:model.live="ejercicio"
                     class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
                     <option value="">Ejercicio (todos)</option>
                     @foreach ($ejerciciosDisponibles as $anio)
                         <option value="{{ $anio }}">{{ $anio }}</option>
@@ -21,29 +22,14 @@
 
                 {{-- Filtro mes (solo meses con datos para el año seleccionado) --}}
                 <select wire:model.live="mes"
-                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline"
-                    @disabled(empty($mesesDisponibles))>
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
                     <option value="">Mes (todos)</option>
-                    @foreach ($mesesDisponibles as $m)
-                        @php
-                            $nombresMes = [
-                                1 => 'Enero',
-                                2 => 'Febrero',
-                                3 => 'Marzo',
-                                4 => 'Abril',
-                                5 => 'Mayo',
-                                6 => 'Junio',
-                                7 => 'Julio',
-                                8 => 'Agosto',
-                                9 => 'Septiembre',
-                                10 => 'Octubre',
-                                11 => 'Noviembre',
-                                12 => 'Diciembre',
-                            ];
-                        @endphp
-                        <option value="{{ $m }}">{{ $nombresMes[(int) $m] ?? $m }}</option>
+                    @foreach ($mesesManual as $num => $txt)
+                        <option value="{{ $num }}">{{ $txt }}</option>
                     @endforeach
                 </select>
+
 
 
                 {{-- Estatus --}}
@@ -74,6 +60,8 @@
                 <thead class="bg-stone-100 dark:bg-stone-900">
                     <tr>
                         <th class="px-4 py-2 text-left">Cliente</th>
+                        <th class="px-4 py-2 text-left">Ejercicio</th>
+
                         <th class="px-4 py-2 text-left">Tarea</th>
                         <th class="px-4 py-2 text-left">Obligación</th>
                         <th class="px-4 py-2 text-left">Vence</th>
@@ -101,19 +89,19 @@
                                 default => 'bg-stone-600',
                             };
 
-                            // Color de vencimiento
-                            $venceClass = $vence
-                                ? ($vence->isPast()
-                                    ? 'text-red-600'
-                                    : ($vence->isToday()
-                                        ? 'text-amber-600'
-                                        : 'text-gray-700 dark:text-gray-300'))
-                                : 'text-gray-500';
+                           
+                        @endphp
+                        @php
+                            $vencida = $vence && $vence->isPast() && $t->estatus !== 'cerrada';
                         @endphp
 
-                        <tr>
+                        <tr class="{{ $vencida ? 'bg-red-50  dark:bg-red-900 dark:text-red-100' : '' }}">
+
                             <td class="px-4 py-2">
                                 {{ $t->cliente->nombre ?? ($t->cliente->razon_social ?? '—') }}
+                            </td>
+                            <td class="px-4 py-2 ">
+                                {{ $t->ejercicio }}-{{ str_pad($t->mes, 2, '0', STR_PAD_LEFT) }}
                             </td>
 
                             <td class="px-4 py-2">
@@ -124,8 +112,8 @@
                                 {{ $t->obligacionClienteContador?->obligacion?->nombre ?? 'Sin obligación' }}
                             </td>
 
-                            <td class="px-4 py-2 {{ $venceClass }}">
-                                {{ $vence ? $vence->format('d/m/Y') : '—' }}
+                            <td class="px-4 py-2 ">
+                                {{ $vence ? $vence->format('Y-m-d') : '—' }}
                             </td>
 
                             <td class="px-4 py-2">
@@ -167,8 +155,6 @@
                                         class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
                                         Ver rechazo
                                     </button>
-
-                                
                                 @endif
 
                             </td>
@@ -191,66 +177,65 @@
             MODAL SEGUIMIENTO
         ========================== --}}
         @if ($openModal && $tareaSeleccionada)
-        <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
-            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">
-    
-                <h4 class="text-lg font-bold mb-4 text-stone-600">
-                    Finalizar tarea
-                </h4>
-    
-                {{-- Comentario si está en estatus rechazado --}}
-                @if ($tareaSeleccionada->estatus === 'rechazada')
-                    <div class="mb-4">
-                        <label class="block text-sm mb-1 text-stone-600">Comentario del rechazo</label>
-                        <div class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded text-gray-800 dark:text-white">
-                            {{ $tareaSeleccionada->comentario ?? '—' }}
-                        </div>
-                    </div>
-                @endif
-    
-                {{-- Archivos y comentario solo si está en progreso --}}
-                @if ($tareaSeleccionada->estatus === 'en_progreso')
-                    {{-- COMPONENTE DE ARCHIVOS --}}
-                    @livewire('shared.archivos-adjuntos-crud', ['modelo' => $tareaSeleccionada], key('archivos-tarea-' . $tareaSeleccionada->id))
-    
-                    {{-- COMENTARIO --}}
-                    <div class="mt-4">
-                        <label class="block text-sm mb-1 text-stone-600">Comentario</label>
-                        <textarea wire:model.defer="comentario" rows="3"
-                            placeholder="Describe el resultado o notas adicionales..."
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
-                        </textarea>
-                    </div>
-                @endif
-    
-                {{-- ACCIONES --}}
-                <div class="flex justify-end space-x-2 mt-6">
-                    {{-- Cerrar modal --}}
-                    <button wire:click="$set('openModal', false)"
-                        class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded text-black dark:text-white hover:bg-gray-400">
-                        Cerrar
-                    </button>
-    
-                    {{-- Botón "Realizar" si está en rechazado --}}
+            <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
+                <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">
+
+                    <h4 class="text-lg font-bold mb-4 text-stone-600">
+                        Finalizar tarea
+                    </h4>
+
+                    {{-- Comentario si está en estatus rechazado --}}
                     @if ($tareaSeleccionada->estatus === 'rechazada')
-                        <button wire:click="corregir({{ $tareaSeleccionada->id }})"
-                            class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded text-white">
-                            Corregir
-                        </button>
+                        <div class="mb-4">
+                            <label class="block text-sm mb-1 text-stone-600">Comentario del rechazo</label>
+                            <div class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded text-gray-800 dark:text-white">
+                                {{ $tareaSeleccionada->comentario ?? '—' }}
+                            </div>
+                        </div>
                     @endif
-    
-                    {{-- Botón "Finalizar" si ya está en progreso --}}
+
+                    {{-- Archivos y comentario solo si está en progreso --}}
                     @if ($tareaSeleccionada->estatus === 'en_progreso')
-                        <button wire:click="cerrarTarea"
-                            class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">
-                            Marcar como realizada
-                        </button>
+                        {{-- COMPONENTE DE ARCHIVOS --}}
+                        @livewire('shared.archivos-adjuntos-crud', ['modelo' => $tareaSeleccionada], key('archivos-tarea-' . $tareaSeleccionada->id))
+
+                        {{-- COMENTARIO --}}
+                        <div class="mt-4">
+                            <label class="block text-sm mb-1 text-stone-600">Comentario</label>
+                            <textarea wire:model.defer="comentario" rows="3" placeholder="Describe el resultado o notas adicionales..."
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        </textarea>
+                        </div>
                     @endif
+
+                    {{-- ACCIONES --}}
+                    <div class="flex justify-end space-x-2 mt-6">
+                        {{-- Cerrar modal --}}
+                        <button wire:click="$set('openModal', false)"
+                            class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded text-black dark:text-white hover:bg-gray-400">
+                            Cerrar
+                        </button>
+
+                        {{-- Botón "Realizar" si está en rechazado --}}
+                        @if ($tareaSeleccionada->estatus === 'rechazada')
+                            <button wire:click="corregir({{ $tareaSeleccionada->id }})"
+                                class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded text-white">
+                                Corregir
+                            </button>
+                        @endif
+
+                        {{-- Botón "Finalizar" si ya está en progreso --}}
+                        @if ($tareaSeleccionada->estatus === 'en_progreso')
+                            <button wire:click="cerrarTarea"
+                                class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">
+                                Marcar como realizada
+                            </button>
+                        @endif
+                    </div>
                 </div>
             </div>
-        </div>
-    @endif
-    
+        @endif
+
 
         <x-spinner target="guardarSeguimiento" />
 

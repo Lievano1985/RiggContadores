@@ -77,160 +77,158 @@
 
     <div class="mt-4">{{ $obligaciones->links() }}</div>
 
-  {{-- SIDEBAR --}}
-<div x-cloak x-show="sidebar" x-transition.opacity class="fixed inset-0 bg-black/40 z-40 flex justify-end">
-    <div class="flex-1" @click="$wire.cerrarSidebar()"></div>
+    {{-- SIDEBAR --}}
+    <div x-cloak x-show="sidebar" x-transition.opacity class="fixed inset-0 bg-black/40 z-40 flex justify-end">
+        <div class="flex-1" @click="$wire.cerrarSidebar()"></div>
 
-    <div class="w-full max-w-xl bg-white dark:bg-gray-900 shadow-xl h-full border-l flex flex-col">
+        <div class="w-full max-w-xl bg-white dark:bg-gray-900 shadow-xl h-full border-l flex flex-col">
 
-        {{-- Header --}}
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-stone-700 dark:text-white">
-                Revisión y validación
-            </h3>
-            <button @click="$wire.cerrarSidebar()" class="text-gray-500 hover:text-black">✕</button>
-        </div>
+            {{-- Header --}}
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-stone-700 dark:text-white">
+                    Revisión y validación
+                </h3>
+                <button @click="$wire.cerrarSidebar()" class="text-gray-500 hover:text-black">✕</button>
+            </div>
 
-        {{-- Contenido --}}
-        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            {{-- Contenido --}}
+            <div class="flex-1 overflow-y-auto p-4 space-y-6">
 
-            @if ($obligacionSeleccionada)
+                @if ($obligacionSeleccionada)
 
-                {{-- OBLIGACIÓN --}}
-                <div class="border p-4 rounded shadow-sm dark:border-gray-700">
-                    <h4 class="font-semibold mb-2">Obligación</h4>
+                    {{-- OBLIGACIÓN --}}
+                    <div class="border p-4 rounded shadow-sm dark:border-gray-700">
+                        <h4 class="font-semibold mb-2">Obligación</h4>
 
-                    <p><strong>Cliente:</strong> {{ $obligacionSeleccionada->cliente->nombre }}</p>
-                    <p><strong>Obligación:</strong> {{ $obligacionSeleccionada->obligacion->nombre }}</p>
-                    <p><strong>Contador:</strong> {{ $obligacionSeleccionada->contador->name ?? '—' }}</p>
-                    <p><strong>Comentario:</strong> {{ $obligacionSeleccionada->comentario ?? '—' }}</p>
+                        <p><strong>Cliente:</strong> {{ $obligacionSeleccionada->cliente->nombre }}</p>
+                        <p><strong>Obligación:</strong> {{ $obligacionSeleccionada->obligacion->nombre }}</p>
+                        <p><strong>Contador:</strong> {{ $obligacionSeleccionada->contador->name ?? '—' }}</p>
+                        <p><strong>Comentario:</strong> {{ $obligacionSeleccionada->comentario ?? '—' }}</p>
 
-                    {{-- Archivos de la obligación --}}
-                    @if($obligacionSeleccionada->archivos->count())
-                        <div class="mt-3 space-y-1">
-                            <strong>Archivos:</strong>
-                            @foreach($obligacionSeleccionada->archivos as $archivo)
-                                @if($archivo->archivo)
-                                    <a href="{{ Storage::disk('public')->url($archivo->archivo) }}"
-                                       target="_blank"
-                                       class="block text-blue-600 text-sm hover:underline">
-                                        📄 {{ $archivo->nombre }}
-                                    </a>
-                                @endif
+                        {{-- Archivos de la obligación --}}
+                        @if ($obligacionSeleccionada->archivos->count())
+                            <div class="mt-3 space-y-1">
+                                <strong>Archivos:</strong>
+                                @foreach ($obligacionSeleccionada->archivos as $archivo)
+                                    @if ($archivo->archivo)
+                                        <a href="{{ Storage::disk('public')->url($archivo->archivo) }}" target="_blank"
+                                            class=" text-blue-600 text-sm hover:underline">
+                                            📄 {{ $archivo->nombre }}
+                                        </a>
+                                    @endif
 
-                                @if($archivo->archivo_drive_url)
+                                    {{--   @if ($archivo->archivo_drive_url)
                                     <a href="{{ $archivo->archivo_drive_url }}"
                                        target="_blank"
                                        class="block text-green-600 text-sm hover:underline">
                                         ☁️ {{ $archivo->nombre }}
                                     </a>
-                                @endif
-                            @endforeach
-                        </div>
-                    @endif
-
-                    {{-- Rechazo obligación --}}
-                    @if(!$mostrarRechazoObligacion)
-                        <button wire:click="$set('mostrarRechazoObligacion', true)"
-                            class="mt-3 text-sm text-red-600 border border-red-400 px-3 py-1 rounded">
-                            Rechazar obligación
-                        </button>
-                    @else
-                        <div class="mt-3">
-                            <textarea wire:model.defer="comentarioRechazoObligacion"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                                placeholder="Motivo del rechazo"></textarea>
-
-                            <div class="mt-2 text-right space-x-2">
-                                <button wire:click="rechazarObligacion"
-                                    class="bg-red-600 text-white px-4 py-1 rounded text-sm">
-                                    Confirmar
-                                </button>
-                                <button wire:click="$set('mostrarRechazoObligacion', false)"
-                                    class="px-3 py-1 border rounded text-sm">
-                                    Cancelar
-                                </button>
+                                @endif --}}
+                                @endforeach
                             </div>
-                        </div>
-                    @endif
-                </div>
+                        @endif
 
-                {{-- TAREAS --}}
-                @if($obligacionSeleccionada->tareasAsignadas->count())
-                    <div class="space-y-4">
-                        <h4 class="font-semibold">Tareas asignadas</h4>
+                        {{-- Rechazo obligación --}}
+                        @if (!$mostrarRechazoObligacion)
+                            <button wire:click="$set('mostrarRechazoObligacion', true)"
+                                class="mt-3 text-sm text-red-600 border border-red-400 px-3 py-1 rounded">
+                                Rechazar obligación
+                            </button>
+                        @else
+                            <div class="mt-3">
+                                <textarea wire:model.defer="comentarioRechazoObligacion"
+                                    class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white" placeholder="Motivo del rechazo"></textarea>
 
-                        @foreach($obligacionSeleccionada->tareasAsignadas as $tarea)
-                            <div class="border p-4 rounded dark:border-gray-700">
-                                <p><strong>Tarea:</strong> {{ $tarea->tareaCatalogo->nombre }}</p>
-                                <p><strong>Estatus:</strong> {{ ucfirst($tarea->estatus) }}</p>
-                                <p><strong>Comentario:</strong> {{ $tarea->comentario ?? '—' }}</p>
+                                <div class="mt-2 text-right space-x-2">
+                                    <button wire:click="rechazarObligacion"
+                                        class="bg-red-600 text-white px-4 py-1 rounded text-sm">
+                                        Confirmar
+                                    </button>
+                                    <button wire:click="$set('mostrarRechazoObligacion', false)"
+                                        class="px-3 py-1 border rounded text-sm">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
 
-                                {{-- Archivos de la tarea --}}
-                                @if($tarea->archivos->count())
-                                    <div class="mt-2 space-y-1">
-                                        <strong>Archivos:</strong>
-                                        @foreach($tarea->archivos as $archivo)
-                                            @if($archivo->archivo)
-                                                <a href="{{ Storage::disk('public')->url($archivo->archivo) }}"
-                                                   target="_blank"
-                                                   class="block text-blue-600 text-sm hover:underline">
-                                                    📄 {{ $archivo->nombre }}
-                                                </a>
-                                            @endif
+                    {{-- TAREAS --}}
+                    @if ($obligacionSeleccionada->tareasAsignadas->count())
+                        <div class="space-y-4">
+                            <h4 class="font-semibold">Tareas asignadas</h4>
 
-                                            @if($archivo->archivo_drive_url)
+                            @foreach ($obligacionSeleccionada->tareasAsignadas as $tarea)
+                                <div class="border p-4 rounded dark:border-gray-700">
+                                    <p><strong>Tarea:</strong> {{ $tarea->tareaCatalogo->nombre }}</p>
+                                    <p><strong>Estatus:</strong> {{ ucfirst($tarea->estatus) }}</p>
+                                    <p><strong>Comentario:</strong> {{ $tarea->comentario ?? '—' }}</p>
+
+                                    {{-- Archivos de la tarea --}}
+                                    @if ($tarea->archivos->count())
+                                        <div class="mt-2 space-y-1">
+                                            <strong>Archivos:</strong>
+                                            @foreach ($tarea->archivos as $archivo)
+                                                @if ($archivo->archivo)
+                                                    <a href="{{ Storage::disk('public')->url($archivo->archivo) }}"
+                                                        target="_blank" class=" text-blue-600 text-sm hover:underline">
+                                                        📄 {{ $archivo->nombre }}
+                                                    </a>
+                                                @endif
+
+                                                {{--  @if ($archivo->archivo_drive_url)
                                                 <a href="{{ $archivo->archivo_drive_url }}"
                                                    target="_blank"
                                                    class="block text-green-600 text-sm hover:underline">
                                                     ☁️ {{ $archivo->nombre }}
                                                 </a>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @endif
-
-                                {{-- Rechazo tarea --}}
-                                @if(empty($mostrarRechazoTarea[$tarea->id]))
-                                    <button wire:click="$set('mostrarRechazoTarea.'.$tarea->id, true)"
-                                        class="mt-2 text-sm text-red-600 border border-red-400 px-3 py-1 rounded">
-                                        Rechazar tarea
-                                    </button>
-                                @else
-                                    <div class="mt-2">
-                                        <textarea wire:model.defer="comentarioRechazoTarea.{{ $tarea->id }}"
-                                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                                            placeholder="Motivo del rechazo"></textarea>
-
-                                        <div class="mt-2 text-right space-x-2">
-                                            <button wire:click="rechazarTarea({{ $tarea->id }})"
-                                                class="bg-red-600 text-white px-4 py-1 rounded text-sm">
-                                                Confirmar
-                                            </button>
-                                            <button wire:click="$set('mostrarRechazoTarea.'.$tarea->id, false)"
-                                                class="px-3 py-1 border rounded text-sm">
-                                                Cancelar
-                                            </button>
+                                            @endif --}}
+                                            @endforeach
                                         </div>
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
+                                    @endif
+
+                                    {{-- Rechazo tarea --}}
+                                    {{-- Rechazo tarea --}}
+                                    @if (!($mostrarRechazoTarea[$tarea->id] ?? false))
+                                        <button wire:click="$set('mostrarRechazoTarea.{{ $tarea->id }}', true)"
+                                            class="mt-2 text-sm text-red-600 border border-red-400 px-3 py-1 rounded">
+                                            Rechazar tarea
+                                        </button>
+                                    @else
+                                        <div class="mt-2">
+                                            <textarea wire:model.defer="comentarioRechazoTarea.{{ $tarea->id }}"
+                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white" placeholder="Motivo del rechazo"></textarea>
+
+                                            <div class="mt-2 text-right space-x-2">
+                                                <button wire:click="rechazarTarea({{ $tarea->id }})"
+                                                    class="bg-red-600 text-white px-4 py-1 rounded text-sm">
+                                                    Confirmar
+                                                </button>
+                                                <button
+                                                    wire:click="$set('mostrarRechazoTarea.{{ $tarea->id }}', false)"
+                                                    class="px-3 py-1 border rounded text-sm">
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
                 @endif
+            </div>
 
-            @endif
-        </div>
-
-        {{-- Footer --}}
-        <div class="p-4 border-t text-right">
-            <button wire:click="enviarAlCliente"
-                class="bg-amber-600 text-white px-4 py-2 rounded">
-                Enviar al cliente
-            </button>
+            {{-- Footer --}}
+            <div class="p-4 border-t text-right">
+                <button wire:click="enviarAlCliente" class="bg-amber-600 text-white px-4 py-2 rounded">
+                    Enviar al cliente
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
 
 </div>

@@ -48,8 +48,9 @@ class TareasAsignadasCrud extends Component
     protected $rules = [
         'tarea_catalogo_id' => 'required|exists:tareas_catalogo,id',
         'contador_id' => 'required|exists:users,id',
-/*         'fecha_limite' => 'required|date|after_or_equal:fecha_asignacion',
- */        'tiempo_estimado' => 'required|integer|min:1|max:1440',
+        /*         'fecha_limite' => 'required|date|after_or_equal:fecha_asignacion',
+ */
+        'tiempo_estimado' => 'required|integer|min:1|max:1440',
         'carpeta_drive_id' => 'nullable|exists:carpeta_drives,id',
     ];
 
@@ -61,55 +62,56 @@ class TareasAsignadasCrud extends Component
 
     public function mount($cliente)
     {
-/*         Carbon::setTestNow(Carbon::create(2026, 1, 1));
- */$this->modoAutomatico = true;
+        /*         Carbon::setTestNow(Carbon::create(2026, 1, 1));
+      */
+        $this->modoAutomatico = true;
 
         $this->cliente = $cliente;
-    
+
         // ✅ AÑOS DISPONIBLES:
         // - YEAR(fecha_limite) cuando exista
         // - si fecha_limite es NULL, usar YEAR(created_at) como fallback
         $this->aniosDisponibles = TareaAsignada::where('cliente_id', $this->cliente->id)
-        ->whereNotNull('ejercicio')
-        ->distinct()
-        ->orderBy('ejercicio', 'desc')
-        ->pluck('ejercicio')
-        ->toArray();
-    
-    
-        // ✅ Asegurar que el año actual exista en el combo
+            ->whereNotNull('ejercicio')
+            ->distinct()
+            ->orderBy('ejercicio', 'desc')
+            ->pluck('ejercicio')
+            ->toArray();
+
+
+       /*  // ✅ Asegurar que el año actual exista en el combo
         $anioActual = now()->year;
         if (!in_array($anioActual, $this->aniosDisponibles)) {
             array_unshift($this->aniosDisponibles, $anioActual);
-        }
-    
+        } */
+
         // ✅ inicializa filtros (mismo patrón)
         $this->filtroEjercicio = null;
         $this->filtroMes = null;
-    
+
         // Carga inicial
         $this->cargarTareasDisponibles();
         $this->verificarTareasCompletadas();
         $this->arbolCarpetas = ArbolCarpetas::obtenerArbol($cliente->id);
     }
-    
+
     private function cargarTareasAsignadasFiltradas()
     {
         $query = TareaAsignada::with([
-                'tareaCatalogo',
-                'contador',
-                'obligacionClienteContador.obligacion'
-            ])
+            'tareaCatalogo',
+            'contador',
+            'obligacionClienteContador.obligacion'
+        ])
             ->where('cliente_id', $this->cliente->id)
-    
+
             // 🔴 FILTRO CLAVE
             ->where(function ($q) {
                 $q->whereNull('obligacion_cliente_contador_id') // tareas sin obligación
-                  ->orWhereHas('obligacionClienteContador.obligacion', function ($o) {
-                      $o->where('is_activa', 1); // solo obligaciones activas
-                  });
+                    ->orWhereHas('obligacionClienteContador.obligacion', function ($o) {
+                        $o->where('is_activa', 1); // solo obligaciones activas
+                    });
             });
-    
+
         // 🔍 Búsqueda
         if (!empty($this->buscarTarea)) {
             $texto = trim($this->buscarTarea);
@@ -117,42 +119,41 @@ class TareasAsignadasCrud extends Component
                 $q->where('nombre', 'like', "%{$texto}%");
             });
         }
-    
+
         /* ===========================
          | AUTOMÁTICO
          =========================== */
         if ($this->modoAutomatico) {
-    
+
             $inicioMes = now()->startOfMonth();
             $finMes    = now()->endOfMonth();
-    
+
             $query->where(function ($q) use ($inicioMes, $finMes) {
-    
+
                 $q->whereBetween('fecha_limite', [$inicioMes, $finMes])
-    
-                ->orWhere(function ($q2) use ($inicioMes) {
-                    $q2->whereNotNull('fecha_limite')
-                       ->whereDate('fecha_limite', '<', $inicioMes)
-                       ->whereNotIn('estatus', ['terminada','cancelada','revisada']);
-                });
+
+                    ->orWhere(function ($q2) use ($inicioMes) {
+                        $q2->whereNotNull('fecha_limite')
+                            ->whereDate('fecha_limite', '<', $inicioMes)
+                            ->whereNotIn('estatus', ['terminada', 'cancelada', 'revisada']);
+                    });
             });
         }
-    
+
         /* ===========================
          | MANUAL
-         =========================== */
-        else {
+         =========================== */ else {
             $query->where('ejercicio', $this->filtroEjercicio)
-                  ->where('mes', $this->filtroMes);
+                ->where('mes', $this->filtroMes);
         }
-    
+
         return $query
-            ->orderBy('fecha_limite','asc')
+            ->orderBy('fecha_limite', 'asc')
             ->paginate(10);
     }
-    
 
-    
+
+
 
 
     public function updatedFiltroEjercicio()
@@ -160,13 +161,13 @@ class TareasAsignadasCrud extends Component
         $this->modoAutomatico = false;
         $this->resetPage();
     }
-    
+
     public function updatedFiltroMes()
     {
         $this->modoAutomatico = false;
         $this->resetPage();
     }
-    
+
     public function updatedBuscarTarea()
     {
         $this->resetPage();

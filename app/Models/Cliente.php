@@ -98,7 +98,7 @@ class Cliente extends Model
     }
 
 
-    public function getAsignacionesCompletasAttribute(): bool
+    /* public function getAsignacionesCompletasAttribute(): bool
     {
         $totalObligaciones = $this->obligaciones()->count();
         $obligacionesAsignadas = $this->obligacionesAsignadas()->count();
@@ -126,5 +126,5 @@ class Cliente extends Model
         }
 
         return true;
-    }
+    } */
 }

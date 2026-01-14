@@ -52,17 +52,23 @@ class MisTareasIndex extends Component
     public ?TareaAsignada $tareaSeleccionada = null;
     public ?string $comentarioRechazo = null;
     public bool $soloLectura = false;
-    
-    // -----------------------------
-    // QueryString (opcional)
-    // -----------------------------
-    protected $queryString = [
-        'buscar'    => ['except' => ''],
-        'estatus'   => ['except' => ''],
-        'ejercicio' => ['except' => null],
-        'mes'       => ['except' => null],
+
+    public array $mesesManual = [
+        '1' => 'Enero',
+        '2' => 'Febrero',
+        '3' => 'Marzo',
+        '4' => 'Abril',
+        '5' => 'Mayo',
+        '6' => 'Junio',
+        '7' => 'Julio',
+        '8' => 'Agosto',
+        '9' => 'Septiembre',
+        '10' => 'Octubre',
+        '11' => 'Noviembre',
+        '12' => 'Diciembre',
     ];
 
+    
     // -----------------------------
     // Validación
     // -----------------------------
@@ -80,76 +86,24 @@ class MisTareasIndex extends Component
     // =========================================================
     public function mount(): void
     {
-        // 1) Cargar años disponibles (solo años con datos reales en fecha_limite)
         $this->cargarEjerciciosDisponibles();
 
-        // 2) Definir ejercicio default:
-        //    - si el año actual existe en datos => usarlo
-        //    - si no existe => usar el más reciente disponible
-        $anioActual = (string) now()->year;
-
-        if (!empty($this->ejerciciosDisponibles)) {
-            $this->ejercicio = in_array($anioActual, $this->ejerciciosDisponibles, true)
-                ? $anioActual
-                : $this->ejerciciosDisponibles[0]; // el más reciente (orderByDesc)
-        } else {
-            // no hay datos -> deja año actual
-            $this->ejercicio = $anioActual;
-        }
-
-        // 3) Cargar meses del ejercicio seleccionado
-        $this->cargarMesesDisponibles();
-
-        // 4) Definir mes default:
-        //    - si el mes actual existe para ese ejercicio => usarlo
-        //    - si no => usar el primer mes disponible (ordenado asc)
-        $mesActual = (string) now()->month; // "12"
-
-        if (!empty($this->mesesDisponibles)) {
-            $this->mes = in_array($mesActual, $this->mesesDisponibles, true)
-                ? $mesActual
-                : $this->mesesDisponibles[0];
-        } else {
-            $this->mes = $mesActual;
-        }
     }
+
 
     // =========================================================
     // REACCIONES A FILTROS (reset paginación)
     // =========================================================
-    public function updatingBuscar()  { $this->resetPage(); }
-    public function updatingEstatus() { $this->resetPage(); }
-
-    /**
-     * Cuando cambia el ejercicio:
-     * - recalcula meses disponibles para ese año
-     * - y ajusta $mes si ya no existe
-     */
-    public function updatedEjercicio($value): void
+    public function updatingBuscar()
     {
         $this->resetPage();
-
-        // normaliza a string (por si llega null/int)
-        $this->ejercicio = $value !== null ? (string) $value : null;
-
-        $this->cargarMesesDisponibles();
-
-        // Si el mes seleccionado ya no existe en este año, asigna el primero disponible
-        if ($this->mes !== null && !in_array($this->mes, $this->mesesDisponibles, true)) {
-            $this->mes = $this->mesesDisponibles[0] ?? null;
-        }
-
-        // Si no hay mes seleccionado (por ejemplo al limpiar), setea uno válido si existe
-        if ($this->mes === null && !empty($this->mesesDisponibles)) {
-            $this->mes = $this->mesesDisponibles[0];
-        }
     }
-
-    public function updatedMes($value): void
+    public function updatingEstatus()
     {
         $this->resetPage();
-        $this->mes = $value !== null ? (string) $value : null;
     }
+
+
 
     // =========================================================
     // CARGA DE COMBOS (BD) - BASADO EN fecha_limite
@@ -158,35 +112,18 @@ class MisTareasIndex extends Component
     {
         $this->ejerciciosDisponibles = TareaAsignada::query()
             ->where('contador_id', Auth::id())
-            ->whereNotNull('fecha_limite')
-            ->selectRaw('YEAR(fecha_limite) as anio')
+            ->whereNotNull('ejercicio')
+            ->select('ejercicio')
             ->distinct()
-            ->orderByDesc('anio') // más reciente primero (ej: 2026, 2025)
-            ->pluck('anio')
-            ->map(fn($v) => (string) $v)
+            ->orderByDesc('ejercicio')
+            ->pluck('ejercicio')
+            ->map(fn($v) => (string)$v)
             ->values()
             ->all();
     }
 
-    private function cargarMesesDisponibles(): void
-    {
-        if (!$this->ejercicio) {
-            $this->mesesDisponibles = [];
-            return;
-        }
 
-        $this->mesesDisponibles = TareaAsignada::query()
-            ->where('contador_id', Auth::id())
-            ->whereNotNull('fecha_limite')
-            ->whereYear('fecha_limite', (int) $this->ejercicio)
-            ->selectRaw('MONTH(fecha_limite) as mes')
-            ->distinct()
-            ->orderBy('mes') // asc: 1..12
-            ->pluck('mes')
-            ->map(fn($v) => (string) $v)
-            ->values()
-            ->all();
-    }
+
 
     // =========================================================
     // CONSULTA PRINCIPAL
@@ -201,9 +138,16 @@ class MisTareasIndex extends Component
             ])
             ->where('contador_id', Auth::id())
 
-            // Filtro por ejercicio/mes (SIEMPRE usando fecha_limite)
-            ->when($this->ejercicio, fn($q) => $q->whereYear('fecha_limite', (int) $this->ejercicio))
-            ->when($this->mes, fn($q) => $q->whereMonth('fecha_limite', (int) $this->mes))
+            ->when(
+                $this->ejercicio,
+                fn($q) =>
+                $q->where('ejercicio', $this->ejercicio)
+            )
+            ->when(
+                $this->mes,
+                fn($q) =>
+                $q->where('mes', $this->mes)
+            )
 
             // Estatus
             ->when($this->estatus, fn($q) => $q->where('estatus', $this->estatus))
@@ -215,14 +159,14 @@ class MisTareasIndex extends Component
                 $q->where(function ($w) use ($bus) {
                     $w->whereHas('cliente', function ($c) use ($bus) {
                         $c->where('nombre', 'like', "%{$bus}%")
-                          ->orWhere('razon_social', 'like', "%{$bus}%");
+                            ->orWhere('razon_social', 'like', "%{$bus}%");
                     })
-                    ->orWhereHas('tareaCatalogo', function ($t) use ($bus) {
-                        $t->where('nombre', 'like', "%{$bus}%");
-                    })
-                    ->orWhereHas('obligacionClienteContador.obligacion', function ($o) use ($bus) {
-                        $o->where('nombre', 'like', "%{$bus}%");
-                    });
+                        ->orWhereHas('tareaCatalogo', function ($t) use ($bus) {
+                            $t->where('nombre', 'like', "%{$bus}%");
+                        })
+                        ->orWhereHas('obligacionClienteContador.obligacion', function ($o) use ($bus) {
+                            $o->where('nombre', 'like', "%{$bus}%");
+                        });
                 });
             })
 
@@ -260,40 +204,40 @@ class MisTareasIndex extends Component
     }
 
     public function guardarSeguimiento(): void
-{
-    $this->validate([
-        'comentario' => ['nullable', 'string', 'max:500'],
-        'archivo'    => ['nullable', 'file', 'mimes:pdf,zip,jpg,jpeg,png'],
-    ]);
+    {
+        $this->validate([
+            'comentario' => ['nullable', 'string', 'max:500'],
+            'archivo'    => ['nullable', 'file', 'mimes:pdf,zip,jpg,jpeg,png'],
+        ]);
 
-    $t = $this->findMine($this->tareaId);
+        $t = $this->findMine($this->tareaId);
 
-    // =============================
-    // Subida de archivo (tu lógica intacta)
-    // =============================
-    $rutaStorage = $t->archivo;
-    $linkDrive   = $t->archivo_drive_url;
+        // =============================
+        // Subida de archivo (tu lógica intacta)
+        // =============================
+        $rutaStorage = $t->archivo;
+        $linkDrive   = $t->archivo_drive_url;
 
-    if ($this->archivo instanceof \Illuminate\Http\UploadedFile) {
-        // (Aquí va exactamente tu lógica actual, sin cambios)
-        // Storage / Drive
+        if ($this->archivo instanceof \Illuminate\Http\UploadedFile) {
+            // (Aquí va exactamente tu lógica actual, sin cambios)
+            // Storage / Drive
+        }
+
+        // =============================
+        // Finalizar tarea
+        // =============================
+        $t->update([
+            'estatus'       => 'realizada',
+            'fecha_termino' => now(),
+            'comentario'    => $this->comentario,
+            'archivo'       => $rutaStorage,
+            'archivo_drive_url' => $linkDrive,
+        ]);
+
+        $this->reset(['openModal', 'tareaId', 'archivo', 'comentario']);
+
+        $this->dispatch('toast', type: 'success', message: 'Tarea finalizada correctamente.');
     }
-
-    // =============================
-    // Finalizar tarea
-    // =============================
-    $t->update([
-        'estatus'       => 'realizada',
-        'fecha_termino' => now(),
-        'comentario'    => $this->comentario,
-        'archivo'       => $rutaStorage,
-        'archivo_drive_url' => $linkDrive,
-    ]);
-
-    $this->reset(['openModal', 'tareaId', 'archivo', 'comentario']);
-
-    $this->dispatch('toast', type: 'success', message: 'Tarea finalizada correctamente.');
-}
 
 
     public function iniciar(int $id): void
@@ -308,84 +252,82 @@ class MisTareasIndex extends Component
             'estatus' => 'en_progreso',
             'fecha_inicio' => now(),
         ]);
-
     }
     public function terminar(int $id): void
     {
         $t = $this->findMine($id);
-    
+
         if ($t->estatus !== 'en_progreso') {
             $this->dispatch('toast', type: 'warning', message: 'Solo puedes terminar tareas en progreso.');
             return;
         }
-    
+
         $this->tareaSeleccionada = $t;
         $this->comentario = $t->comentario; // 👈 importante
 
         $this->openModal = true;
     }
-    
-    
+
+
     private function findMine(int $id): TareaAsignada
     {
         return TareaAsignada::where('contador_id', Auth::id())->findOrFail($id);
     }
     public function cerrarTarea(): void
-{
-    if (!$this->tareaSeleccionada) {
-        return;
-    }
+    {
+        if (!$this->tareaSeleccionada) {
+            return;
+        }
 
-    $t = $this->findMine($this->tareaSeleccionada->id);
+        $t = $this->findMine($this->tareaSeleccionada->id);
 
-   /*  if ($t->archivos()->count() === 0) {
+        /*  if ($t->archivos()->count() === 0) {
         $this->dispatch('toast', type: 'warning', message: 'Debes subir al menos un archivo.');
         return;
     }
  */
-    $t->update([
-        'estatus' => 'realizada',
-        'fecha_termino' => now(),
-        'comentario'    => $this->comentario,
+        $t->update([
+            'estatus' => 'realizada',
+            'fecha_termino' => now(),
+            'comentario'    => $this->comentario,
 
-    ]);
+        ]);
 
-    $this->reset(['openModal', 'tareaSeleccionada','comentario']);
+        $this->reset(['openModal', 'tareaSeleccionada', 'comentario']);
 
-    $this->dispatch('toast', type: 'success', message: 'Tarea finalizada correctamente.');
-}
-public function verRechazo(int $id): void
-{
-    $t = $this->findMine($id);
-
-    if ($t->estatus !== 'rechazada') {
-        return;
+        $this->dispatch('toast', type: 'success', message: 'Tarea finalizada correctamente.');
     }
+    public function verRechazo(int $id): void
+    {
+        $t = $this->findMine($id);
 
-    $this->tareaSeleccionada = $t;
-    $this->comentario = $t->comentario;
-    $this->soloLectura = true;
-    $this->openModal = true;
-}
-public function corregir(int $id): void
-{
-    $t = $this->findMine($id);
+        if ($t->estatus !== 'rechazada') {
+            return;
+        }
 
-    if ($t->estatus !== 'rechazada') {
-        return;
+        $this->tareaSeleccionada = $t;
+        $this->comentario = $t->comentario;
+        $this->soloLectura = true;
+        $this->openModal = true;
     }
+    public function corregir(int $id): void
+    {
+        $t = $this->findMine($id);
 
-    $t->update([
-        'estatus' => 'en_progreso',
-        'fecha_inicio' => now(),
-        'fecha_termino' => null,
-    ]);
+        if ($t->estatus !== 'rechazada') {
+            return;
+        }
 
-    $this->tareaSeleccionada = $t;
-    $this->comentario = $t->comentario;
+        $t->update([
+            'estatus' => 'en_progreso',
+            'fecha_inicio' => now(),
+            'fecha_termino' => null,
+        ]);
 
-    $this->soloLectura = false;
-    $this->openModal = true;
-}
+        $this->tareaSeleccionada = $t;
+        $this->comentario = $t->comentario;
 
+        $this->soloLectura = false;
+        $this->openModal = true;
+    }
 }

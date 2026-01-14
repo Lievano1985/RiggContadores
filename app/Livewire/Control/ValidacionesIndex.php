@@ -15,7 +15,6 @@ use App\Models\ObligacionClienteContador;
 use App\Models\TareaAsignada;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Support\Facades\Storage;
 
 class ValidacionesIndex extends Component
 {
@@ -73,7 +72,7 @@ class ValidacionesIndex extends Component
         $registro = ObligacionClienteContador::find($this->obligacionIdSeleccionada);
         if (!$registro || !$this->comentarioRechazoObligacion) return;
 
-        $registro->estatus = 'reabierta';
+        $registro->estatus = 'rechazada';
         $registro->comentario = $this->comentarioRechazoObligacion;
         $registro->save();
 
@@ -84,21 +83,32 @@ class ValidacionesIndex extends Component
     public function rechazarTarea(int $tareaId): void
     {
         if (empty($this->comentarioRechazoTarea[$tareaId])) return;
-
+    
         $tarea = TareaAsignada::find($tareaId);
         if (!$tarea) return;
-
+    
+        // 1️⃣ Rechazar tarea
         $tarea->estatus = 'rechazada';
         $tarea->comentario = $this->comentarioRechazoTarea[$tareaId];
         $tarea->save();
-
-        session()->flash('mensaje', 'Tarea rechazada correctamente.');
-        $this->mostrarRechazoTarea[$tareaId] = false;
+    
+        // 2️⃣ Regresar obligación a en_progreso
+        $obligacion = $tarea->obligacionClienteContador ?? null;
+    
+        if ($obligacion) {
+            $obligacion->estatus = 'en_progreso';
+            $obligacion->save();
+        }
+    
+        session()->flash('mensaje', 'Tarea rechazada. Obligación devuelta al contador.');
+    
+        // 3️⃣ Cerrar sidebar
+        $this->cerrarSidebar();
     }
-
+    
     public function render()
     {
-        $query = ObligacionClienteContador::with([
+        $obligaciones = ObligacionClienteContador::with([
                 'cliente',
                 'contador',
                 'obligacion',
@@ -112,11 +122,10 @@ class ValidacionesIndex extends Component
                     $qc->where('nombre', 'like', "%{$this->search}%")
                 );
             })
-            ->orderByDesc('fecha_termino');
+            ->orderByDesc('fecha_termino')
+            ->paginate(10);
 
-        $obligaciones = $query->paginate(10);
-
-        $seleccionada = $this->obligacionIdSeleccionada
+        $obligacionSeleccionada = $this->obligacionIdSeleccionada
             ? ObligacionClienteContador::with([
                 'cliente',
                 'contador',
@@ -124,13 +133,12 @@ class ValidacionesIndex extends Component
                 'archivos',
                 'tareasAsignadas.archivos',
                 'tareasAsignadas.tareaCatalogo',
-                'tareasAsignadas.contador',
             ])->find($this->obligacionIdSeleccionada)
             : null;
 
         return view('livewire.control.validaciones-index', [
             'obligaciones' => $obligaciones,
-            'obligacionSeleccionada' => $seleccionada,
+            'obligacionSeleccionada' => $obligacionSeleccionada,
         ]);
     }
 }

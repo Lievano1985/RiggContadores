@@ -91,9 +91,8 @@
                         :tabindex="tab === 'obligaciones' ? 0 : -1" @click="tab = 'obligaciones'"
                         @keydown.arrow-right.prevent="move(1)" @keydown.arrow-left.prevent="move(-1)"
                         :class="tab === 'obligaciones' ? 'font-bold border-b-2 border-amber-800' : ''"
-                        class="pb-1 focus:outline-none
-                               {{ $obligacionesCompletadas ? 'text-green-600 border-green-600' : 'text-red-600 border-red-600' }}">
-                        Asignar Obligaciones
+                        class="pb-1 focus:outline-none">
+                      Asignar Obligaciones
                     </button>
 
                     <button id="tab-tareas" role="tab" :aria-selected="tab === 'tareas'"
@@ -141,7 +140,7 @@
     </div>
 
     {{-- Script para actualizar colores en tiempo real --}}
-    <script>
+ {{--    <script>
         document.addEventListener('estado-obligaciones', e => {
             const tab = document.getElementById('tab-obligaciones');
             if (!tab) return;
@@ -175,5 +174,5 @@
                 tab.classList.add('text-yellow-600', 'border-yellow-600');
             }
         });
-    </script>
+    </script> --}}
 </x-layouts.app>

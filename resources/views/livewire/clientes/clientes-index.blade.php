@@ -50,14 +50,76 @@
                                 class="text-green-600 hover:underline">Expediente</a>
 
                         </td>
-                        <td class="px-4 py-2">
-                            @if ($cliente->asignaciones_completas)
-                                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✔
-                                    Completo</span>
-                            @else
-                                <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">⚠ Incompleto</span>
-                            @endif
-                        </td>
+                        <td class="text-center">
+
+                            @php
+                                $asignadas = $cliente->total_obligaciones - $cliente->obligaciones_pendientes;
+                            @endphp
+                            
+                            <div class="flex flex-col items-center text-xs">
+                            
+                                <div x-data="{ open:false }" class="relative">
+                            
+                                    {{-- Trigger --}}
+                                    <div @mouseenter="open=true" 
+                                         @mouseleave="open=false"
+                                         class="cursor-help">
+                            
+                                        <span class="text-xs font-semibold">
+                                            {{ $asignadas }} / {{ $cliente->total_obligaciones }}
+                                        </span>
+                            
+                                        @if($cliente->asignaciones_completas)
+                                            <span class="block text-green-600">Completo</span>
+                                        @else
+                                            <span class="block text-red-600">Incompleto</span>
+                                        @endif
+                                    </div>
+                            
+                                    {{-- Tooltip --}}
+                                    <div x-show="open"
+                                         class="absolute z-50 w-64 p-3
+                                                bg-white dark:bg-gray-800
+                                                border rounded shadow-lg
+                                                bottom-full right-0 mb-2">
+                            
+                                        <strong class="block mb-1">Detalle:</strong>
+                            
+                                        {{-- Caso: sin obligaciones --}}
+                                        @if($cliente->total_obligaciones == 0)
+                                            <span class="text-yellow-600">
+                                                ⚠️ Cliente sin obligaciones asignadas
+                                            </span>
+                            
+                                        {{-- Caso: todo asignado --}}
+                                        @elseif(
+                                            empty($cliente->pendientes_detalle['obligaciones']) &&
+                                            empty($cliente->pendientes_detalle['tareas'])
+                                        )
+                                            <span class="text-green-600">
+                                                Todo asignado ✔
+                                            </span>
+                            
+                                        {{-- Caso: pendientes --}}
+                                        @else
+                            
+                                            @foreach($cliente->pendientes_detalle['obligaciones'] as $obl)
+                                                <div>📌 Obligación: {{ $obl }}</div>
+                                            @endforeach
+                            
+                                            @foreach($cliente->pendientes_detalle['tareas'] as $tar)
+                                                <div>📝 Tarea: {{ $tar }}</div>
+                                            @endforeach
+                            
+                                        @endif
+                            
+                                    </div>
+                                </div>
+                            
+                            </div>
+                            </td>
+                            
+                        
 
                     </tr>
                 @empty

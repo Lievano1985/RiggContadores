@@ -1,7 +1,7 @@
 <div class="p-6 bg-white dark:bg-gray-900 rounded-lg shadow">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-bold text-stone-600">Tareas Asignadas</h2>
-        <div class="flex flex-col items-end space-y-2 mb-4">
+     {{--    <div class="flex flex-col items-end space-y-2 mb-4">
             @if ($tareasCompletadas)
                 <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
                     ✔ Todas las tareas por obligación asignadas
@@ -10,17 +10,17 @@
             <button wire:click="crear" class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
                 + Asignar nueva tarea
             </button>
-        </div>
+        </div> --}}
     </div>
-    <div class="flex space-x-3 mb-4">
+    <div class="flex flex-wrap gap-4 items-center mb-4">
         <div>
 
-            <label class="text-sm font-semibold">Ejercicio</label>
+            <label class="block text-sm font-semibold">Ejercicio</label>
             <select wire:model.live="filtroEjercicio"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
                    border-gray-300 dark:border-gray-600 focus:border-amber-600
                    focus:ring focus:ring-amber-500/40 focus:outline-none">
-                   <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+                <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
 
                 @foreach ($aniosDisponibles as $year)
                     <option value="{{ $year }}">{{ $year }}</option>
@@ -28,12 +28,12 @@
             </select>
         </div>
         <div>
-            <label class="text-sm font-semibold">Mes</label>
+            <label class="block text-sm font-semibold">Mes</label>
             <select wire:model.live="filtroMes"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
             border-gray-300 dark:border-gray-600 focus:border-amber-600
             focus:ring focus:ring-amber-500/40 focus:outline-none">
-            <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+                <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
                 @foreach (range(1, 12) as $m)
                     <option value="{{ $m }}">
                         {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}
@@ -41,41 +41,58 @@
                 @endforeach
             </select>
         </div>
-        <div class="mb-4 flex items-center gap-3">
-            <div>
-                <label class="text-sm font-semibold">Buscar tarea</label>
-                <input type="text" wire:model.live="buscarTarea" placeholder="Nombre de la tarea"
-                    class="px-3 py-2 border rounded-md 
+        <div>
+            <label class="block text-sm font-semibold">Buscar tarea</label>
+            <input type="text" wire:model.live="buscarTarea" placeholder="Nombre de la tarea"
+                class="px-3 py-1.5 border rounded-sm
                                dark:bg-gray-700 dark:text-white 
                                border-gray-300 dark:border-gray-600 
                                focus:border-amber-600 focus:ring focus:ring-amber-500/40 
                                focus:outline-none">
-            </div>
         </div>
+
     </div>
-
-
 
     <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700 text-sm">
         <thead class="bg-stone-100 dark:bg-stone-900">
             <tr>
                 <th class="px-4 py-2 text-left">Tarea</th>
-                <th class="px-4 py-2 text-left">Periodo</th> <!-- 👈 NUEVO -->
+                <th class="px-4 py-2 text-left">Periodo</th>
                 <th class="px-4 py-2 text-left">Carpeta Drive</th>
-                <th class="px-4 py-2 text-left">Contador Responsable</th>
+                <th class="px-4 py-2 text-left">Contador</th>
                 <th class="px-4 py-2 text-left">Obligación</th>
                 <th class="px-4 py-2 text-left">Vencimiento</th>
-                <th class="px-4 py-2 text-left">Acciones</th>
+                <th class="px-4 py-2 text-center">Acciones</th>
             </tr>
         </thead>
+    
         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             @foreach ($tareasAsignadas as $tarea)
-                <tr class="@if ($tarea->estatus === 'cancelada') opacity-70 dark:opacity-60 @endif">
+    
+                <tr
+                    class="
+                        {{-- VENCIDA --}}
+                        @if (
+                            $tarea->fecha_limite &&
+                            \Carbon\Carbon::parse($tarea->fecha_limite)->isPast() &&
+                            !in_array($tarea->estatus, ['terminada','cancelada'])
+                        )
+                            bg-red-50 dark:bg-red-900/30
+                        @endif
+    
+                        {{-- CANCELADA --}}
+                        @if ($tarea->estatus === 'cancelada')
+                            opacity-70 dark:opacity-60
+                        @endif
+                    "
+                >
+    
+                    {{-- TAREA --}}
                     <td class="px-4 py-2">
-                        <div class="flex items-center gap-2">
-                            <span>{{ $tarea->tareaCatalogo->nombre }}</span>
-                        </div>
+                        {{ $tarea->tareaCatalogo->nombre }}
                     </td>
+    
+                    {{-- PERIODO --}}
                     <td class="px-4 py-2">
                         @if ($tarea->ejercicio && $tarea->mes)
                             {{ $tarea->ejercicio }}-{{ str_pad($tarea->mes, 2, '0', STR_PAD_LEFT) }}
@@ -83,44 +100,58 @@
                             —
                         @endif
                     </td>
-                    <td class="px-4 py-2 text-sm">
+    
+                    {{-- CARPETA --}}
+                    <td class="px-4 py-2">
                         @php
                             $carpeta = $tarea->carpeta_drive_id
                                 ? \App\Models\CarpetaDrive::find($tarea->carpeta_drive_id)
                                 : null;
                         @endphp
-
-                        @if ($carpeta)
-                            {{ $carpeta->nombre }}
-                        @else
-                            Sin carpeta
-                        @endif
+    
+                        {{ $carpeta?->nombre ?? 'Sin carpeta' }}
                     </td>
-                    <td class="px-4 py-2">{{ $tarea->contador->name ?? '-' }}</td>
-
+    
+                    {{-- CONTADOR --}}
+                    <td class="px-4 py-2">
+                        {{ $tarea->contador->name ?? '—' }}
+                    </td>
+    
+                    {{-- OBLIGACIÓN --}}
                     <td class="px-4 py-2">
                         {{ $tarea->obligacionClientecontador?->obligacion?->nombre ?? 'Sin obligación' }}
                     </td>
-
+    
+                    {{-- FECHA LIMITE --}}
                     <td class="px-4 py-2">
-                        {{ $tarea->fecha_limite ? \Carbon\Carbon::parse($tarea->fecha_limite)->format('Y-m-d') : '—' }}
+                        {{ $tarea->fecha_limite
+                            ? \Carbon\Carbon::parse($tarea->fecha_limite)->format('Y-m-d')
+                            : '—' }}
                     </td>
-
-                    <td class="px-4 py-2 space-x-2">
+    
+                    {{-- ACCIONES --}}
+                    <td class="px-4 py-2 text-center space-x-2">
                         @if ($tarea->estatus !== 'cancelada')
-                            <button wire:click="editar({{ $tarea->id }})"
-                                class="text-blue-600 hover:underline">Editar</button>
-                            <button wire:click="eliminar({{ $tarea->id }})"
-                                class="text-red-600 hover:underline">Eliminar</button>
+                            <button
+                                wire:click="editar({{ $tarea->id }})"
+                                class="text-amber-600 hover:underline"
+                            >
+                                Editar
+                            </button>
                         @else
-                            <span class="text-gray-500 text-sm italic">Sin acciones</span>
+                            <span class="text-gray-500 text-sm italic">
+                                Sin acciones
+                            </span>
                         @endif
                     </td>
+    
                 </tr>
+    
             @endforeach
         </tbody>
-
     </table>
+    
+
 
     <div class="mt-4">
         {{ $tareasAsignadas->links() }}

@@ -39,6 +39,7 @@ class CreateObligacionClienteContadorTable extends Migration
                 'respuesta_cliente',
                 'respuesta_revisada',
                 'finalizado',
+                'rechazada',
                 'reabierta'
             ])->default('asignada');
 

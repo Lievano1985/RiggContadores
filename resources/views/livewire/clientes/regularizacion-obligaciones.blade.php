@@ -55,7 +55,7 @@
                         <div class="border rounded bg-white dark:bg-gray-800 shadow-inner p-2 max-h-60 overflow-y-auto">
                             @forelse ($this->obligacionesFiltradas as $ob)
                                 <label wire:key="obligacion-{{ $ob->id }}"
-                                    class="flex items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                                    class="flex text-sm items-center px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
 
                                     <input type="checkbox" value="{{ $ob->id }}"
                                         wire:model.live="obligacionesSeleccionadas"
