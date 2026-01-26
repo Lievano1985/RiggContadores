@@ -25,13 +25,11 @@
                 <label class="block text-stone-600 dark:text-gray-200 mb-1">Mes</label>
                 <select wire:model.live="mes"
                     class="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
-                    @forelse($this->mesesDisponibles as $m)
-                        <option value="{{ $m }}">
-                            {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}
-                        </option>
-                    @empty
-                        <option disabled>No hay meses disponibles</option>
-                    @endforelse
+                    @foreach (range(1, 12) as $m)
+                    <option value="{{ $m }}">
+                        {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}
+                    </option>
+                @endforeach
                 </select>
                 @error('mes')
                     <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
@@ -138,4 +136,5 @@
             </div>
         @endif
     </div>
+    <x-notification/>
 </div>

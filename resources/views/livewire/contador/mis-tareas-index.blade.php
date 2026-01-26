@@ -226,7 +226,7 @@
 
                         {{-- Botón "Finalizar" si ya está en progreso --}}
                         @if ($tareaSeleccionada->estatus === 'en_progreso')
-                            <button wire:click="cerrarTarea"
+                            <button wire:click="saveResultTarea" @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
                                 class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">
                                 Marcar como realizada
                             </button>
@@ -237,7 +237,7 @@
         @endif
 
 
-        <x-spinner target="guardarSeguimiento" />
+        <x-notification />
 
     </div>
 </div>

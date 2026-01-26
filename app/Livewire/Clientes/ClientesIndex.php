@@ -44,6 +44,12 @@ class ClientesIndex extends Component
     public $rfc_representante;
     public $correo_representante;
 
+
+    // Filtro de busqueda 
+    public $buscar = '';
+
+
+
     // Definir la propiedad para DriveService
     protected $driveService;
 
@@ -79,6 +85,14 @@ class ClientesIndex extends Component
     public function render()
     {
         $clientes = Cliente::with('despacho')
+            ->when($this->buscar, function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('nombre', 'like', '%' . $this->buscar . '%')
+                        ->orWhere('rfc', 'like', '%' . $this->buscar . '%')
+                        ->orWhere('razon_social', 'like', '%' . $this->buscar . '%')
+                        ->orWhere('nombre_comercial', 'like', '%' . $this->buscar . '%');
+                });
+            })
             ->withCount([
 
                 // TOTAL obligaciones activas
@@ -348,5 +362,11 @@ class ClientesIndex extends Component
                 ->pluck('tareaCatalogo.nombre')
                 ->toArray(),
         ];
+    }
+
+    //filtro-------------
+    public function updatedBuscar()
+    {
+        $this->resetPage();
     }
 }

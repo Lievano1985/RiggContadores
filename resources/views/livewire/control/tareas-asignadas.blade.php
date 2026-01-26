@@ -230,27 +230,29 @@
                         @endif
                     </div>
 
-                    {{-- Auxiliar --}}
-                    <div>
-                        <label class="block text-sm mb-1">Contador Responsable</label>
-                        <select wire:model.defer="contador_id"
-                            class="w-full px-3 py-2 border rounded-md 
-                                   dark:bg-gray-700 dark:text-white 
-                                   border-gray-300 dark:border-gray-600 
-                                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 
-                                   focus:outline-none">
-                            <option value="">Selecciona un Auxiliar</option>
-                            @foreach ($contadores as $u)
-                                <option value="{{ $u->id }}">{{ $u->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('contador_id')
-                            <span class="text-red-500 text-sm">{{ $message }}</span>
-                        @enderror
-                    </div>
-
+                
                     {{-- Tiempo y fecha --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <div>
+                            <label class="block text-sm mb-1">Contador Responsable</label>
+                            <select wire:model.defer="contador_id"
+                                class="w-full px-3 py-2 border rounded-md 
+                                       dark:bg-gray-700 dark:text-white 
+                                       border-gray-300 dark:border-gray-600 
+                                       focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+                                       focus:outline-none">
+                                <option value="">Selecciona un Auxiliar</option>
+                                @foreach ($contadores as $u)
+                                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('contador_id')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
+                            
+                        </div>
+
                         <div>
                             <label class="block text-sm mb-1">Tiempo estimado (minutos)</label>
                             <input type="number" wire:model.defer="tiempo_estimado" min="1" max="1440"
@@ -265,18 +267,7 @@
                             @enderror
                         </div>
 
-                        <div>
-                            <label class="block text-sm mb-1">Fecha de Vencimiento</label>
-                            <input type="date" wire:model.defer="fecha_limite"
-                                class="w-full px-3 py-2 border rounded-md 
-                                       dark:bg-gray-700 dark:text-white 
-                                       border-gray-300 dark:border-gray-600 
-                                       focus:border-amber-600 focus:ring focus:ring-amber-500/40 
-                                       focus:outline-none">
-                            @error('fecha_limite')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                            @enderror
-                        </div>
+                        
                     </div>
 
                     {{-- Árbol de carpetas --}}

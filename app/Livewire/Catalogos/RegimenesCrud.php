@@ -23,7 +23,7 @@ class RegimenesCrud extends Component
     public $sortDirection = 'asc';
     protected $rules = [
         'nombre' => 'required|string|min:3',
-        'clave_sat' => 'required|string|min:2|max:10',
+        'clave_sat' => 'required|string|min:3|max:10|unique:regimenes,clave_sat',
         'tipo_persona' => 'required|in:física,moral,física/moral',
     ];
 
@@ -55,6 +55,7 @@ class RegimenesCrud extends Component
 
     public function showEditForm(Regimen $regimen)
     {
+        $this->resetForm();
         $this->regimenId = $regimen->id;
         $this->nombre = $regimen->nombre;
         $this->clave_sat = $regimen->clave_sat;
@@ -85,6 +86,8 @@ class RegimenesCrud extends Component
     public function resetForm()
     {
         $this->reset(['regimenId', 'nombre', 'clave_sat', 'tipo_persona']);
+        $this->resetValidation();   // limpia errores
+        $this->resetErrorBag();     // limpia bolsa interna
     }
     public function updatingSearch() { $this->resetPage(); }
 

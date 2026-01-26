@@ -68,6 +68,10 @@ class MisTareasIndex extends Component
         '12' => 'Diciembre',
     ];
 
+    protected $listeners = [
+        'archivos-ok-tareas'    => 'continuarGuardadoTarea',
+        'archivos-error-tareas' => 'cancelarGuardadoTarea',
+    ];
     
     // -----------------------------
     // Validación
@@ -236,7 +240,11 @@ class MisTareasIndex extends Component
 
         $this->reset(['openModal', 'tareaId', 'archivo', 'comentario']);
 
-        $this->dispatch('toast', type: 'success', message: 'Tarea finalizada correctamente.');
+        $this->dispatch(
+            'notify',
+            message:'Tarea finalizada correctamente.'
+        );
+   
     }
 
 
@@ -258,9 +266,16 @@ class MisTareasIndex extends Component
         $t = $this->findMine($id);
 
         if ($t->estatus !== 'en_progreso') {
-            $this->dispatch('toast', type: 'warning', message: 'Solo puedes terminar tareas en progreso.');
+            $this->dispatch(
+                'notify',
+                message:'Solo puedes terminar tareas en progreso.'
+            );
             return;
         }
+
+
+      
+
 
         $this->tareaSeleccionada = $t;
         $this->comentario = $t->comentario; // 👈 importante
@@ -272,31 +287,59 @@ class MisTareasIndex extends Component
     private function findMine(int $id): TareaAsignada
     {
         return TareaAsignada::where('contador_id', Auth::id())->findOrFail($id);
+
     }
-    public function cerrarTarea(): void
+
+
+
+
+    public function saveResultTarea(): void
+    {
+        $this->dispatch('guardar-archivos-adjuntos', origen: 'tareas');
+    }
+
+    public function continuarGuardadoTarea(): void
     {
         if (!$this->tareaSeleccionada) {
             return;
         }
-
+    
         $t = $this->findMine($this->tareaSeleccionada->id);
-
-        /*  if ($t->archivos()->count() === 0) {
-        $this->dispatch('toast', type: 'warning', message: 'Debes subir al menos un archivo.');
-        return;
-    }
- */
+    
         $t->update([
-            'estatus' => 'realizada',
+            'estatus'       => 'realizada',
             'fecha_termino' => now(),
             'comentario'    => $this->comentario,
-
         ]);
+    
+        $this->reset([
+            'openModal',
+            'tareaSeleccionada',
+            'comentario',
+            'archivo'
+        ]);
+    
+    
+        $this->dispatch(
+            'notify',
+            message:'Tarea finalizada correctamente.'
+        );
 
-        $this->reset(['openModal', 'tareaSeleccionada', 'comentario']);
 
-        $this->dispatch('toast', type: 'success', message: 'Tarea finalizada correctamente.');
     }
+    public function cancelarGuardadoTarea(): void
+{
+  
+    $this->dispatch(
+        'notify',
+        message:'Corrige los archivos antes de continuar'
+    );
+
+
+}
+
+
+   
     public function verRechazo(int $id): void
     {
         $t = $this->findMine($id);

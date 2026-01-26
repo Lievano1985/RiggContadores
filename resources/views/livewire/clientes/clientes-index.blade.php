@@ -11,6 +11,15 @@
 
     <!-- Tabla de clientes -->
     <div class="overflow-x-auto rounded shadow">
+        <div class="mb-4">
+            <input type="text" wire:model.live="buscar" placeholder="Buscar por nombre o RFC..."
+            class="uppercase w-full px-3 py-2 border rounded-md 
+            dark:bg-gray-700 dark:text-white 
+            border-gray-300 dark:border-gray-600 
+            focus:border-amber-600 focus:ring focus:ring-amber-500/40 
+            focus:outline-none">
+        </div>
+
         <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
             <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
@@ -41,10 +50,10 @@
                         <td class="px-4 py-2 space-x-2">
                             {{--  <button wire:click="abrirModalEditar({{ $cliente->id }})"
                                 class="text-stone-600 hover:underline">Editar</button> --}}
-                                @hasrole('admin_despacho')
-                            <button wire:click="confirmarEliminar({{ $cliente->id }})"
-                                class="text-red-600 hover:underline">Eliminar</button>
-                                @endhasrole
+                            @hasrole('admin_despacho')
+                                <button wire:click="confirmarEliminar({{ $cliente->id }})"
+                                    class="text-red-600 hover:underline">Eliminar</button>
+                            @endhasrole
 
                             <a href="{{ route('clientes.expediente.show', $cliente->id) }}"
                                 class="text-green-600 hover:underline">Expediente</a>
@@ -55,71 +64,64 @@
                             @php
                                 $asignadas = $cliente->total_obligaciones - $cliente->obligaciones_pendientes;
                             @endphp
-                            
+
                             <div class="flex flex-col items-center text-xs">
-                            
-                                <div x-data="{ open:false }" class="relative">
-                            
+
+                                <div x-data="{ open: false }" class="relative">
+
                                     {{-- Trigger --}}
-                                    <div @mouseenter="open=true" 
-                                         @mouseleave="open=false"
-                                         class="cursor-help">
-                            
+                                    <div @mouseenter="open=true" @mouseleave="open=false" class="cursor-help">
+
                                         <span class="text-xs font-semibold">
                                             {{ $asignadas }} / {{ $cliente->total_obligaciones }}
                                         </span>
-                            
-                                        @if($cliente->asignaciones_completas)
+
+                                        @if ($cliente->asignaciones_completas)
                                             <span class="block text-green-600">Completo</span>
                                         @else
                                             <span class="block text-red-600">Incompleto</span>
                                         @endif
                                     </div>
-                            
+
                                     {{-- Tooltip --}}
                                     <div x-show="open"
-                                         class="absolute z-50 w-64 p-3
+                                        class="absolute z-50 w-64 p-3
                                                 bg-white dark:bg-gray-800
                                                 border rounded shadow-lg
                                                 bottom-full right-0 mb-2">
-                            
+
                                         <strong class="block mb-1">Detalle:</strong>
-                            
+
                                         {{-- Caso: sin obligaciones --}}
-                                        @if($cliente->total_obligaciones == 0)
+                                        @if ($cliente->total_obligaciones == 0)
                                             <span class="text-yellow-600">
                                                 ⚠️ Cliente sin obligaciones asignadas
                                             </span>
-                            
-                                        {{-- Caso: todo asignado --}}
-                                        @elseif(
-                                            empty($cliente->pendientes_detalle['obligaciones']) &&
-                                            empty($cliente->pendientes_detalle['tareas'])
-                                        )
+
+                                            {{-- Caso: todo asignado --}}
+                                        @elseif(empty($cliente->pendientes_detalle['obligaciones']) && empty($cliente->pendientes_detalle['tareas']))
                                             <span class="text-green-600">
                                                 Todo asignado ✔
                                             </span>
-                            
-                                        {{-- Caso: pendientes --}}
+
+                                            {{-- Caso: pendientes --}}
                                         @else
-                            
-                                            @foreach($cliente->pendientes_detalle['obligaciones'] as $obl)
+                                            @foreach ($cliente->pendientes_detalle['obligaciones'] as $obl)
                                                 <div>📌 Obligación: {{ $obl }}</div>
                                             @endforeach
-                            
-                                            @foreach($cliente->pendientes_detalle['tareas'] as $tar)
+
+                                            @foreach ($cliente->pendientes_detalle['tareas'] as $tar)
                                                 <div>📝 Tarea: {{ $tar }}</div>
                                             @endforeach
-                            
                                         @endif
-                            
+
                                     </div>
                                 </div>
-                            
+
                             </div>
-                            </td>
-                            
-                        
+                        </td>
+
+
 
                     </tr>
                 @empty
@@ -241,7 +243,7 @@
                 </form>
                 <x-spinner target="guardar" />
 
-            
+
             </div>
         </div>
     @endif

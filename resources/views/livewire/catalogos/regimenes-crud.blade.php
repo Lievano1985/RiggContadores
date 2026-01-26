@@ -97,7 +97,7 @@
                                    border-gray-300 dark:border-gray-600 
                                    focus:border-amber-600 focus:ring focus:ring-amber-500/40 
                                    focus:outline-none">
-                        @error('clave_sat') <div class="text-red-500 text-xs mt-1">{{ $message }}</div> @enderror
+                        @error('clave_sat') <div class="text-red-500 text-xs mt-1">{{ 'Error en la clave ingresada' }}</div> @enderror
                     </div>
 
                     <div>

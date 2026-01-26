@@ -151,7 +151,7 @@
                 </div>
 
                 {{-- Fecha límite --}}
-                <div class="mb-3">
+              {{--   <div class="mb-3">
                     <label class="block text-sm font-medium mb-1">Fecha límite</label>
                     <input type="date" wire:model="fecha_vencimiento"
                         class="w-full px-3 py-2 border rounded-md
@@ -160,14 +160,18 @@
                                focus:border-amber-600 focus:ring focus:ring-amber-500/40
                                focus:outline-none">
                     @error('fecha_vencimiento') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                </div>
+                </div> --}}
 
                 {{-- Carpeta Drive --}}
                 <div class="mt-6">
+                    
+                    
                     <label class="block text-sm font-semibold text-stone-600 mb-2">Carpeta en Drive</label>
-                    <div x-data="{ seleccion: @entangle('carpeta_drive_id') }"
-                        class="overflow-y-auto max-h-80 rounded border border-gray-200 dark:border-gray-700 p-3">
-                        <ul class="space-y-1">
+                    <div x-data="{ abiertos: {}, seleccion: @entangle('carpeta_drive_id') }"
+                    class="p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-3">
+                    
+                    
+                     <ul class="space-y-1">
                             @foreach ($arbolCarpetas as $nodo)
                                 <x-arbol-carpetas-nodo :nodo="$nodo" :nivel="0" model="carpeta_drive_id" />
                             @endforeach

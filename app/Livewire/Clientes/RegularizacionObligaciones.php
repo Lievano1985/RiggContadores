@@ -114,34 +114,47 @@ class RegularizacionObligaciones extends Component
     /* ============================================================
      | Generación
      |============================================================ */
-    public function generar()
-    {
-        $this->validate();
+     public function generar()
+     {
+         $this->validate();
+     
+         $periodoSeleccionado = Carbon::create($this->anio, $this->mes, 1)->startOfMonth();
+         $periodoActual       = now()->startOfMonth();
+     
+         if ($periodoSeleccionado->greaterThan($periodoActual)) {
+             $this->addError('mes', 'No se pueden generar obligaciones para meses futuros.');
+             return;
+         }
+     
+         $resultado = $this->generador->generarManualClienteObligaciones(
+             $this->cliente,
+             $this->obligacionesSeleccionadas,
+             $this->anio,
+             $this->mes
+         );
+     
+         $this->resumen = $resultado;
+     
+         $this->dispatch('DatosFiscalesActualizados');
+         $this->dispatch('obligacionActualizada');
+         session()->flash('success', 'Obligaciónes Generadas correctamente.');
 
-        // Regla fuerte: NO permitir periodos futuros (se permite mes actual)
-        $periodoSeleccionado = Carbon::create($this->anio, $this->mes, 1)->startOfMonth();
-        $periodoActual       = now()->startOfMonth();
+         // ===============================
+         // RESET CAMPOS DESPUÉS DE GUARDAR
+         // ===============================
+         $this->reset([
+             'obligacionesSeleccionadas',
+             'buscarObligacion',
+         ]);
+     
 
-        if ($periodoSeleccionado->greaterThan($periodoActual)) {
-            $this->addError('mes', 'No se pueden generar obligaciones para meses futuros.');
-            return;
-        }
-
-        $resultado = $this->generador->generarManualClienteObligaciones(
-            $this->cliente,
-            $this->obligacionesSeleccionadas,
-            $this->anio,
-            $this->mes
-        );
-
-        $this->resumen = $resultado;
-
-        // Por si otro tab depende de ello
-        $this->dispatch('DatosFiscalesActualizados');
-        $this->dispatch('obligacionActualizada');
-
-        
-    }
+         $this->anio = now()->year;
+         $this->mes  = now()->month;
+     
+         // (opcional)
+         $this->reset('resumen');
+     }
+     
 
     /* ============================================================
      | Obligaciones (solo periódicas)

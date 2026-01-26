@@ -175,6 +175,10 @@ class TareasAsignadasCrud extends Component
     // === Render del componente ===
     public function render()
     {
+
+        if(!$this->tiempo_estimado){
+            $this->tiempo_estimado = 5;
+        }
         return view('livewire.control.tareas-asignadas', [
             'tareasAsignadas' => $this->cargarTareasAsignadasFiltradas(),
 

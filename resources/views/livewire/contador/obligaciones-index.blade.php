@@ -199,7 +199,7 @@
                         Cancelar
                     </button>
 
-                    <button wire:click="saveResult"
+                    <button wire:click="saveResult" @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
                         class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                         Guardar
                     </button>
@@ -208,6 +208,8 @@
         </div>
     @endif
 
-    <x-spinner target="saveResult" />
+
+
+
     <x-notification />
 </div>

@@ -23,7 +23,7 @@ class ActividadesCrud extends Component
 
     protected $rules = [
         'nombre' => 'required|string|min:3',
-        'clave' => 'required|string|min:3|max:10',
+        'clave' => 'required|string|min:3|max:10|unique:actividad_economicas,clave',
         'ponderacion' => 'nullable|numeric|min:0',
     ];
 
@@ -64,6 +64,8 @@ class ActividadesCrud extends Component
 
     public function showEditForm(ActividadEconomica $actividad)
     {
+        $this->resetForm();
+
         $this->actividadId = $actividad->id;
         $this->nombre = $actividad->nombre;
         $this->clave = $actividad->clave;
@@ -95,5 +97,7 @@ class ActividadesCrud extends Component
     public function resetForm()
     {
         $this->reset(['actividadId', 'nombre', 'clave', 'ponderacion']);
+        $this->resetValidation();   // limpia errores
+        $this->resetErrorBag();     // limpia bolsa interna
     }
 }

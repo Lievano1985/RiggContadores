@@ -40,7 +40,6 @@ class ObligacionesIndex extends Component
 
     public array $ejerciciosDisponibles = [];
 
-   
     public array $mesesDisponibles = [
         '1' => 'Enero',
         '2' => 'Febrero',
@@ -55,6 +54,7 @@ class ObligacionesIndex extends Component
         '11' => 'Noviembre',
         '12' => 'Diciembre',
     ];
+
     // =========================================================
     // MODAL
     // =========================================================
@@ -64,6 +64,15 @@ class ObligacionesIndex extends Component
     public ?string $numero_operacion = null;
     public $archivo = null;
     public ?string $fecha_finalizado = null;
+
+    // =========================================================
+    // LISTENERS
+    // =========================================================
+    protected $listeners = [
+        'archivos-ok-obligaciones'    => 'continuarGuardado',
+        'archivos-error-obligaciones' => 'cancelarGuardado',
+    ];
+    
 
     // =========================================================
     // QUERY STRING
@@ -81,9 +90,8 @@ class ObligacionesIndex extends Component
     protected function rules()
     {
         return [
-            'archivo' => ['nullable', 'file', 'mimes:pdf,zip,jpg,jpeg,png'],
             'numero_operacion' => ['required', 'string', 'max:100'],
-            'fecha_finalizado' => ['nullable','date'],
+            'fecha_finalizado' => ['nullable', 'date'],
         ];
     }
 
@@ -93,9 +101,6 @@ class ObligacionesIndex extends Component
     public function mount(): void
     {
         $this->cargarEjerciciosDisponibles();
-
-/*         $this->ejercicioSeleccionado = $this->ejerciciosDisponibles[0] ?? null;
- */
     }
 
     // =========================================================
@@ -125,21 +130,20 @@ class ObligacionesIndex extends Component
             ->where('contador_id', Auth::id())
 
             // 🔹 FILTRO AUTOMÁTICO (NO TOCAR)
-            ->where(function($q){
-                $q->where('estatus','!=','finalizado')
-                  ->orWhereDate('fecha_vencimiento','>=',now());
+            ->where(function ($q) {
+                $q->where('estatus', '!=', 'finalizado')
+                  ->orWhereDate('fecha_vencimiento', '>=', now());
             })
 
             // 🔹 FILTROS MANUALES
             ->when($this->ejercicioSeleccionado,
-                fn($w) => $w->where('ejercicio',$this->ejercicioSeleccionado)
+                fn($w) => $w->where('ejercicio', $this->ejercicioSeleccionado)
             )
             ->when($this->mesSeleccionado,
-                fn($w) => $w->where('mes',$this->mesSeleccionado)
+                fn($w) => $w->where('mes', $this->mesSeleccionado)
             )
-
             ->when($this->estatus,
-                fn($w) => $w->where('estatus',$this->estatus)
+                fn($w) => $w->where('estatus', $this->estatus)
             )
 
             ->when($this->buscar, function ($w) {
@@ -189,9 +193,6 @@ class ObligacionesIndex extends Component
             ->all();
     }
 
- 
-
-     
     // =========================================================
     // ACCIONES
     // =========================================================
@@ -226,14 +227,23 @@ class ObligacionesIndex extends Component
         $this->openModal = true;
     }
 
+    // 🔹 BOTÓN PADRE
     public function saveResult(): void
+    {
+        $this->dispatch('guardar-archivos-adjuntos', origen: 'obligaciones');
+    }
+
+    /* ==========================================
+       SOLO SI ARCHIVOS OK
+    ========================================== */
+    public function continuarGuardado(): void
     {
         $this->validate();
 
         $o = $this->findMine((int)$this->selectedId);
 
         if ($this->hayTareasPendientes($o->id)) {
-            session()->flash('success','Cierra tareas ligadas primero.');
+            $this->dispatch('notify', message: 'Cierra tareas ligadas primero');
             return;
         }
 
@@ -253,9 +263,29 @@ class ObligacionesIndex extends Component
 
         $o->save();
 
-        $this->reset(['openModal','selectedId','archivo','numero_operacion']);
+        $this->reset([
+            'openModal',
+            'selectedId',
+            'archivo',
+            'numero_operacion',
+            'fecha_finalizado'
+        ]);
 
-        session()->flash('success','Resultado guardado.');
+        $this->dispatch(
+            'notify',
+            message:'Obligación guardada correctamente'
+        );
+    }
+
+    /* ==========================================
+       SI ARCHIVOS FALLAN
+    ========================================== */
+    public function cancelarGuardado(): void
+    {
+        $this->dispatch(
+            'notify',
+            message:'Corrige los archivos antes de continuar'
+        );
     }
 
     // =========================================================

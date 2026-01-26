@@ -199,6 +199,7 @@
 
     
     @fluxScripts
+    <x-spinner />
 </body>
 
 </html>
