@@ -64,6 +64,11 @@ class ObligacionesIndex extends Component
     public ?string $numero_operacion = null;
     public $archivo = null;
     public ?string $fecha_finalizado = null;
+    // =========================================================
+    // RECHAZOS
+    // =========================================================
+    public bool $soloLectura = false;
+    public ?string $comentario = null;
 
     // =========================================================
     // LISTENERS
@@ -72,7 +77,7 @@ class ObligacionesIndex extends Component
         'archivos-ok-obligaciones'    => 'continuarGuardado',
         'archivos-error-obligaciones' => 'cancelarGuardado',
     ];
-    
+
 
     // =========================================================
     // QUERY STRING
@@ -106,8 +111,14 @@ class ObligacionesIndex extends Component
     // =========================================================
     // HOOKS
     // =========================================================
-    public function updatingBuscar() { $this->resetPage(); }
-    public function updatingEstatus() { $this->resetPage(); }
+    public function updatingBuscar()
+    {
+        $this->resetPage();
+    }
+    public function updatingEstatus()
+    {
+        $this->resetPage();
+    }
 
     public function updatedEjercicioSeleccionado()
     {
@@ -132,30 +143,37 @@ class ObligacionesIndex extends Component
             // 🔹 FILTRO AUTOMÁTICO (NO TOCAR)
             ->where(function ($q) {
                 $q->where('estatus', '!=', 'finalizado')
-                  ->orWhereDate('fecha_vencimiento', '>=', now());
+                    ->orWhereDate('fecha_vencimiento', '>=', now());
             })
 
             // 🔹 FILTROS MANUALES
-            ->when($this->ejercicioSeleccionado,
+            ->when(
+                $this->ejercicioSeleccionado,
                 fn($w) => $w->where('ejercicio', $this->ejercicioSeleccionado)
             )
-            ->when($this->mesSeleccionado,
+            ->when(
+                $this->mesSeleccionado,
                 fn($w) => $w->where('mes', $this->mesSeleccionado)
             )
-            ->when($this->estatus,
+            ->when(
+                $this->estatus,
                 fn($w) => $w->where('estatus', $this->estatus)
             )
 
             ->when($this->buscar, function ($w) {
                 $bus = trim($this->buscar);
                 $w->where(function ($x) use ($bus) {
-                    $x->whereHas('cliente', fn($c) =>
-                        $c->where('nombre','like',"%{$bus}%")
-                          ->orWhere('razon_social','like',"%{$bus}%")
+                    $x->whereHas(
+                        'cliente',
+                        fn($c) =>
+                        $c->where('nombre', 'like', "%{$bus}%")
+                            ->orWhere('razon_social', 'like', "%{$bus}%")
                     )
-                    ->orWhereHas('obligacion', fn($o) =>
-                        $o->where('nombre','like',"%{$bus}%")
-                    );
+                        ->orWhereHas(
+                            'obligacion',
+                            fn($o) =>
+                            $o->where('nombre', 'like', "%{$bus}%")
+                        );
                 });
             })
 
@@ -169,7 +187,7 @@ class ObligacionesIndex extends Component
                 WHEN estatus='finalizado' THEN 7
                 WHEN estatus='reabierta' THEN 8
                 ELSE 99 END")
-            ->orderBy('fecha_vencimiento','asc');
+            ->orderBy('fecha_vencimiento', 'asc');
 
         $obligaciones = $q->paginate(10);
 
@@ -182,13 +200,13 @@ class ObligacionesIndex extends Component
     private function cargarEjerciciosDisponibles(): void
     {
         $this->ejerciciosDisponibles = ObligacionClienteContador::query()
-            ->where('contador_id',Auth::id())
+            ->where('contador_id', Auth::id())
             ->whereNotNull('ejercicio')
             ->select('ejercicio')
             ->distinct()
             ->orderByDesc('ejercicio')
             ->pluck('ejercicio')
-            ->map(fn($v)=>(string)$v)
+            ->map(fn($v) => (string)$v)
             ->values()
             ->all();
     }
@@ -201,16 +219,16 @@ class ObligacionesIndex extends Component
         $o = $this->findMine($id);
 
         if ($o->estatus !== 'asignada') {
-            session()->flash('error','Solo puedes iniciar obligaciones asignadas.');
+            session()->flash('error', 'Solo puedes iniciar obligaciones asignadas.');
             return;
         }
 
         $o->update([
-            'estatus'=>'en_progreso',
-            'fecha_inicio'=>now(),
+            'estatus' => 'en_progreso',
+            'fecha_inicio' => now(),
         ]);
 
-        session()->flash('success','Obligación iniciada.');
+        session()->flash('success', 'Obligación iniciada.');
     }
 
     public function openResultModal(int $id): void
@@ -218,7 +236,7 @@ class ObligacionesIndex extends Component
         $o = $this->findMine($id);
 
         $this->resetValidation();
-        $this->reset(['archivo','numero_operacion']);
+        $this->reset(['archivo', 'numero_operacion']);
 
         $this->selectedId = $o->id;
         $this->numero_operacion = $o->numero_operacion;
@@ -248,16 +266,16 @@ class ObligacionesIndex extends Component
         }
 
         if ($this->archivo instanceof UploadedFile) {
-            $upload = $this->subirArchivoResultado($o,$this->archivo);
+            $upload = $this->subirArchivoResultado($o, $this->archivo);
             $o->archivo_resultado = $upload['storage'] ?? $o->archivo_resultado;
         }
 
         $o->numero_operacion = $this->numero_operacion;
         $o->fecha_finalizado = $this->fecha_finalizado;
 
-        if(in_array($o->estatus,['asignada','en_progreso'],true)){
-            $o->estatus='realizada';
-            $o->fecha_termino=now();
+        if (in_array($o->estatus, ['asignada', 'en_progreso'], true)) {
+            $o->estatus = 'realizada';
+            $o->fecha_termino = now();
             $o->fecha_inicio ??= now();
         }
 
@@ -273,7 +291,7 @@ class ObligacionesIndex extends Component
 
         $this->dispatch(
             'notify',
-            message:'Obligación guardada correctamente'
+            message: 'Obligación guardada correctamente'
         );
     }
 
@@ -284,7 +302,7 @@ class ObligacionesIndex extends Component
     {
         $this->dispatch(
             'notify',
-            message:'Corrige los archivos antes de continuar'
+            message: 'Corrige los archivos antes de continuar'
         );
     }
 
@@ -293,14 +311,52 @@ class ObligacionesIndex extends Component
     // =========================================================
     private function findMine(int $id): ObligacionClienteContador
     {
-        return ObligacionClienteContador::where('contador_id',Auth::id())
+        return ObligacionClienteContador::where('contador_id', Auth::id())
             ->findOrFail($id);
     }
 
     private function hayTareasPendientes(int $id): bool
     {
-        return TareaAsignada::where('obligacion_cliente_contador_id',$id)
-            ->whereNotIn('estatus',['realizada','revisada','cerrada'])
+        return TareaAsignada::where('obligacion_cliente_contador_id', $id)
+            ->whereNotIn('estatus', ['realizada', 'revisada', 'cerrada'])
             ->exists();
+    }
+
+    // =========================================================
+    // RECHAZO (IGUAL QUE TAREAS)
+    // =========================================================
+    public function verRechazoObligacion(int $id): void
+    {
+        $o = $this->findMine($id);
+
+        if ($o->estatus !== 'rechazada') {
+            return;
+        }
+
+        $this->selectedId = $o->id;
+        $this->comentarioRechazo = $o->comentario;
+        $this->soloLectura = true;
+
+        $this->openModal = true;
+    }
+
+    public function corregirObligacion(int $id): void
+    {
+        $o = $this->findMine($id);
+
+        if ($o->estatus !== 'rechazada') {
+            return;
+        }
+
+        $o->update([
+            'estatus' => 'en_progreso',
+            'fecha_inicio' => now(),
+            'fecha_termino' => null,
+        ]);
+
+        $this->selectedId = $o->id;
+        $this->soloLectura = false;
+
+        $this->openModal = true;
     }
 }

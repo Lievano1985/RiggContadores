@@ -100,7 +100,7 @@
                             <td class="px-4 py-2">
                                 {{ $t->cliente->nombre ?? ($t->cliente->razon_social ?? '—') }}
                             </td>
-                            <td class="px-4 py-2 ">
+                            <td class="px-4 py-2 whitespace-nowrap ">
                                 {{ $t->ejercicio }}-{{ str_pad($t->mes, 2, '0', STR_PAD_LEFT) }}
                             </td>
 
@@ -112,7 +112,7 @@
                                 {{ $t->obligacionClienteContador?->obligacion?->nombre ?? 'Sin obligación' }}
                             </td>
 
-                            <td class="px-4 py-2 ">
+                            <td class="px-4 py-2 whitespace-nowrap ">
                                 {{ $vence ? $vence->format('Y-m-d') : '—' }}
                             </td>
 

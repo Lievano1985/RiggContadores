@@ -92,7 +92,7 @@
 
                     <tr class="{{ $vencida ? 'bg-red-50 dark:bg-red-900' : '' }}">
                         <td class="px-4 py-2">{{ $item->cliente->nombre ?? ($item->cliente->razon_social ?? '—') }}</td>
-                        <td class="px-4 py-2">
+                        <td class="px-4 py-2 whitespace-nowrap">
                             {{ $item->ejercicio }} - {{ str_pad($item->mes, 2, '0', STR_PAD_LEFT) }}
                         </td>
                         <td class="px-4 py-2">{{ $item->obligacion->nombre ?? '—' }}</td>
@@ -104,11 +104,13 @@
                             </span>
                         </td>
 
-                        <td class="px-4 py-2">
+                        <td class="px-4 py-2 whitespace-nowrap">
                             {{ $item->fecha_vencimiento ? \Carbon\Carbon::parse($item->fecha_vencimiento)->format('Y-m-d') : '—' }}
                         </td>
 
                         <td class="px-4 py-2 space-x-2">
+
+                            {{-- ASIGNADA --}}
                             @if ($item->estatus === 'asignada')
                                 <button wire:click="iniciarObligacion({{ $item->id }})"
                                     class="bg-amber-600 text-white px-3 py-1 rounded hover:bg-amber-700">
@@ -116,13 +118,24 @@
                                 </button>
                             @endif
 
+                            {{-- EN PROGRESO / REALIZADA --}}
                             @if (in_array($item->estatus, ['en_progreso', 'realizada'], true))
                                 <button wire:click="openResultModal({{ $item->id }})"
                                     class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
                                     {{ $item->estatus === 'realizada' ? 'Editar resultados' : 'Subir resultados' }}
                                 </button>
                             @endif
+
+                            {{-- RECHAZADA --}}
+                            @if ($item->estatus === 'rechazada')
+                                <button wire:click="verRechazoObligacion({{ $item->id }})"
+                                    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+                                    Ver rechazo
+                                </button>
+                            @endif
+
                         </td>
+
                     </tr>
                 @empty
                     <tr>
@@ -137,77 +150,109 @@
 
     <div>{{ $obligaciones->links() }}</div>
 
-    {{-- =========================
-        MODAL RESULTADOS
-    ========================== --}}
     @if ($openModal)
         <div class="fixed inset-0 flex items-center justify-center bg-stone-800/70 z-50 p-4">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-lg">
-                <h3 class="text-lg font-bold mb-4 text-stone-700 dark:text-white">Resultados de obligación</h3>
+                <h3 class="text-lg font-bold mb-4 text-stone-700 dark:text-white">
+                    Resultados de obligación
+                </h3>
 
                 <div class="space-y-4">
 
-                    {{-- Subir archivo --}}
-                    {{-- <div>
-                    <label class="block text-sm mb-1">Archivo (PDF, ZIP, JPG, PNG)</label>
-                    <input type="file" wire:model="archivo"
-                        class="w-full border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" />
-                    @error('archivo') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-            
-                    @if ($selectedId && ($registro = \App\Models\ObligacionClienteContador::find($selectedId)) && $registro->archivo_resultado)
-                        <div class="mt-2">
-                            <a href="{{ Storage::disk('public')->url($registro->archivo_resultado) }}" target="_blank"
-                                class="text-sm text-blue-600 hover:underline" title="Ver archivo actual">
-                                📄 Ver archivo actual
-                            </a>
+
+                    {{-- ============================= --}}
+                    {{-- SOLO SI NO ES RECHAZO --}}
+                    {{-- ============================= --}}
+                    @if (!$soloLectura)
+
+                        {{-- Archivos múltiples --}}
+                        @if ($selectedId)
+                            <div class="mt-4 border-t pt-4">
+                                <livewire:shared.archivos-adjuntos-crud :modelo="\App\Models\ObligacionClienteContador::find($selectedId)"
+                                    wire:key="archivos-obligacion-{{ $selectedId }}" />
+                            </div>
+                        @endif
+
+                        {{-- Número de operación --}}
+                        <div>
+                            <label class="block text-sm mb-1">
+                                Número de operación
+                            </label>
+
+                            <input type="text" wire:model.defer="numero_operacion"
+                                class="w-full px-3 py-2 border rounded
+                                   dark:bg-gray-700 dark:text-white
+                                   focus:outline-amber-600 focus:outline" />
+
+                            @error('numero_operacion')
+                                <span class="text-red-600 text-sm">{{ $message }}</span>
+                            @enderror
                         </div>
-                    @endif
-                </div> --}}
-                    {{-- Archivos múltiples --}}
-                    @if ($selectedId)
-                        <div class="mt-4 border-t pt-4">
-                            <livewire:shared.archivos-adjuntos-crud :modelo="\App\Models\ObligacionClienteContador::find($selectedId)"
-                                wire:key="archivos-obligacion-{{ $selectedId }}" />
+
+                        {{-- Fecha oficial --}}
+                        <div>
+                            <label class="block text-sm mb-1">
+                                Fecha oficial del documento / línea de captura
+                            </label>
+
+                            <input type="date" wire:model.defer="fecha_finalizado"
+                                class="w-full px-3 py-2 border rounded
+                                   dark:bg-gray-700 dark:text-white
+                                   focus:outline-amber-600 focus:outline" />
+
+                            @error('fecha_finalizado')
+                                <span class="text-red-600 text-sm">{{ $message }}</span>
+                            @enderror
                         </div>
+
                     @endif
 
-                    {{-- Número de operación --}}
+                    {{-- ============================= --}}
+                    {{-- COMENTARIO (ÚNICO) --}}
+                    {{-- ============================= --}}
                     <div>
-                        <label class="block text-sm mb-1">Número de operación</label>
-                        <input type="text" wire:model.defer="numero_operacion"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" />
-                        @error('numero_operacion')
-                            <span class="text-red-600 text-sm">{{ $message }}</span>
-                        @enderror
-                    </div>
+                        <label class="block text-sm mb-1">
+                            Comentario
+                        </label>
 
-                    {{-- Fecha oficial que arroja el documento (fecha_finalizado) --}}
-                    <div>
-                        <label class="block text-sm mb-1">Fecha oficial del documento / línea de captura</label>
-                        <input type="date" wire:model.defer="fecha_finalizado"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline" />
-                        @error('fecha_finalizado')
-                            <span class="text-red-600 text-sm">{{ $message }}</span>
-                        @enderror
+                        <textarea wire:model.defer="comentario" @if ($soloLectura) readonly @endif
+                            class="w-full px-3 py-2 border rounded
+                               dark:bg-gray-700 dark:text-white
+                               focus:outline-amber-600 focus:outline">
+                    </textarea>
                     </div>
                 </div>
 
-
+                {{-- ============================= --}}
+                {{-- BOTONES --}}
+                {{-- ============================= --}}
                 <div class="flex justify-end space-x-2 mt-6">
+
+                    {{-- Cerrar --}}
                     <button wire:click="$set('openModal', false)"
-                        class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded hover:bg-gray-400">
-                        Cancelar
+                        class="px-4 py-2 bg-gray-300 dark:bg-gray-700
+                           text-black dark:text-white rounded hover:bg-gray-400">
+                        Cerrar
                     </button>
 
-                    <button wire:click="saveResult" @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
-                        class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
-                        Guardar
-                    </button>
+                    {{-- Rechazo --}}
+                    @if ($soloLectura)
+                        <button wire:click="corregirObligacion({{ $selectedId }})"
+                            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
+                            Corregir
+                        </button>
+                    @else
+                        <button wire:click="saveResult" @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
+                            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
+                            Guardar
+                        </button>
+                    @endif
+
                 </div>
+
             </div>
         </div>
     @endif
-
 
 
 

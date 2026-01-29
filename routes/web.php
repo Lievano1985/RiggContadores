@@ -14,11 +14,13 @@ use App\Livewire\Catalogos\ObligacionesCrud;
 use App\Livewire\Catalogos\ActividadesCrud;
 use App\Livewire\Catalogos\ObligacionesTareas;
 use App\Livewire\Catalogos\TareasCrud;
+use App\Livewire\Clientes\ClienteContrasena;
 use App\Livewire\Clientes\ClientesPortal;
 use App\Livewire\Contador\MisTareasIndex;
 use App\Livewire\Contador\ObligacionesIndex;
 use App\Livewire\Control\TareasAsignadasCrud;
 use App\Livewire\Control\ValidacionesIndex;
+use App\Livewire\Notificaciones\ListaClientes;
 use App\Livewire\Usuarios\UsuariosIndex;
 
 Route::get('/', function () { return view('welcome');})->name('home');
@@ -40,7 +42,12 @@ Route::middleware(['auth', 'role:admin_despacho||super_admin'])->group(function 
     Route::get('/catalogos/Obligaciones-tareas',ObligacionesTareas::class)->name('catalogos.obligaciones-tareas');
     Route::get('/control/validaciones',ValidacionesIndex::class)->name('control.validaciones.index');
 
+    //**#####Notificaciones######### */
 
+    Route::get('/notificaciones/clientes', ListaClientes::class)->name('notificaciones.clientes.index');
+
+    Route::get('/Notificaciones/{cliente}/Notificaciones', [ClienteContrasena::class, 'show'])
+    ->name('clientes.notificaciones.show');
 });
 
 

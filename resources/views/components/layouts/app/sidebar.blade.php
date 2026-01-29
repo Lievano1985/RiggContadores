@@ -83,17 +83,17 @@
                                 class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Actividades Economicas') }}
                             </flux:navlist.item>
-{{-- 
+                            {{-- 
                             <flux:navlist.item icon="banknotes" :href="route('catalogos.obligaciones-crud')"
                                 :current="request()->routeIs('catalogos.obligaciones-crud')" wire:navigate
                                 class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Obligaciones') }}
                             </flux:navlist.item> --}}
                             <flux:navlist.item icon="banknotes" :href="route('catalogos.obligaciones-tareas')"
-                            :current="request()->routeIs('catalogos.obligaciones-tareas')" wire:navigate
-                            class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
-                            {{ __('Obligaciones/Tareas') }}
-                        </flux:navlist.item>
+                                :current="request()->routeIs('catalogos.obligaciones-tareas')" wire:navigate
+                                class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
+                                {{ __('Obligaciones/Tareas') }}
+                            </flux:navlist.item>
 
                             {{-- <flux:navlist.item icon="briefcase" :href="route('catalogos.tareas-crud')"
                                 :current="request()->routeIs('catalogos.tareas-crud')" wire:navigate
@@ -120,12 +120,19 @@
                             {{ __('Mis Asignaciones') }}
                         </flux:navlist.item>
                         @hasrole('admin_despacho')
+                            <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
+                                :current="request()->routeIs('control.validaciones.index')" wire:navigate
+                                class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
+                                {{ __('Validaciones') }}
+                            </flux:navlist.item>
 
-                        <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
-                            :current="request()->routeIs('control.validaciones.index')" wire:navigate
-                            class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
-                            {{ __('Validaciones') }}
-                        </flux:navlist.item>
+
+                            <flux:navlist.item icon="envelope-open" :href="route('notificaciones.clientes.index')"
+                                :current="request()->routeIs('notificaciones.clientes.index')" wire:navigate
+                                class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
+                                {{ __('Notificaciones') }}
+                            </flux:navlist.item>
+
 
                             <flux:navlist.item icon="user-group" :href="route('Usuarios.index')"
                                 :current="request()->routeIs('Usuarios.index')" wire:navigate
@@ -197,7 +204,7 @@
 
 
 
-    
+
     @fluxScripts
     <x-spinner />
 </body>
