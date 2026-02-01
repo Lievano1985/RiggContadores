@@ -42,7 +42,7 @@ class DatosGenerales extends Component
     public function guardar()
     {
         $this->validaciones();
-    
+
         $this->cliente->update([
             'nombre' => $this->nombre,
             'rfc' => $this->rfc,
@@ -63,7 +63,7 @@ class DatosGenerales extends Component
             'rfc_representante' => $this->rfc_representante,
             'correo_representante' => $this->correo_representante,
         ]);
-    
+
         //  Sincronizar datos en el usuario si existe
         $user = User::where('cliente_id', $this->cliente->id)->first();
         if ($user) {
@@ -72,51 +72,50 @@ class DatosGenerales extends Component
                 'email' => $this->correo,
             ]);
         }
-    
+
         if ($this->archivoContrato) {
             $this->procesarArchivoContrato();
         }
-    
+
         $this->modoEdicion = false;
         $this->modoKey++; // fuerza repintado del switch
 
         session()->flash('message', 'Datos generales actualizados correctamente.');
         $this->dispatch('DatosFiscalesActualizados');
-
     }
     public function updatedClienteTieneTrabajadores($value)
-{
-    $this->cliente->tiene_trabajadores = $value;
-    $this->loadObligacionesDisponibles();
+    {
+        $this->cliente->tiene_trabajadores = $value;
+        $this->loadObligacionesDisponibles();
 
-    // Calcular obligaciones válidas y huérfanas
-    $allowed = $this->obligacionesDisponibles->pluck('id')->toArray();
-    $orphan  = array_diff($this->obligacionesSeleccionadas, $allowed);
+        // Calcular obligaciones válidas y huérfanas
+        $allowed = $this->obligacionesDisponibles->pluck('id')->toArray();
+        $orphan  = array_diff($this->obligacionesSeleccionadas, $allowed);
 
-    if (!empty($orphan)) {
-        // 1. Eliminar relación cliente-obligación
-        $this->cliente->obligaciones()->detach($orphan);
+        if (!empty($orphan)) {
+            // 1. Eliminar relación cliente-obligación
+            $this->cliente->obligaciones()->detach($orphan);
 
-        // 2. Obtener asignaciones afectadas
-        $asignaciones = \App\Models\ObligacionClienteContador::where('cliente_id', $this->cliente->id)
-            ->whereIn('obligacion_id', $orphan)
-            ->get();
+            // 2. Obtener asignaciones afectadas
+            $asignaciones = \App\Models\ObligacionClienteContador::where('cliente_id', $this->cliente->id)
+                ->whereIn('obligacion_id', $orphan)
+                ->get();
 
-        // 3. Eliminar tareas y luego asignaciones
-        foreach ($asignaciones as $asignacion) {
-            \App\Models\TareaAsignada::where('obligacion_cliente_contador_id', $asignacion->id)->delete();
-            $asignacion->delete();
+            // 3. Eliminar tareas y luego asignaciones
+            foreach ($asignaciones as $asignacion) {
+                \App\Models\TareaAsignada::where('obligacion_cliente_contador_id', $asignacion->id)->delete();
+                $asignacion->delete();
+            }
+
+            // 4. Actualizar lista local
+            $this->obligacionesSeleccionadas = array_values(
+                array_intersect($this->obligacionesSeleccionadas, $allowed)
+            );
+
+            // 5. Disparar evento Livewire
+            $this->dispatch('obligacionActualizada');
         }
-
-        // 4. Actualizar lista local
-        $this->obligacionesSeleccionadas = array_values(
-            array_intersect($this->obligacionesSeleccionadas, $allowed)
-        );
-
-        // 5. Disparar evento Livewire
-        $this->dispatch('obligacionActualizada');
     }
-}
 
 
     public function validaciones()
@@ -145,11 +144,13 @@ class DatosGenerales extends Component
             ]);
         }
 
-        if (!empty($this->curp) && strlen($this->curp) !== 18) {
+        // CURP obligatorio solo para persona física
+        if ($this->tipo_persona === 'fisica' && strlen($this->curp) !== 18) {
             throw ValidationException::withMessages([
-                'curp' => 'La CURP debe tener exactamente 18 caracteres.',
+                'curp' => 'La CURP para persona física debe tener exactamente 18 caracteres.',
             ]);
         }
+
 
         if (!empty($this->rfc_representante) && strlen($this->rfc_representante) !== 13) {
             throw ValidationException::withMessages([
@@ -157,7 +158,12 @@ class DatosGenerales extends Component
             ]);
         }
     }
-
+    public function updatedTipoPersona($value)
+    {
+        if ($value === 'moral') {
+            $this->curp = null;
+        }
+    }
     public function procesarArchivoContrato()
     {
         $despacho = $this->cliente->despacho;

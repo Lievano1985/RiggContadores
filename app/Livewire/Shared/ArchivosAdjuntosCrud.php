@@ -27,9 +27,10 @@ class ArchivosAdjuntosCrud extends Component
     {
         return [
             'nuevosArchivos' => ['array'],
-            'nuevosArchivos.*.nombre' => ['required','string','max:255'],
+            'nuevosArchivos.*.nombre' => ['required', 'string', 'max:255'],
             'nuevosArchivos.*.file' => [
-                'required','file',
+                'required',
+                'file',
                 'mimes:pdf,zip,jpg,jpeg,png',
                 'max:10240'
             ],
@@ -50,7 +51,7 @@ class ArchivosAdjuntosCrud extends Component
 
     public function agregarArchivo(): void
     {
-        $this->nuevosArchivos[] = ['nombre'=>'','file'=>null];
+        $this->nuevosArchivos[] = ['nombre' => '', 'file' => null];
     }
 
     public function quitarArchivo(int $index): void
@@ -70,7 +71,7 @@ class ArchivosAdjuntosCrud extends Component
         $archivo->delete();
         $this->resetFormulario();
 
-        $this->dispatch('notify', message:'Archivo eliminado');
+        $this->dispatch('notify', message: 'Archivo eliminado');
     }
 
     /* ==========================================
@@ -80,31 +81,30 @@ class ArchivosAdjuntosCrud extends Component
     public function ejecutarDesdePadre($origen = null)
     {
         $this->origen = $origen;
-    
+
         try {
-    
+
             $this->js("window.dispatchEvent(new CustomEvent('spinner-on'))");
-    
+
             $this->guardar();
-    
+
             // devolver según origen
             $this->dispatch("archivos-ok-$origen");
-    
         } catch (\Throwable $e) {
-    
-/*             $this->reset('nuevosArchivos');
- */            $this->resetErrorBag();
+
+            /*             $this->reset('nuevosArchivos');
+ */
+            $this->resetErrorBag();
             $this->resetValidation();
-    
+
             $this->dispatch("archivos-error-$origen");
-    
         } finally {
-    
+
             $this->js("window.dispatchEvent(new CustomEvent('spinner-off'))");
         }
     }
-    
-    
+
+
 
 
     public function guardar(): void
@@ -118,9 +118,10 @@ class ArchivosAdjuntosCrud extends Component
 
         foreach ($this->nuevosArchivos as $item) {
 
-            if($this->modelo->archivos()
-                ->where('nombre',$item['nombre'])
-                ->exists()){
+            if ($this->modelo->archivos()
+                ->where('nombre', $item['nombre'])
+                ->exists()
+            ) {
                 $this->addError(
                     'nuevosArchivos',
                     "Ya existe '{$item['nombre']}'"
@@ -128,16 +129,37 @@ class ArchivosAdjuntosCrud extends Component
                 throw new \Exception('Duplicado');
             }
 
+
             $extension = $item['file']->getClientOriginalExtension();
 
-            $nombreFinal =
-                now()->format('Ymd_His').'_'.
-                \Str::slug($item['nombre']).'.'.$extension;
+            // ----------------------------------
+            // Prefijo ejercicio-mes si existe
+            // ----------------------------------
+            $prefijo = null;
+
+            if (
+                !empty($modelo->ejercicio) &&
+                !empty($modelo->mes)
+            ) {
+                $prefijo =
+                    $modelo->ejercicio . '-' .
+                    str_pad($modelo->mes, 2, '0', STR_PAD_LEFT);
+            }
+
+            // ----------------------------------
+            // Nombre final
+            // ----------------------------------
+            $nombreBase = \Str::slug($item['nombre']);
+
+            $nombreFinal = $prefijo
+                ? $prefijo . '-' . $nombreBase . '.' . $extension
+                : $nombreBase . '.' . $extension;
+
 
             $rutaStorage = null;
             $urlDrive = null;
 
-            if(in_array($politica,['storage_only','both'])){
+            if (in_array($politica, ['storage_only', 'both'])) {
                 $rutaStorage = $item['file']->storeAs(
                     'adjuntos',
                     $nombreFinal,
@@ -145,16 +167,16 @@ class ArchivosAdjuntosCrud extends Component
                 );
             }
 
-            if(in_array($politica,['drive_only','both'])){
+            if (in_array($politica, ['drive_only', 'both'])) {
 
                 $folderId = null;
 
-                if($modelo->carpeta_drive_id){
+                if ($modelo->carpeta_drive_id) {
                     $cd = CarpetaDrive::find($modelo->carpeta_drive_id);
                     $folderId = $cd?->drive_folder_id;
                 }
 
-                if($folderId){
+                if ($folderId) {
                     $drive = app(DriveService::class);
                     $res = $drive->subirArchivo(
                         $nombreFinal,
@@ -170,9 +192,9 @@ class ArchivosAdjuntosCrud extends Component
             }
 
             $this->modelo->archivos()->create([
-                'nombre'=>$item['nombre'],
-                'archivo'=>$rutaStorage,
-                'archivo_drive_url'=>$urlDrive,
+                'nombre' => $item['nombre'],
+                'archivo' => $rutaStorage,
+                'archivo_drive_url' => $urlDrive,
             ]);
         }
 
@@ -181,8 +203,8 @@ class ArchivosAdjuntosCrud extends Component
 
     public function render()
     {
-        return view('livewire.shared.archivos-adjuntos-crud',[
-            'archivos'=>$this->modelo->archivos()->latest()->get(),
+        return view('livewire.shared.archivos-adjuntos-crud', [
+            'archivos' => $this->modelo->archivos()->latest()->get(),
         ]);
     }
 }

@@ -45,6 +45,9 @@ class MisTareasIndex extends Component
     // -----------------------------
     // Modal Seguimiento
     // -----------------------------
+    public ?string $modalCliente = null;
+    public ?string $modalTarea = null;
+    public ?string $modalObligacion = null;
     public bool $openModal = false;
     public ?int $tareaId = null;
     public $archivo = null;
@@ -72,7 +75,7 @@ class MisTareasIndex extends Component
         'archivos-ok-tareas'    => 'continuarGuardadoTarea',
         'archivos-error-tareas' => 'cancelarGuardadoTarea',
     ];
-    
+
     // -----------------------------
     // Validación
     // -----------------------------
@@ -91,7 +94,6 @@ class MisTareasIndex extends Component
     public function mount(): void
     {
         $this->cargarEjerciciosDisponibles();
-
     }
 
 
@@ -198,14 +200,28 @@ class MisTareasIndex extends Component
     public function abrirSeguimiento(int $id): void
     {
         $t = $this->findMine($id);
-
-        $this->tareaId = $t->id;
+    
+        $this->tareaSeleccionada = $t;
         $this->comentario = $t->comentario;
         $this->archivo = null;
-
+    
+        // 👇 TITULOS
+        $this->modalCliente =
+            $t->cliente->nombre
+            ?? $t->cliente->razon_social
+            ?? 'Cliente';
+    
+        $this->modalTarea = $t->tareaCatalogo->nombre ?? 'Tarea';
+    
+        $this->modalObligacion =
+            $t->obligacionClienteContador?->obligacion?->nombre;
+    
+        $this->soloLectura = false;
+    
         $this->resetValidation();
         $this->openModal = true;
     }
+    
 
     public function guardarSeguimiento(): void
     {
@@ -242,9 +258,8 @@ class MisTareasIndex extends Component
 
         $this->dispatch(
             'notify',
-            message:'Tarea finalizada correctamente.'
+            message: 'Tarea finalizada correctamente.'
         );
-   
     }
 
 
@@ -264,30 +279,34 @@ class MisTareasIndex extends Component
     public function terminar(int $id): void
     {
         $t = $this->findMine($id);
-
+    
         if ($t->estatus !== 'en_progreso') {
-            $this->dispatch(
-                'notify',
-                message:'Solo puedes terminar tareas en progreso.'
-            );
             return;
         }
-
-
-      
-
-
+    
         $this->tareaSeleccionada = $t;
-        $this->comentario = $t->comentario; // 👈 importante
-
+        $this->comentario = $t->comentario;
+    
+        // 👇 TITULOS
+        $this->modalCliente =
+            $t->cliente->nombre
+            ?? $t->cliente->razon_social
+            ?? 'Cliente';
+    
+        $this->modalTarea = $t->tareaCatalogo->nombre ?? 'Tarea';
+    
+        $this->modalObligacion =
+            $t->obligacionClienteContador?->obligacion?->nombre;
+    
+        $this->soloLectura = false;
         $this->openModal = true;
     }
+    
 
 
     private function findMine(int $id): TareaAsignada
     {
         return TareaAsignada::where('contador_id', Auth::id())->findOrFail($id);
-
     }
 
 
@@ -303,74 +322,98 @@ class MisTareasIndex extends Component
         if (!$this->tareaSeleccionada) {
             return;
         }
-    
+
         $t = $this->findMine($this->tareaSeleccionada->id);
-    
+
         $t->update([
             'estatus'       => 'realizada',
             'fecha_termino' => now(),
             'comentario'    => $this->comentario,
         ]);
-    
+
         $this->reset([
             'openModal',
             'tareaSeleccionada',
             'comentario',
             'archivo'
         ]);
-    
-    
+
+
         $this->dispatch(
             'notify',
-            message:'Tarea finalizada correctamente.'
+            message: 'Tarea finalizada correctamente.'
         );
-
-
     }
     public function cancelarGuardadoTarea(): void
+    {
+
+        $this->dispatch(
+            'notify',
+            message: 'Corrige los archivos antes de continuar'
+        );
+    }
+
+
+
+    public function verRechazo(int $id): void
 {
-  
-    $this->dispatch(
-        'notify',
-        message:'Corrige los archivos antes de continuar'
-    );
+    $t = $this->findMine($id);
 
+    if ($t->estatus !== 'rechazada') {
+        return;
+    }
 
+    $this->tareaSeleccionada = $t;
+    $this->comentario = $t->comentario;
+
+    // 👇 TITULOS
+    $this->modalCliente =
+        $t->cliente->nombre
+        ?? $t->cliente->razon_social
+        ?? 'Cliente';
+
+    $this->modalTarea = $t->tareaCatalogo->nombre ?? 'Tarea';
+
+    $this->modalObligacion =
+        $t->obligacionClienteContador?->obligacion?->nombre;
+
+    $this->soloLectura = true;
+    $this->openModal = true;
 }
 
 
-   
-    public function verRechazo(int $id): void
-    {
-        $t = $this->findMine($id);
 
-        if ($t->estatus !== 'rechazada') {
-            return;
-        }
 
-        $this->tareaSeleccionada = $t;
-        $this->comentario = $t->comentario;
-        $this->soloLectura = true;
-        $this->openModal = true;
+public function corregir(int $id): void
+{
+    $t = $this->findMine($id);
+
+    if ($t->estatus !== 'rechazada') {
+        return;
     }
-    public function corregir(int $id): void
-    {
-        $t = $this->findMine($id);
 
-        if ($t->estatus !== 'rechazada') {
-            return;
-        }
+    $t->update([
+        'estatus' => 'en_progreso',
+        'fecha_inicio' => now(),
+        'fecha_termino' => null,
+    ]);
 
-        $t->update([
-            'estatus' => 'en_progreso',
-            'fecha_inicio' => now(),
-            'fecha_termino' => null,
-        ]);
+    $this->tareaSeleccionada = $t;
+    $this->comentario = $t->comentario;
 
-        $this->tareaSeleccionada = $t;
-        $this->comentario = $t->comentario;
+    // 👇 TITULOS
+    $this->modalCliente =
+        $t->cliente->nombre
+        ?? $t->cliente->razon_social
+        ?? 'Cliente';
 
-        $this->soloLectura = false;
-        $this->openModal = true;
-    }
+    $this->modalTarea = $t->tareaCatalogo->nombre ?? 'Tarea';
+
+    $this->modalObligacion =
+        $t->obligacionClienteContador?->obligacion?->nombre;
+
+    $this->soloLectura = false;
+    $this->openModal = true;
+}
+
 }

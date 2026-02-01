@@ -74,14 +74,18 @@
             <!-- CURP -->
             <div>
                 <label class="block text-sm font-medium mb-1">CURP</label>
-                <input type="text" wire:model="curp"
+                <input type="text" wire:model.defer="curp" @disabled(!$modoEdicion || $tipo_persona === 'moral')
                     class="uppercase w-full px-3 py-2 border rounded-md 
                            dark:bg-gray-700 dark:text-white 
                            border-gray-300 dark:border-gray-600 
                            focus:border-amber-600 focus:ring focus:ring-amber-500/40 
                            focus:outline-none"
-                    @disabled(!$modoEdicion) oninput="this.value = this.value.toUpperCase()" required>
-                @error('curp') <div class="text-red-500 text-xs mt-1">{{ $message }}</div> @enderror
+                           oninput="this.value = this.value.toUpperCase()"
+
+                           @required($tipo_persona === 'fisica')>
+                           @error('curp')
+                           <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                       @enderror
             </div>
 
             <!-- Correo -->

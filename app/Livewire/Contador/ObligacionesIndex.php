@@ -60,10 +60,12 @@ class ObligacionesIndex extends Component
     // =========================================================
     public bool $openModal = false;
     public ?int $selectedId = null;
-
     public ?string $numero_operacion = null;
     public $archivo = null;
     public ?string $fecha_finalizado = null;
+    public ?string $modalCliente = null;
+    public ?string $modalObligacion = null;
+
     // =========================================================
     // RECHAZOS
     // =========================================================
@@ -241,7 +243,13 @@ class ObligacionesIndex extends Component
         $this->selectedId = $o->id;
         $this->numero_operacion = $o->numero_operacion;
         $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
-
+        $this->comentario = $o->comentario;
+        $this->modalCliente =
+            $o->cliente->nombre
+            ?? $o->cliente->razon_social
+            ?? 'Cliente';
+        $this->modalObligacion = $o->obligacion->nombre ?? 'Obligación';
+        $this->soloLectura = false;
         $this->openModal = true;
     }
 
@@ -273,11 +281,15 @@ class ObligacionesIndex extends Component
         $o->numero_operacion = $this->numero_operacion;
         $o->fecha_finalizado = $this->fecha_finalizado;
 
+
+        $o->comentario = $this->comentario;
+
         if (in_array($o->estatus, ['asignada', 'en_progreso'], true)) {
             $o->estatus = 'realizada';
             $o->fecha_termino = now();
             $o->fecha_inicio ??= now();
         }
+
 
         $o->save();
 
@@ -286,8 +298,11 @@ class ObligacionesIndex extends Component
             'selectedId',
             'archivo',
             'numero_operacion',
-            'fecha_finalizado'
+            'fecha_finalizado',
+            'comentario',
+            'soloLectura',
         ]);
+
 
         $this->dispatch(
             'notify',
@@ -326,37 +341,71 @@ class ObligacionesIndex extends Component
     // RECHAZO (IGUAL QUE TAREAS)
     // =========================================================
     public function verRechazoObligacion(int $id): void
-    {
-        $o = $this->findMine($id);
+{
+    $o = $this->findMine($id);
 
-        if ($o->estatus !== 'rechazada') {
-            return;
-        }
-
-        $this->selectedId = $o->id;
-        $this->comentarioRechazo = $o->comentario;
-        $this->soloLectura = true;
-
-        $this->openModal = true;
+    if ($o->estatus !== 'rechazada') {
+        return;
     }
 
-    public function corregirObligacion(int $id): void
-    {
-        $o = $this->findMine($id);
+    // Datos base
+    $this->selectedId = $o->id;
+    $this->numero_operacion = $o->numero_operacion;
+    $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
+    $this->comentario = $o->comentario;
 
-        if ($o->estatus !== 'rechazada') {
-            return;
-        }
+    // Títulos modal
+    $this->modalCliente =
+        $o->cliente->nombre
+        ?? $o->cliente->razon_social
+        ?? 'Cliente';
 
-        $o->update([
-            'estatus' => 'en_progreso',
-            'fecha_inicio' => now(),
-            'fecha_termino' => null,
-        ]);
+    $this->modalObligacion =
+        $o->obligacion->nombre
+        ?? 'Obligación';
 
-        $this->selectedId = $o->id;
-        $this->soloLectura = false;
+    // Modo lectura
+    $this->soloLectura = true;
 
-        $this->openModal = true;
+    $this->openModal = true;
+}
+
+
+public function corregirObligacion(int $id): void
+{
+    $o = $this->findMine($id);
+
+    if ($o->estatus !== 'rechazada') {
+        return;
     }
+
+    // Cambia estatus
+    $o->update([
+        'estatus' => 'en_progreso',
+        'fecha_inicio' => now(),
+        'fecha_termino' => null,
+    ]);
+
+    // Datos base
+    $this->selectedId = $o->id;
+    $this->numero_operacion = $o->numero_operacion;
+    $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
+    $this->comentario = $o->comentario;
+
+    // Títulos modal
+    $this->modalCliente =
+        $o->cliente->nombre
+        ?? $o->cliente->razon_social
+        ?? 'Cliente';
+
+    $this->modalObligacion =
+        $o->obligacion->nombre
+        ?? 'Obligación';
+
+    // Ya editable
+    $this->soloLectura = false;
+
+    $this->openModal = true;
+}
+
 }

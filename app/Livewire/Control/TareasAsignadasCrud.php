@@ -114,11 +114,25 @@ class TareasAsignadasCrud extends Component
 
         // 🔍 Búsqueda
         if (!empty($this->buscarTarea)) {
+
             $texto = trim($this->buscarTarea);
-            $query->whereHas('tareaCatalogo', function ($q) use ($texto) {
-                $q->where('nombre', 'like', "%{$texto}%");
+        
+            $query->where(function ($q) use ($texto) {
+        
+                // Buscar por nombre de tarea
+                $q->whereHas('tareaCatalogo', function ($sub) use ($texto) {
+                    $sub->where('nombre', 'like', "%{$texto}%");
+                })
+        
+                // O buscar por nombre de obligación
+                ->orWhereHas('obligacionClientecontador.obligacion', function ($sub) use ($texto) {
+                    $sub->where('nombre', 'like', "%{$texto}%");
+                });
+        
             });
+        
         }
+        
 
         /* ===========================
          | AUTOMÁTICO

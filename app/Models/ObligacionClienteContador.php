@@ -20,6 +20,8 @@ class ObligacionClienteContador extends Model
 {
     protected $casts = [
         'id' => 'integer',
+        'fecha_finalizado' => 'date',
+
     ];
     protected $table = 'obligacion_cliente_contador';
 

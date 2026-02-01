@@ -212,14 +212,7 @@
                         <p><strong>Cliente:</strong> {{ $obligacionSeleccionada->cliente->nombre }}</p>
                         <p><strong>Obligación:</strong> {{ $obligacionSeleccionada->obligacion->nombre }}</p>
                         <p><strong>Contador:</strong> {{ $obligacionSeleccionada->contador->name ?? '—' }}</p>
-                        <p>
-                            <strong>Fecha vencimiento:</strong>
-                            {{ 
-                                $obligacionSeleccionada->fecha_vencimiento
-                                    ? \Carbon\Carbon::parse($obligacionSeleccionada->fecha_vencimiento)->format('Y-m-d')
-                                    : '—'
-                            }}
-                        </p>
+                   
                         
                         <p class="mt-1">
                             <strong>Estatus:</strong>
@@ -244,7 +237,14 @@
                                 @endforeach
                             </div>
                         @endif
-
+                        <p>
+                            <strong>Fecha vencimiento:</strong>
+                            {{ 
+                                $obligacionSeleccionada->fecha_finalizado
+                                    ? \Carbon\Carbon::parse($obligacionSeleccionada->fecha_finalizado)->format('Y-m-d')
+                                    : '—'
+                            }}
+                        </p>
                         {{-- Rechazo obligación --}}
                         @if (!$mostrarRechazoObligacion)
                             <button wire:click="$set('mostrarRechazoObligacion', true)"

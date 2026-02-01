@@ -153,9 +153,16 @@
     @if ($openModal)
         <div class="fixed inset-0 flex items-center justify-center bg-stone-800/70 z-50 p-4">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-lg">
-                <h3 class="text-lg font-bold mb-4 text-stone-700 dark:text-white">
-                    Resultados de obligación
-                </h3>
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold text-stone-700 dark:text-white">
+                        {{ $modalCliente }}
+                    </h3>
+                
+                    <p class="text-sm text-gray-600 dark:text-gray-300">
+                        Resultados de obligación – {{ $modalObligacion }}
+                    </p>
+                </div>
+                
 
                 <div class="space-y-4">
 

@@ -171,8 +171,8 @@
             </table>
         </div>
 
-        <div>{{ $tareas->links() }}</div>
-
+{{--         <div>{{ $tareas->links() }}</div>
+ --}}
         {{-- =========================
             MODAL SEGUIMIENTO
         ========================== --}}
@@ -180,10 +180,20 @@
             <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
                 <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">
 
-                    <h4 class="text-lg font-bold mb-4 text-stone-600">
-                        Finalizar tarea
-                    </h4>
-
+                    <div class="mb-4">
+                        <h4 class="text-lg font-bold text-stone-600">
+                            {{ $modalCliente }}
+                        </h4>
+                    
+                        <p class="text-sm text-gray-600 dark:text-gray-300">
+                            Resultados de tarea - {{ $modalTarea }}
+                    
+                            @if ($modalObligacion)
+                                – {{ $modalObligacion }}
+                            @endif
+                        </p>
+                    </div>
+                    
                     {{-- Comentario si está en estatus rechazado --}}
                     @if ($tareaSeleccionada->estatus === 'rechazada')
                         <div class="mb-4">
