@@ -60,6 +60,9 @@
                                 'rechazada' => 'bg-red-600',
                                 default => 'bg-stone-600',
                             };
+
+
+                            
                             $venceClass = $vence
                                 ? ($vence->isPast()
                                     ? 'text-red-600'
