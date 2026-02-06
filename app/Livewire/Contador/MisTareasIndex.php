@@ -194,6 +194,7 @@ class MisTareasIndex extends Component
                 );
             }
 
+            
             if (in_array($politica, ['drive_only', 'both'])) {
                 // Usar carpeta específica si viene en la tarea (carpeta_drive_id)
                 $folderId = null;

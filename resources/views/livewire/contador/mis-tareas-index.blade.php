@@ -63,6 +63,7 @@
 
 
                             
+
                             $venceClass = $vence
                                 ? ($vence->isPast()
                                     ? 'text-red-600'
