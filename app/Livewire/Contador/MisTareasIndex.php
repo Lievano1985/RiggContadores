@@ -30,6 +30,8 @@ class MisTareasIndex extends Component
     // -----------------------------
     public ?string $buscar = '';
     public ?string $estatus = '';
+    public ?string $cliente_id = null; // 👈 NUEVO
+    public array $clientesDisponibles = [];
 
     /**
      * IMPORTANTE:
@@ -94,9 +96,30 @@ class MisTareasIndex extends Component
     public function mount(): void
     {
         $this->cargarEjerciciosDisponibles();
+        $this->cargarClientesDisponibles(); // 👈
+
     }
 
-
+    private function cargarClientesDisponibles(): void
+    {
+        $this->clientesDisponibles = TareaAsignada::query()
+            ->where('contador_id', Auth::id())
+            ->whereNotNull('cliente_id')
+            ->with('cliente:id,nombre,razon_social')
+            ->get()
+            ->pluck('cliente')
+            ->unique('id')
+            ->values()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'nombre' => $c->nombre ?? $c->razon_social
+            ])
+            ->toArray();
+    }
+    public function updatingClienteId()
+{
+    $this->resetPage();
+}
     // =========================================================
     // REACCIONES A FILTROS (reset paginación)
     // =========================================================
@@ -143,7 +166,10 @@ class MisTareasIndex extends Component
                 'obligacionClienteContador.obligacion',
             ])
             ->where('contador_id', Auth::id())
-
+            ->when(
+                $this->cliente_id,
+                fn ($q) => $q->where('cliente_id', $this->cliente_id)
+            )
             ->when(
                 $this->ejercicio,
                 fn($q) =>
@@ -161,20 +187,18 @@ class MisTareasIndex extends Component
             // Buscar
             ->when($this->buscar, function ($q) {
                 $bus = trim($this->buscar);
-
+            
                 $q->where(function ($w) use ($bus) {
-                    $w->whereHas('cliente', function ($c) use ($bus) {
-                        $c->where('nombre', 'like', "%{$bus}%")
-                            ->orWhere('razon_social', 'like', "%{$bus}%");
+            
+                    $w->whereHas('tareaCatalogo', function ($t) use ($bus) {
+                        $t->where('nombre', 'like', "%{$bus}%");
                     })
-                        ->orWhereHas('tareaCatalogo', function ($t) use ($bus) {
-                            $t->where('nombre', 'like', "%{$bus}%");
-                        })
-                        ->orWhereHas('obligacionClienteContador.obligacion', function ($o) use ($bus) {
-                            $o->where('nombre', 'like', "%{$bus}%");
-                        });
+                    ->orWhereHas('obligacionClienteContador.obligacion', function ($o) use ($bus) {
+                        $o->where('nombre', 'like', "%{$bus}%");
+                    });
                 });
             })
+            
 
             // Orden
             ->orderBy('fecha_limite', 'asc')

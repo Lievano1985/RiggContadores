@@ -45,10 +45,22 @@
                     <option value="cerrada">Cerrada</option>
                     <option value="reabierta">Reabierta</option>
                 </select>
+                {{-- Filtro Cliente --}}
+                <select wire:model.live="cliente_id"
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+
+                    <option value="">Cliente (todos)</option>
+
+                    @foreach ($clientesDisponibles as $c)
+                        <option value="{{ $c['id'] }}">
+                            {{ $c['nombre'] }}
+                        </option>
+                    @endforeach
+                </select>
 
                 {{-- Buscar --}}
-                <input type="text" placeholder="Buscar (cliente / tarea / obligación)" wire:model.live="buscar"
-                    class="w-72 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                <input type="text" placeholder="Buscar (tarea / obligación)" wire:model.live="buscar"
+                    class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
             </div>
         </div>
 
@@ -89,7 +101,6 @@
                                 default => 'bg-stone-600',
                             };
 
-                           
                         @endphp
                         @php
                             $vencida = $vence && $vence->isPast() && $t->estatus !== 'cerrada';
@@ -171,8 +182,8 @@
             </table>
         </div>
 
-{{--         <div>{{ $tareas->links() }}</div>
- --}}
+        <div>{{ $tareas->links() }}</div>
+
         {{-- =========================
             MODAL SEGUIMIENTO
         ========================== --}}
@@ -184,16 +195,16 @@
                         <h4 class="text-lg font-bold text-stone-600">
                             {{ $modalCliente }}
                         </h4>
-                    
+
                         <p class="text-sm text-gray-600 dark:text-gray-300">
                             Resultados de tarea - {{ $modalTarea }}
-                    
+
                             @if ($modalObligacion)
                                 – {{ $modalObligacion }}
                             @endif
                         </p>
                     </div>
-                    
+
                     {{-- Comentario si está en estatus rechazado --}}
                     @if ($tareaSeleccionada->estatus === 'rechazada')
                         <div class="mb-4">
@@ -236,7 +247,8 @@
 
                         {{-- Botón "Finalizar" si ya está en progreso --}}
                         @if ($tareaSeleccionada->estatus === 'en_progreso')
-                            <button wire:click="saveResultTarea" @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
+                            <button wire:click="saveResultTarea"
+                                @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
                                 class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">
                                 Marcar como realizada
                             </button>
