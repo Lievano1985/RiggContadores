@@ -1,5 +1,5 @@
 <div>
-    <h2 class="text-xl font-bold text-stone-600">Mis tareas asignadas </h2>
+    <h2 class="text-xl font-bold text-stone-600">Mis tareas asignadas prueba </h2>
 
     <div class="p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-4">
 
@@ -62,7 +62,7 @@
                             };
 
 
-                            
+
 
                             $venceClass = $vence
                                 ? ($vence->isPast()
