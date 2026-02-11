@@ -240,15 +240,13 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
         <x-lista-resumen titulo="Regímenes fiscales" :items="$cliente->regimenes->map(fn($r) => $r->clave_sat . ' - ' . $r->nombre)" />
 
         <x-lista-resumen titulo="Actividades económicas" :items="$cliente->actividadesEconomicas->map(fn($a) => $a->clave . ' - ' . $a->nombre)" />
-
-        <x-lista-resumen titulo="Obligaciones fiscales" :items="$this->getObligacionesVigentes()->map(function ($o) {
-            return [
-                'nombre' => $o->obligacion->nombre,
-                'categoria' => $o->obligacion->categoria, // proceso | obligacion
-                'activa' => $o->is_activa,
-            ];
-        })" />
-
-
-    @endif
+            <x-lista-resumen
+            titulo="Obligaciones fiscales"
+            :items="$this->getObligacionesVigentes()->map(fn($o) => [
+                'nombre'    => $o->obligacion->nombre,
+                'categoria' => $o->obligacion->categoria ?? 'obligacion',
+                'activa'    => true,
+            ])->toArray()"
+        />
+            @endif
 </div>

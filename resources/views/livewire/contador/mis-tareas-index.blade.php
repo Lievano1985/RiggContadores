@@ -69,11 +69,14 @@
         ========================== --}}
         <div class="overflow-x-auto rounded shadow">
             <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700 text-sm">
+        
+                {{-- =========================
+                    HEADER
+                ========================== --}}
                 <thead class="bg-stone-100 dark:bg-stone-900">
                     <tr>
                         <th class="px-4 py-2 text-left">Cliente</th>
                         <th class="px-4 py-2 text-left">Ejercicio</th>
-
                         <th class="px-4 py-2 text-left">Tarea</th>
                         <th class="px-4 py-2 text-left">Obligación</th>
                         <th class="px-4 py-2 text-left">Vence</th>
@@ -83,13 +86,16 @@
                         <th class="px-4 py-2 text-left">Acciones</th>
                     </tr>
                 </thead>
-
+        
+                {{-- =========================
+                    BODY
+                ========================== --}}
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+        
                     @forelse ($tareas as $t)
                         @php
                             $vence = $t->fecha_limite ? \Carbon\Carbon::parse($t->fecha_limite) : null;
-
-                            // Chip color por estatus
+        
                             $chip = match ($t->estatus) {
                                 'en_progreso' => 'bg-amber-600',
                                 'realizada' => 'bg-green-600',
@@ -100,49 +106,61 @@
                                 'reabierta' => 'bg-purple-600',
                                 default => 'bg-stone-600',
                             };
-
-                        @endphp
-                        @php
+        
                             $vencida = $vence && $vence->isPast() && $t->estatus !== 'cerrada';
                         @endphp
-
-                        <tr class="{{ $vencida ? 'bg-red-50  dark:bg-red-900 dark:text-red-100' : '' }}">
-
+        
+                        <tr
+                        @class([
+                            'transition-all duration-400',
+                        
+                            // 🔴 vencida SOLO si no está resaltada
+                            $vencida && $highlightId !== $t->id
+                                ? 'bg-red-50 dark:bg-red-900 dark:text-red-100'
+                                : '',
+                        
+                            // 🟡 highlight tiene prioridad
+                            'bg-amber-100 dark:bg-amber-900' => $highlightId === $t->id,
+                        ])
+                           
+                        >
+        
                             <td class="px-4 py-2">
                                 {{ $t->cliente->nombre ?? ($t->cliente->razon_social ?? '—') }}
                             </td>
-                            <td class="px-4 py-2 whitespace-nowrap ">
+        
+                            <td class="px-4 py-2 whitespace-nowrap">
                                 {{ $t->ejercicio }}-{{ str_pad($t->mes, 2, '0', STR_PAD_LEFT) }}
                             </td>
-
+        
                             <td class="px-4 py-2">
                                 {{ $t->tareaCatalogo?->nombre ?? '—' }}
                             </td>
-
+        
                             <td class="px-4 py-2">
                                 {{ $t->obligacionClienteContador?->obligacion?->nombre ?? 'Sin obligación' }}
                             </td>
-
-                            <td class="px-4 py-2 whitespace-nowrap ">
+        
+                            <td class="px-4 py-2 whitespace-nowrap">
                                 {{ $vence ? $vence->format('Y-m-d') : '—' }}
                             </td>
-
+        
                             <td class="px-4 py-2">
                                 <span class="text-xs px-2 py-1 rounded text-white {{ $chip }}">
                                     {{ str_replace('_', ' ', ucfirst($t->estatus)) }}
                                 </span>
                             </td>
-
+        
                             <td class="px-4 py-2">
                                 {{ $t->tiempo_estimado ? $t->tiempo_estimado . ' min' : '—' }}
                             </td>
-
+        
                             <td class="px-4 py-2">
                                 {{ $t->duracion_minutos ? $t->duracion_minutos . ' min' : '—' }}
                             </td>
-
+        
                             <td class="px-4 py-2 space-x-2">
-
+        
                                 {{-- ASIGNADA --}}
                                 @if ($t->estatus === 'asignada')
                                     <button wire:click="iniciar({{ $t->id }})"
@@ -150,7 +168,7 @@
                                         Iniciar
                                     </button>
                                 @endif
-
+        
                                 {{-- EN PROGRESO --}}
                                 @if ($t->estatus === 'en_progreso')
                                     <button wire:click="terminar({{ $t->id }})"
@@ -158,8 +176,7 @@
                                         Terminar
                                     </button>
                                 @endif
-
-
+        
                                 {{-- RECHAZADA --}}
                                 @if ($t->estatus === 'rechazada')
                                     <button wire:click="verRechazo({{ $t->id }})"
@@ -167,20 +184,24 @@
                                         Ver rechazo
                                     </button>
                                 @endif
-
+        
                             </td>
-
+        
                         </tr>
+        
                     @empty
                         <tr>
-                            <td colspan="8" class="px-4 py-6 text-center text-sm text-gray-600 dark:text-gray-300">
+                            <td colspan="9"
+                                class="px-4 py-6 text-center text-sm text-gray-600 dark:text-gray-300">
                                 No hay tareas para mostrar.
                             </td>
                         </tr>
                     @endforelse
+        
                 </tbody>
             </table>
         </div>
+        
 
         <div>{{ $tareas->links() }}</div>
 
@@ -260,6 +281,12 @@
 
 
         <x-notification />
-
+        <script>
+            window.addEventListener('limpiar-highlight', () => {
+                setTimeout(() => {
+                    Livewire.find(@this.__instance.id).call('limpiarHighlight')
+                }, 5000)
+            })
+        </script>
     </div>
 </div>

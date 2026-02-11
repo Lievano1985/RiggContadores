@@ -54,11 +54,21 @@ class GeneradorObligaciones
                     }
 
                     // 3️⃣ Buscar clientes que tienen esta obligación asignada (pivot)
-                    $clientes = $ob->clientes()->select('clientes.id')->get();
+                    $clientes = Cliente::whereIn('id', function ($q) use ($ob) {
+                        $q->select('cliente_id')
+                            ->from('obligacion_cliente_contador')
+                            ->where('obligacion_id', $ob->id)
+                            ->where('is_activa', true)
+                            ->distinct();
+                    })
+                        ->select('id')
+                        ->get();
+
                     if ($clientes->isEmpty()) {
                         $omitidas++;
                         continue;
                     }
+
 
                     foreach ($clientes as $cli) {
                         DB::beginTransaction();

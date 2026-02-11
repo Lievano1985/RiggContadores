@@ -5,7 +5,8 @@ use App\Models\Despacho;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
-
+use App\Services\GeneradorObligaciones;
+use Carbon\Carbon;
 class DespachoPerfil extends Component
 {
     public $nombre, $rfc, $correo_contacto, $telefono_contacto, $drive_folder_id, $politica_almacenamiento;
@@ -71,7 +72,10 @@ class DespachoPerfil extends Component
 
         $this->politica_original = $this->politica_almacenamiento;
 
-        session()->flash('success', 'Información actualizada correctamente.');
+        $this->dispatch(
+            'notify',
+            message: 'Información actualizada correctamente.'
+        );
     }
 
     public function updatedPoliticaAlmacenamiento($value)
@@ -82,5 +86,39 @@ class DespachoPerfil extends Component
     {
         return view('livewire.despachos.despacho-perfil');
     }
-    
+    public function ejecutarGeneracionMensual()
+{
+    try {
+        $fecha = now()->startOfMonth()->setYear(2026)->setMonth(1);
+
+        $resultado = app(GeneradorObligaciones::class)
+/*             ->generarParaPeriodo(Carbon::now());
+ */            ->generarParaPeriodo($fecha);
+
+        if (($resultado['generadas'] ?? 0) > 0) {
+           
+            $this->dispatch(
+                'notify',
+                message: "Se generaron {$resultado['generadas']} obligaciones del periodo actual."
+            );
+        } else {
+            dd($resultado);
+
+            $this->dispatch(
+                'notify',
+                message: 'El periodo actual ya estaba completamente generado. No se realizaron cambios.'
+
+            );
+        }
+
+    } catch (\Throwable $e) {
+        report($e);
+       
+
+        $this->dispatch(
+            'notify',
+            message:'Ocurrió un error al ejecutar la generación de obligaciones.'
+        );
+    }
+}
 }

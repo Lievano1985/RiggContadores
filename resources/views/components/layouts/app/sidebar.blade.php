@@ -32,26 +32,28 @@
             <!-- ============================= -->
             <!--         MENÚ COMPLETO         -->
             <!-- ============================= -->
+ <!-- =============Dashboard================ -->
 
-            @if (auth()->check() && auth()->user()->hasRole('super_admin'))
-                <flux:navlist variant="outline">
-                    <flux:navlist.group :heading="__('Super_admin')" class="grid">
-                        <flux:navlist.item icon="plus" :href="route('despachos.index')"
-                            :current="request()->routeIs('despachos.index')" wire:navigate
-                            class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
-                            {{ __('Crear despachos') }}
-                        </flux:navlist.item>
-                    </flux:navlist.group>
-                </flux:navlist>
-            @endif
-
-            @if (auth()->check() && auth()->user()->hasRole('contador||admin_despacho'))
                 <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
                     wire:navigate
                     class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                     {{ __('Dashboard') }}
                 </flux:navlist.item>
-            @endif
+
+
+ <!-- =============Crear Despacho================ -->
+ @if (auth()->check() && auth()->user()->hasRole('super_admin'))
+ <flux:navlist variant="outline">
+     <flux:navlist.group :heading="__('Super_admin')" class="grid">
+         <flux:navlist.item icon="plus" :href="route('despachos.index')"
+             :current="request()->routeIs('despachos.index')" wire:navigate
+             class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
+             {{ __('Crear despachos') }}
+         </flux:navlist.item>
+     </flux:navlist.group>
+ </flux:navlist>
+@endif
+
 
             @if (auth()->check() && auth()->user()->hasRole('cliente'))
                 <flux:navlist variant="outline">
@@ -65,7 +67,7 @@
                 </flux:navlist>
             @endif
 
-            @hasrole('contador||admin_despacho')
+            @hasanyrole('contador|admin_despacho|supervisor')
                 <flux:navlist variant="outline">
                     <flux:navlist.group :heading="__('Mi despacho')" class="grid">
                         <flux:navlist.group expandable
@@ -83,29 +85,21 @@
                                 class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Actividades Economicas') }}
                             </flux:navlist.item>
-                            {{-- 
-                            <flux:navlist.item icon="banknotes" :href="route('catalogos.obligaciones-crud')"
-                                :current="request()->routeIs('catalogos.obligaciones-crud')" wire:navigate
-                                class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
-                                {{ __('Obligaciones') }}
-                            </flux:navlist.item> --}}
+
                             <flux:navlist.item icon="banknotes" :href="route('catalogos.obligaciones-tareas')"
                                 :current="request()->routeIs('catalogos.obligaciones-tareas')" wire:navigate
                                 class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Obligaciones/Tareas') }}
                             </flux:navlist.item>
 
-                            {{-- <flux:navlist.item icon="briefcase" :href="route('catalogos.tareas-crud')"
-                                :current="request()->routeIs('catalogos.tareas-crud')" wire:navigate
-                                class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
-                                {{ __('Tareas') }}
-                            </flux:navlist.item>
- --}}
-                            <flux:navlist.item icon="pencil-square" :href="route('despacho.perfil')"
-                                :current="request()->routeIs('despacho.perfil')" wire:navigate
-                                class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
-                                {{ __('Perfil de Despacho') }}
-                            </flux:navlist.item>
+                            @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
+                                <flux:navlist.item icon="pencil-square" :href="route('despacho.perfil')"
+                                    :current="request()->routeIs('despacho.perfil')" wire:navigate
+                                    class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
+                                    {{ __('Perfil de Despacho') }}
+                                </flux:navlist.item>
+                            @endif
+
                         </flux:navlist.group>
 
                         <flux:navlist.item icon="user-circle" :href="route('clientes.index')"
@@ -119,31 +113,36 @@
                             class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                             {{ __('Mis Asignaciones') }}
                         </flux:navlist.item>
-                        @hasrole('admin_despacho')
-                            <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
+
+                        @hasanyrole('supervisor|admin_despacho')
+                        <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
                                 :current="request()->routeIs('control.validaciones.index')" wire:navigate
                                 class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Validaciones') }}
                             </flux:navlist.item>
 
+                            @hasanyrole('admin_despacho')
 
                             <flux:navlist.item icon="envelope-open" :href="route('notificaciones.clientes.index')"
                                 :current="request()->routeIs('notificaciones.clientes.index')" wire:navigate
                                 class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Notificaciones') }}
                             </flux:navlist.item>
+                            @endhasanyrole
 
+                            @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
 
                             <flux:navlist.item icon="user-group" :href="route('Usuarios.index')"
                                 :current="request()->routeIs('Usuarios.index')" wire:navigate
                                 class="mt-2 hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
                                 {{ __('Usuarios') }}
                             </flux:navlist.item>
-                        @endhasrole
-                    </flux:navlist.group>
+                            @endif
+                            @endhasanyrole
+                        </flux:navlist.group>
                 </flux:navlist>
-            @endhasrole
-            <flux:spacer />
+                @endhasanyrole
+                <flux:spacer />
             <!-- User Menu -->
             <flux:dropdown position="bottom" align="start">
                 <flux:profile :name="auth()->user()->name" :initials="auth()->user()->initials()"

@@ -17,18 +17,18 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 use App\Models\ObligacionClienteContador;
 use App\Models\TareaAsignada;
-use App\Models\CarpetaDrive;
-use App\Services\DriveService;
 
 class ObligacionesIndex extends Component
 {
     use WithPagination, WithFileUploads;
+    // -----------------------------
+    // Highlight temporal (flash)
+    // -----------------------------
+    public ?int $highlightId = null;
 
     // =========================================================
     // FILTROS
@@ -37,6 +37,8 @@ class ObligacionesIndex extends Component
     public ?string $estatus = '';
     public ?string $ejercicioSeleccionado = null;
     public ?string $mesSeleccionado = null;
+    public ?string $cliente_id = null;
+    public array $clientesDisponibles = [];
 
     public array $ejerciciosDisponibles = [];
 
@@ -60,12 +62,10 @@ class ObligacionesIndex extends Component
     // =========================================================
     public bool $openModal = false;
     public ?int $selectedId = null;
+
     public ?string $numero_operacion = null;
     public $archivo = null;
     public ?string $fecha_finalizado = null;
-    public ?string $modalCliente = null;
-    public ?string $modalObligacion = null;
-
     // =========================================================
     // RECHAZOS
     // =========================================================
@@ -108,11 +108,34 @@ class ObligacionesIndex extends Component
     public function mount(): void
     {
         $this->cargarEjerciciosDisponibles();
+        $this->cargarClientesDisponibles(); // 👈 NUEVO
     }
-
+    
+    private function cargarClientesDisponibles(): void
+    {
+        $this->clientesDisponibles = ObligacionClienteContador::query()
+            ->where('contador_id', Auth::id())
+            ->whereNotNull('cliente_id')
+            ->with('cliente:id,nombre,razon_social')
+            ->get()
+            ->pluck('cliente')
+            ->unique('id')
+            ->values()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'nombre' => $c->nombre ?? $c->razon_social,
+            ])
+            ->toArray();
+    }
+    
     // =========================================================
     // HOOKS
     // =========================================================
+    public function updatingClienteId()
+    {
+        $this->resetPage();
+    }
+    
     public function updatingBuscar()
     {
         $this->resetPage();
@@ -132,6 +155,10 @@ class ObligacionesIndex extends Component
     {
         $this->resetPage();
     }
+    public function limpiarHighlight(): void
+    {
+        $this->highlightId = null;
+    }
 
     // =========================================================
     // RENDER
@@ -141,7 +168,11 @@ class ObligacionesIndex extends Component
         $q = ObligacionClienteContador::query()
             ->with(['cliente', 'obligacion'])
             ->where('contador_id', Auth::id())
-
+            ->when(
+                $this->cliente_id,
+                fn ($w) => $w->where('cliente_id', $this->cliente_id)
+            )
+            
             // 🔹 FILTRO AUTOMÁTICO (NO TOCAR)
             ->where(function ($q) {
                 $q->where('estatus', '!=', 'finalizado')
@@ -164,20 +195,13 @@ class ObligacionesIndex extends Component
 
             ->when($this->buscar, function ($w) {
                 $bus = trim($this->buscar);
-                $w->where(function ($x) use ($bus) {
-                    $x->whereHas(
-                        'cliente',
-                        fn($c) =>
-                        $c->where('nombre', 'like', "%{$bus}%")
-                            ->orWhere('razon_social', 'like', "%{$bus}%")
-                    )
-                        ->orWhereHas(
-                            'obligacion',
-                            fn($o) =>
-                            $o->where('nombre', 'like', "%{$bus}%")
-                        );
-                });
+            
+                $w->whereHas(
+                    'obligacion',
+                    fn($o) => $o->where('nombre', 'like', "%{$bus}%")
+                );
             })
+            
 
             ->orderByRaw("CASE
                 WHEN estatus='asignada' THEN 1
@@ -191,7 +215,7 @@ class ObligacionesIndex extends Component
                 ELSE 99 END")
             ->orderBy('fecha_vencimiento', 'asc');
 
-        $obligaciones = $q->paginate(10);
+        $obligaciones = $q->paginate(15);
 
         return view('livewire.contador.obligaciones-index', compact('obligaciones'));
     }
@@ -229,7 +253,9 @@ class ObligacionesIndex extends Component
             'estatus' => 'en_progreso',
             'fecha_inicio' => now(),
         ]);
-
+        // 👇 HIGHLIGHT FLASH
+        $this->highlightId = $o->id;
+        $this->dispatch('limpiar-highlight');
         session()->flash('success', 'Obligación iniciada.');
     }
 
@@ -244,11 +270,6 @@ class ObligacionesIndex extends Component
         $this->numero_operacion = $o->numero_operacion;
         $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
         $this->comentario = $o->comentario;
-        $this->modalCliente =
-            $o->cliente->nombre
-            ?? $o->cliente->razon_social
-            ?? 'Cliente';
-        $this->modalObligacion = $o->obligacion->nombre ?? 'Obligación';
         $this->soloLectura = false;
         $this->openModal = true;
     }
@@ -280,8 +301,6 @@ class ObligacionesIndex extends Component
 
         $o->numero_operacion = $this->numero_operacion;
         $o->fecha_finalizado = $this->fecha_finalizado;
-
-
         $o->comentario = $this->comentario;
 
         if (in_array($o->estatus, ['asignada', 'en_progreso'], true)) {
@@ -292,17 +311,16 @@ class ObligacionesIndex extends Component
 
 
         $o->save();
-
+        // 👇 HIGHLIGHT FLASH
+        $this->highlightId = $o->id;
+        $this->dispatch('limpiar-highlight');
         $this->reset([
             'openModal',
             'selectedId',
             'archivo',
             'numero_operacion',
-            'fecha_finalizado',
-            'comentario',
-            'soloLectura',
+            'fecha_finalizado'
         ]);
-
 
         $this->dispatch(
             'notify',
@@ -341,71 +359,38 @@ class ObligacionesIndex extends Component
     // RECHAZO (IGUAL QUE TAREAS)
     // =========================================================
     public function verRechazoObligacion(int $id): void
-{
-    $o = $this->findMine($id);
+    {
+        $o = $this->findMine($id);
 
-    if ($o->estatus !== 'rechazada') {
-        return;
+        if ($o->estatus !== 'rechazada') {
+            return;
+        }
+
+        $this->selectedId = $o->id;
+        $this->comentario = $o->comentario;
+        $this->soloLectura = true;
+
+        $this->openModal = true;
     }
 
-    // Datos base
-    $this->selectedId = $o->id;
-    $this->numero_operacion = $o->numero_operacion;
-    $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
-    $this->comentario = $o->comentario;
+    public function corregirObligacion(int $id): void
+    {
+        $o = $this->findMine($id);
 
-    // Títulos modal
-    $this->modalCliente =
-        $o->cliente->nombre
-        ?? $o->cliente->razon_social
-        ?? 'Cliente';
+        if ($o->estatus !== 'rechazada') {
+            return;
+        }
 
-    $this->modalObligacion =
-        $o->obligacion->nombre
-        ?? 'Obligación';
+        $o->update([
+            'estatus' => 'en_progreso',
+            'fecha_inicio' => now(),
+            'fecha_termino' => null,
+        ]);
+        $this->highlightId = $o->id;
+        $this->dispatch('limpiar-highlight');
+        $this->selectedId = $o->id;
+        $this->soloLectura = false;
 
-    // Modo lectura
-    $this->soloLectura = true;
-
-    $this->openModal = true;
-}
-
-
-public function corregirObligacion(int $id): void
-{
-    $o = $this->findMine($id);
-
-    if ($o->estatus !== 'rechazada') {
-        return;
+        $this->openModal = true;
     }
-
-    // Cambia estatus
-    $o->update([
-        'estatus' => 'en_progreso',
-        'fecha_inicio' => now(),
-        'fecha_termino' => null,
-    ]);
-
-    // Datos base
-    $this->selectedId = $o->id;
-    $this->numero_operacion = $o->numero_operacion;
-    $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
-    $this->comentario = $o->comentario;
-
-    // Títulos modal
-    $this->modalCliente =
-        $o->cliente->nombre
-        ?? $o->cliente->razon_social
-        ?? 'Cliente';
-
-    $this->modalObligacion =
-        $o->obligacion->nombre
-        ?? 'Obligación';
-
-    // Ya editable
-    $this->soloLectura = false;
-
-    $this->openModal = true;
-}
-
 }

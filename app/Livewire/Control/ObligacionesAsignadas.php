@@ -68,7 +68,9 @@ class ObligacionesAsignadas extends Component
     {
 /* Carbon::setTestNow(Carbon::create(2026, 2, 2)); 
  */
-        $this->cliente   = $cliente;
+if (!auth()->user()->hasAnyRole(['adminadmin_despacho','supervisor'])) {
+    abort(403);
+}        $this->cliente   = $cliente;
         $this->clienteId = $cliente->id;
 
         $this->filtroEjercicio = null;
@@ -76,7 +78,7 @@ class ObligacionesAsignadas extends Component
 
         $this->cargarAniosDisponibles();
 
-        $this->contadores = User::role('contador')->orderBy('name')->get();
+        $this->contadores = User::role(['contador','Supervisor'])->orderBy('name')->get();
         $this->cargarArbolCarpetas();
     }
 
@@ -180,30 +182,42 @@ class ObligacionesAsignadas extends Component
         $this->validate([
             'motivoBaja' => 'nullable|string|max:255'
         ]);
-
-        DB::transaction(function(){
-
-            $asig = ObligacionClienteContador::findOrFail($this->asignacionABaja->id);
-
+    
+        DB::transaction(function () {
+    
+            $asig = ObligacionClienteContador::with('obligacion')
+                ->findOrFail($this->asignacionABaja->id);
+    
+            // 🔥 SI ES OBLIGACIÓN ÚNICA → ELIMINACIÓN TOTAL
+            if ($asig->obligacion->periodicidad === 'unica') {
+    
+                // Elimina tareas ligadas
+                $asig->tareasAsignadas()->delete();
+    
+                // Elimina asignación
+                $asig->delete();
+    
+                return;
+            }
+    
+            // 🔁 SI ES PERIÓDICA → BAJA LÓGICA
             $asig->update([
-                'is_activa'=>false,
-                'fecha_baja'=>now(),
-                'motivo_baja'=>$this->motivoBaja ?: 'Baja manual'
+                'is_activa'    => false,
+                'fecha_baja'   => now(),
+                'motivo_baja'  => $this->motivoBaja ?: 'Baja manual',
             ]);
-
-         
         });
-
+    
         $this->confirmarBaja = false;
         $this->asignacionABaja = null;
         $this->motivoBaja = '';
-
+    
         $this->refrescarComponente();
-        $this->dispatch("obligacionEliminada");
-        
-
-        session()->flash('success','Obligación dada de baja correctamente.');
+        $this->dispatch('obligacionEliminada');
+    
+        session()->flash('success', 'Obligación procesada correctamente.');
     }
+    
 
     /* =====================================================
      | ÁRBOL DRIVE

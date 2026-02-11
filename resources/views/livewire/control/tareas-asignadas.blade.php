@@ -79,7 +79,7 @@
                     </td>
 
                     {{-- PERIODO --}}
-                    <td class="px-4 py-2">
+                    <td class="px-4 py-2 whitespace-nowrap">
                         @if ($tarea->ejercicio && $tarea->mes)
                             {{ $tarea->ejercicio }}-{{ str_pad($tarea->mes, 2, '0', STR_PAD_LEFT) }}
                         @else
@@ -109,7 +109,7 @@
                     </td>
 
                     {{-- FECHA LIMITE --}}
-                    <td class="px-4 py-2">
+                    <td class="px-4 py-2 whitespace-nowrap">
                         {{ $tarea->fecha_limite ? \Carbon\Carbon::parse($tarea->fecha_limite)->format('Y-m-d') : '—' }}
                     </td>
                     {{-- ESTATUS --}}

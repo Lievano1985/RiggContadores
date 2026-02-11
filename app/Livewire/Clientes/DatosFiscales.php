@@ -113,9 +113,14 @@ class DatosFiscales extends Component
             }
         }
 
-        $this->obligacionesEstado = $asignaciones
-            ->pluck('is_activa', 'obligacion_id')
-            ->toArray();
+        $this->obligacionesEstado = [];
+
+        foreach ($asignaciones as $a) {
+            $this->obligacionesEstado[$a->obligacion_id] = [
+                'activa' => (bool) $a->is_activa,
+            ];
+        }
+        
 
         $this->obligacionesUnicasSeleccionadas = [];
     }
@@ -361,7 +366,8 @@ class DatosFiscales extends Component
             TareaAsignada::where('obligacion_cliente_contador_id', $a->id)->delete();
             $a->delete();
         }
-
+        unset($this->obligacionesEstado[$id]);
+        unset($this->obligacionesSeleccionadas[$id]);
         $this->modoEdicion = true;
         $this->dispatch('mantenerModoEdicion');
         $this->dispatch('obligacionActualizada');
@@ -384,6 +390,33 @@ class DatosFiscales extends Component
              ->get();
      }
 
+     public function updatedObligacionesSeleccionadas($value, $key)
+     {
+         if ($value) {
+             // Seleccionada (aunque no exista aún en BD)
+             $this->obligacionesEstado[$key] = [
+                 'activa' => $this->obligacionesEstado[$key]['activa'] ?? null,
+             ];
+         } else {
+             // Si existe en BD, solo se dará de baja al guardar
+             // Si NO existe en BD, se quita de la previsualización
+             if (!array_key_exists($key, $this->obligacionesEstado) ||
+                 $this->obligacionesEstado[$key]['activa'] === null) {
+                 unset($this->obligacionesEstado[$key]);
+             }
+         }
+     }
+     
+
+
+     protected function getObligacionesUnicasExistentes(): array
+     {
+         return ObligacionClienteContador::where('cliente_id', $this->cliente->id)
+             ->whereHas('obligacion', fn ($q) => $q->where('periodicidad', 'unica'))
+             ->pluck('obligacion_id')
+             ->toArray();
+     }
+     
     /* ============================================================
      | RENDER
      |============================================================ */

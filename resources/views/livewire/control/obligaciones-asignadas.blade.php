@@ -78,7 +78,7 @@
                             @endif
                         </td>
 
-                        <td class="px-4 py-2">
+                        <td class="px-4 py-2 whitespace-nowrap">
                             {{ $a->ejercicio }}-{{ str_pad($a->mes, 2, '0', STR_PAD_LEFT) }}
                         </td>
 
@@ -90,7 +90,7 @@
                             {{ $a->carpeta->nombre ?? '—' }}
                         </td>
 
-                        <td class="px-4 py-2">
+                        <td class="px-4 py-2 whitespace-nowrap">
                             {{ $a->fecha_vencimiento ?? '—' }}
                         </td>
 

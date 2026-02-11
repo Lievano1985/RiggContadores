@@ -137,7 +137,7 @@ class RegularizacionObligaciones extends Component
      
          $this->dispatch('DatosFiscalesActualizados');
          $this->dispatch('obligacionActualizada');
-         session()->flash('success', 'Obligaciónes Generadas correctamente.');
+         $this->dispatch('notify', message:  'Obligaciónes Generadas correctamente.');
 
          // ===============================
          // RESET CAMPOS DESPUÉS DE GUARDAR

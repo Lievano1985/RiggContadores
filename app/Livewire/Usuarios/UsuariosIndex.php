@@ -37,7 +37,7 @@ class UsuariosIndex extends Component
             $this->roles = Role::pluck('name')->toArray();
             $this->despachos = Despacho::all();
         } elseif (auth()->user()->hasRole('admin_despacho')) {
-            $this->roles = ['contador'];
+            $this->roles = ['contador', 'supervisor'];
             $this->despacho_id = auth()->user()->despacho_id;
         }
     }
@@ -47,8 +47,8 @@ class UsuariosIndex extends Component
         $query = User::with('roles', 'despacho');
 
         if (auth()->user()->hasRole('admin_despacho')) {
-            $query->whereHas('roles', fn($q) => $q->where('name', 'contador'))
-                  ->where('despacho_id', auth()->user()->despacho_id);
+            $query->whereHas('roles', fn($q) => $q->wherein('name', ['contador', 'supervisor']))
+                ->where('despacho_id', auth()->user()->despacho_id);
         }
 
         $usuarios = $query->paginate(10);
@@ -68,9 +68,13 @@ class UsuariosIndex extends Component
         $usuario = User::findOrFail($id);
 
         // Validación extra: si es admin_despacho solo puede editar contadores de su despacho
+        // Validación extra: si es admin_despacho solo puede editar contadores de su despacho
         if (
             auth()->user()->hasRole('admin_despacho') &&
-            ($usuario->despacho_id !== auth()->user()->despacho_id || !$usuario->hasRole('contador'))
+            (
+                $usuario->despacho_id !== auth()->user()->despacho_id ||
+                !$usuario->hasAnyRole(['contador', 'supervisor']) // Corrección aquí
+            )
         ) {
             abort(403, 'No tienes permiso para editar este usuario.');
         }

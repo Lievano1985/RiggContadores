@@ -26,6 +26,14 @@ class MisTareasIndex extends Component
     use WithPagination, WithFileUploads;
 
     // -----------------------------
+    // Highlight temporal + badge de estatus
+    // -----------------------------
+    public ?int $highlightId = null;
+    public int $pageActual = 1;
+
+
+
+    // -----------------------------
     // Filtros UI
     // -----------------------------
     public ?string $buscar = '';
@@ -166,6 +174,8 @@ class MisTareasIndex extends Component
                 'obligacionClienteContador.obligacion',
             ])
             ->where('contador_id', Auth::id())
+            ->whereIn('estatus',['asignada','en_progreso','rechazada'])
+           
             ->when(
                 $this->cliente_id,
                 fn ($q) => $q->where('cliente_id', $this->cliente_id)
@@ -213,7 +223,7 @@ class MisTareasIndex extends Component
                 WHEN estatus='cerrada' THEN 8
                 ELSE 99 END")
 
-            ->paginate(10);
+            ->paginate(15);
 
         return view('livewire.contador.mis-tareas-index', compact('tareas'));
     }
@@ -290,16 +300,23 @@ class MisTareasIndex extends Component
     public function iniciar(int $id): void
     {
         $t = $this->findMine($id);
-
+    
         if ($t->estatus !== 'asignada') {
             return;
         }
-
+    
         $t->update([
             'estatus' => 'en_progreso',
             'fecha_inicio' => now(),
         ]);
+    
+        // 👇 marcar highlight
+        $this->highlightId = $id;
+    
+        // 👇 pedir limpieza después
+        $this->dispatch('limpiar-highlight');
     }
+    
     public function terminar(int $id): void
     {
         $t = $this->findMine($id);
@@ -406,7 +423,10 @@ class MisTareasIndex extends Component
 }
 
 
-
+public function limpiarHighlight(): void
+{
+    $this->highlightId = null;
+}
 
 public function corregir(int $id): void
 {

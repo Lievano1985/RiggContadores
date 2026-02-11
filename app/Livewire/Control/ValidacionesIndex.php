@@ -328,7 +328,6 @@ class ValidacionesIndex extends Component
 
         $query = ObligacionClienteContador::select('obligacion_cliente_contador.*')
             ->with([
-
                 'cliente',
                 'contador',
                 'obligacion',
@@ -336,16 +335,13 @@ class ValidacionesIndex extends Component
                 'tareasAsignadas.archivos',
                 'tareasAsignadas.tareaCatalogo',
                 'tareasAsignadas.contador',
-
             ])
-            // Excluimos flujos del cliente (van en otro componente)
             ->whereNotIn('estatus', $this->estatusExcluidosCliente);
-
-        // Búsqueda por cliente
-        if ($this->search !== '') {
-            $query->whereHas('cliente', function ($qc) {
-                $qc->where('nombre', 'like', "%{$this->search}%");
-            });
+    
+        // ✅ Filtro por rol (Spatie)
+        $user = auth()->user();
+        if ($user && $user->hasRole('supervisor')) {
+            $query->where('contador_id', $user->id);
         }
 
         // FILTRO PERÍODO

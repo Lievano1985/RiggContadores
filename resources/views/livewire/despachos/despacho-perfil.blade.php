@@ -123,7 +123,19 @@
             </button>
         </div>
     </form>
- 
+    <div class="mt-6 border-t pt-4">
+        <h3 class="text-md font-semibold text-stone-600 mb-2">
+            Acciones del despacho
+        </h3>
+    
+        <button
+            wire:click="ejecutarGeneracionMensual"
+            onclick="return confirm('¿Deseas ejecutar la generación de obligaciones del periodo actual?')"
+            class="px-4 py-2 bg-stone-600 text-white rounded hover:bg-stone-700"
+        >
+            Ejecutar generación mensual
+        </button>
+    </div>
     <x-notification />
 
 </div>

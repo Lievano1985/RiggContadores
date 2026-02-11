@@ -64,7 +64,11 @@ class TareasAsignadasCrud extends Component
     {
         /*         Carbon::setTestNow(Carbon::create(2026, 1, 1));
       */
-        $this->modoAutomatico = true;
+       
+      if (!auth()->user()->hasAnyRole(['adminadmin_despacho','supervisor'])) {
+        abort(403);
+    }
+      $this->modoAutomatico = true;
 
         $this->cliente = $cliente;
 
@@ -196,7 +200,7 @@ class TareasAsignadasCrud extends Component
         return view('livewire.control.tareas-asignadas', [
             'tareasAsignadas' => $this->cargarTareasAsignadasFiltradas(),
 
-            'contadores' => User::role('contador')->get(),
+            'contadores' => User::role(['contador','supervisor'])->get(),
             'obligacionesAsignadas' => (function () {
                 $base = ObligacionClienteContador::with(['obligacion'])
                     ->where('cliente_id', $this->cliente->id)

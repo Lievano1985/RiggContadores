@@ -40,10 +40,22 @@
                 <option value="finalizado">Finalizado</option>
                 <option value="reabierta">Reabierta</option>
             </select>
+            {{-- Filtro Cliente --}}
+            <select wire:model.live="cliente_id"
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+
+                <option value="">Cliente (todos)</option>
+
+                @foreach ($clientesDisponibles as $c)
+                    <option value="{{ $c['id'] }}">
+                        {{ $c['nombre'] }}
+                    </option>
+                @endforeach
+            </select>
 
             {{-- Buscar --}}
-            <input type="text" placeholder="Buscar (cliente / obligación)" wire:model.live="buscar"
-                class="w-72 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+            <input type="text" placeholder="Buscar (obligación)" wire:model.live="buscar"
+                class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
         </div>
     </div>
 
@@ -90,7 +102,18 @@
                     @endphp
 
 
-                    <tr class="{{ $vencida ? 'bg-red-50 dark:bg-red-900' : '' }}">
+                    <tr @class([
+                        'transition-all duration-400',
+                    
+                        // 🔴 vencida SOLO si no está resaltada
+                        $item->fecha_vencimiento < now() && $highlightId !== $item->id
+                            ? 'bg-red-50 dark:bg-red-900 dark:text-red-100'
+                            : '',
+                    
+                        // 🟡 highlight flash (PRIORIDAD)
+                        'bg-amber-100 dark:bg-amber-900' => $highlightId === $item->id,
+                    ])>
+
                         <td class="px-4 py-2">{{ $item->cliente->nombre ?? ($item->cliente->razon_social ?? '—') }}</td>
                         <td class="px-4 py-2 whitespace-nowrap">
                             {{ $item->ejercicio }} - {{ str_pad($item->mes, 2, '0', STR_PAD_LEFT) }}
@@ -157,12 +180,12 @@
                     <h3 class="text-lg font-bold text-stone-700 dark:text-white">
                         {{ $modalCliente }}
                     </h3>
-                
+
                     <p class="text-sm text-gray-600 dark:text-gray-300">
                         Resultados de obligación – {{ $modalObligacion }}
                     </p>
                 </div>
-                
+
 
                 <div class="space-y-4">
 
@@ -264,4 +287,12 @@
 
 
     <x-notification />
+    <script>
+        window.addEventListener('limpiar-highlight', () => {
+            setTimeout(() => {
+                Livewire.find(@this.__instance.id).call('limpiarHighlight')
+            }, 5000)
+        })
+    </script>
+
 </div>
