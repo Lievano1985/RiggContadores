@@ -29,7 +29,11 @@ class ObligacionesIndex extends Component
     // Highlight temporal (flash)
     // -----------------------------
     public ?int $highlightId = null;
-
+// =========================================================
+// TITULOS MODAL (agregado)
+// =========================================================
+public ?string $modalCliente = null;
+public ?string $modalObligacion = null;
     // =========================================================
     // FILTROS
     // =========================================================
@@ -262,17 +266,28 @@ class ObligacionesIndex extends Component
     public function openResultModal(int $id): void
     {
         $o = $this->findMine($id);
-
+    
         $this->resetValidation();
         $this->reset(['archivo', 'numero_operacion']);
-
+    
         $this->selectedId = $o->id;
         $this->numero_operacion = $o->numero_operacion;
         $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
         $this->comentario = $o->comentario;
+    
+        // 👇 TITULOS
+        $this->modalCliente =
+            $o->cliente->nombre
+            ?? $o->cliente->razon_social
+            ?? 'Cliente';
+    
+        $this->modalObligacion =
+            $o->obligacion->nombre ?? 'Obligación';
+    
         $this->soloLectura = false;
         $this->openModal = true;
     }
+    
 
     // 🔹 BOTÓN PADRE
     public function saveResult(): void

@@ -134,12 +134,19 @@ class ArchivosAdjuntosCrud extends Component
                NOMBRE FINAL DEL ARCHIVO
                mm-aa-rfc-nombre-manual-ss.ext
             =============================== */
-            $fecha = now();
+       /*      $fecha = now();
     
             $mm = $fecha->format('m');
             $aa = $fecha->format('y');
             $ss = $fecha->format('s');
-    
+     */
+
+            $mesPeriodo = str_pad($modelo->mes ?? now()->month, 2, '0', STR_PAD_LEFT);
+            $anioPeriodo = substr((string)($modelo->ejercicio ?? now()->year), -2);
+            
+            $mm = $mesPeriodo;
+            $aa = $anioPeriodo;
+            $ss = now()->format('s'); 
             $rfc = \Str::upper($cliente->rfc);
             $nombreManual = \Str::slug($item['nombre'], '-');
     
@@ -182,10 +189,11 @@ class ArchivosAdjuntosCrud extends Component
             }
     
             $this->modelo->archivos()->create([
-                'nombre' => $item['nombre'],
+                'nombre' => $nombreFinal, // 👈 guardamos el nombre real
                 'archivo' => $rutaStorage,
                 'archivo_drive_url' => $urlDrive,
             ]);
+            
         }
     
         $this->resetFormulario();

@@ -68,7 +68,7 @@ class ObligacionesAsignadas extends Component
     {
 /* Carbon::setTestNow(Carbon::create(2026, 2, 2)); 
  */
-if (!auth()->user()->hasAnyRole(['adminadmin_despacho','supervisor'])) {
+if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
     abort(403);
 }        $this->cliente   = $cliente;
         $this->clienteId = $cliente->id;
