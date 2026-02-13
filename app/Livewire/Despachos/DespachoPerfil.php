@@ -89,12 +89,12 @@ class DespachoPerfil extends Component
     public function ejecutarGeneracionMensual()
 {
     try {
-        $fecha = now()->startOfMonth()->setYear(2026)->setMonth(1);
-
+/*         $fecha = now()->startOfMonth()->setYear(2026)->setMonth(1);
+ */
         $resultado = app(GeneradorObligaciones::class)
-/*             ->generarParaPeriodo(Carbon::now());
- */            ->generarParaPeriodo($fecha);
-
+            ->generarParaPeriodo(Carbon::now());
+/*             ->generarParaPeriodo($fecha);
+ */
         if (($resultado['generadas'] ?? 0) > 0) {
            
             $this->dispatch(

@@ -394,6 +394,17 @@ if ($this->filtroEstatus === 'auto') {
 }
 
 
+// ===============================
+// BUSCADOR POR CLIENTE
+// ===============================
+if (!empty($this->search)) {
+    $query->whereHas('cliente', function ($q) {
+        $q->where('nombre', 'like', '%' . $this->search . '%')
+          ->orWhere('razon_social', 'like', '%' . $this->search . '%')
+          ->orWhere('nombre_comercial', 'like', '%' . $this->search . '%')
+          ->orWhere('rfc', 'like', '%' . $this->search . '%');
+    });
+}
 
         $obligaciones = $query
             ->orderBy('fecha_vencimiento')
