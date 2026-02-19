@@ -150,7 +150,7 @@ class ArchivosAdjuntosCrud extends Component
             $rfc = \Str::upper($cliente->rfc);
             $nombreManual = \Str::slug($item['nombre'], '-');
     
-            $nombreFinal = "{$mm}-{$aa}-{$rfc}-{$nombreManual}-{$ss}.{$extension}";
+            $nombreFinal = "{$aa}-{$mm}-{$rfc}-{$nombreManual}-{$ss}.{$extension}";
             /* =============================== */
     
             $rutaStorage = null;
