@@ -107,7 +107,7 @@ Route::middleware(['auth', 'role:admin_despacho|super_admin|supervisor'])->group
 /* ==========================================================
 |  CONTADOR / SUPERVISOR / ADMIN DESPACHO
 ==========================================================*/
-Route::middleware(['auth', 'role:admin_despacho|supervisor|contador'])->group(function () {
+Route::middleware(['auth', 'role:admin_despacho|contador|supervisor'])->group(function () {
 
     /* ===== Panel Contador ===== */
     Route::get('/contador/obligaciones', ObligacionesIndex::class)

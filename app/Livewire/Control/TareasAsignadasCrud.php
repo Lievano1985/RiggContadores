@@ -65,7 +65,7 @@ class TareasAsignadasCrud extends Component
         /*         Carbon::setTestNow(Carbon::create(2026, 1, 1));
       */
        
-      if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
+      if (!auth()->user()->hasAnyRole(['adminadmin_despacho','supervisor'])) {
         abort(403);
     }
       $this->modoAutomatico = true;

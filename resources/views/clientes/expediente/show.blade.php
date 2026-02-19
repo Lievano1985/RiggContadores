@@ -34,6 +34,7 @@
                 url.hash = v;
                 window.history.replaceState({ tab: v }, '', url);
             },
+
             init() {
                 this.tab = this.getInitial();
                 this.$watch('tab', (v) => this.setUrl(v));
@@ -77,8 +78,8 @@
                     Contraseñas
                 </button>
 
-                @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
-                    <button id="tab-regularizaciones" role="tab" :aria-selected="tab === 'tareas'"
+                @hasanyrole('admin_despacho|supervisor')
+                <button id="tab-regularizaciones" role="tab" :aria-selected="tab === 'regularizaciones'"
                         :tabindex="tab === 'regularizaciones' ? 0 : -1" @click="tab = 'regularizaciones'"
                         @keydown.arrow-right.prevent="move(1)" @keydown.arrow-left.prevent="move(-1)"
                         :class="tab === 'regularizaciones' ? 'font-bold border-b-2 border-amber-800' : ''"
@@ -102,9 +103,10 @@
                         class="pb-1 focus:outline-none ">
                         Asignar Tareas
                     </button>
-                @endif
+                    @endhasanyrole
 
             </nav>
+            @hasanyrole('admin_despacho|supervisor')
 
             {{-- Contenidos --}}
             <section x-show="tab === 'tareas'" x-cloak x-transition.opacity role="tabpanel"
@@ -121,6 +123,7 @@
                 aria-labelledby="tab-regularizaciones">
                 @livewire('clientes.regularizacion-obligaciones', ['cliente' => $cliente], key('regularizaciones-' . $cliente->id))
             </section>
+            @endhasanyrole
 
 
             <section x-show="tab === 'fiscales'" x-cloak x-transition.opacity role="tabpanel"

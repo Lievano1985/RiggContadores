@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\NotificacionCliente;
 use App\Models\ObligacionClienteContador;
 use App\Models\ArchivoAdjunto;
+use App\Services\BrevoService;
+use Illuminate\Support\Facades\Storage;
 
 class CrearNotificacion extends Component
 {
@@ -179,12 +181,14 @@ class CrearNotificacion extends Component
 
     public function guardar()
     {
+
         $this->validate([
             'asunto' => 'required',
             'mensaje' => 'required',
             'obligacionesSeleccionadas' => 'required|array|min:1',
         ]);
 
+        // 1️⃣ Crear registro en BD (temporal)
         $notificacion = NotificacionCliente::create([
             'cliente_id' => $this->cliente->id,
             'user_id' => Auth::id(),
@@ -194,19 +198,71 @@ class CrearNotificacion extends Component
             'periodo_ejercicio' => $this->periodo_ejercicio,
         ]);
 
-        // Guardar obligaciones
+        // 2️⃣ Guardar relaciones obligaciones
         $notificacion->obligaciones()
             ->sync($this->obligacionesSeleccionadas);
 
-        // Guardar archivos
+        // 3️⃣ Guardar relaciones archivos
         $notificacion->archivos()
             ->sync(collect($this->archivosSeleccionados)->pluck('id'));
 
-        // Marcar obligaciones como enviadas
+        // 4️⃣ Preparar adjuntos para Brevo
+        $attachments = [];
+
+        $archivos = ArchivoAdjunto::whereIn(
+            'id',
+            collect($this->archivosSeleccionados)->pluck('id')
+        )->get();
+
+        foreach ($archivos as $archivo) {
+
+            // Solo archivos que existen en Storage
+            if ($archivo->tieneArchivoStorage()) {
+        
+                if (Storage::disk('public')->exists($archivo->archivo)) {
+        
+                    $attachments[] = [
+                        'name' => $archivo->nombre ?? basename($archivo->archivo),
+                        'content' => base64_encode(
+                            Storage::disk('public')->get($archivo->archivo)
+                        ),
+                    ];
+                }
+            }
+        }
+        
+     
+        // 5️⃣ Enviar correo con Brevo
+        $brevo = new BrevoService();
+
+        $response = $brevo->enviarNotificacionClientePlantilla(
+            $this->cliente->correo,
+            $this->cliente->nombre,
+            $this->mensaje,
+            $this->periodo_mes . '/' . $this->periodo_ejercicio,
+            $attachments
+        );
+
+
+        // 6️⃣ Validar respuesta
+        if (!$response) {
+
+            // Si falla el envío, eliminar notificación creada
+            $notificacion->delete();
+
+            $this->dispatch(
+                'notify',
+                message: 'Error al enviar el correo. Intenta nuevamente.'
+            );
+
+            return;
+        }
+
+        // 7️⃣ Solo si el correo fue exitoso → actualizar estatus
         ObligacionClienteContador::whereIn('id', $this->obligacionesSeleccionadas)
             ->update(['estatus' => 'enviada_cliente']);
 
-        // Limpieza
+        // 8️⃣ Limpiar formulario
         $this->asunto = '';
         $this->mensaje = '';
         $this->obligacionesSeleccionadas = [];
@@ -214,7 +270,7 @@ class CrearNotificacion extends Component
 
         $this->dispatch(
             'notify',
-            message: 'Notificación registrada correctamente'
+            message: 'Notificación enviada correctamente'
         );
     }
 

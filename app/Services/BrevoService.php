@@ -2,12 +2,14 @@
 // app/Services/BrevoService.php
 
 namespace App\Services;
+use Brevo\Client\Model\SendSmtpEmailAttachment;
 
 use Brevo\Client\Api\TransactionalEmailsApi;
 use Brevo\Client\Configuration;
 use Brevo\Client\ApiException;
 use Brevo\Client\Model\SendSmtpEmail;
 use GuzzleHttp\Client;
+use App\Models\ArchivoAdjunto;
 
 class BrevoService
 {
@@ -57,4 +59,60 @@ class BrevoService
             ]);
         }
     }
+    /**
+     * Envía notificación personalizada con adjuntos.
+     */
+    public function enviarNotificacionClientePlantilla(
+        string $email,
+        string $nombre,
+        string $mensaje,
+        string $periodo,
+        array $attachments = []
+     ) {
+    
+        $data = [
+            'to' => [
+                [
+                    'email' => $email,
+                    'name'  => $nombre,
+                ],
+            ],
+            'templateId' => 7,
+            'params' => [
+                'nombre'  => $nombre,
+                'mensaje' => $mensaje,
+                'periodo' => $periodo,
+                'empresa' => config('app.name'),
+            ],
+        ];
+    
+        if (!empty($attachments)) {
+    
+            $attachmentObjects = [];
+    
+            foreach ($attachments as $file) {
+                $attachmentObjects[] = new \Brevo\Client\Model\SendSmtpEmailAttachment([
+                    'name' => $file['name'],
+                    'content' => $file['content'],
+                ]);
+            }
+    
+            $data['attachment'] = $attachmentObjects;
+        }
+    
+        $sendSmtpEmail = new SendSmtpEmail($data);
+    
+        try {
+            return $this->apiInstance->sendTransacEmail($sendSmtpEmail);
+        } catch (ApiException $e) {
+    
+            logger()->error('Error al enviar notificación con Brevo', [
+                'mensaje' => $e->getMessage(),
+                'respuesta' => $e->getResponseBody(),
+            ]);
+    
+            return false;
+        }
+    }
+    
 }
