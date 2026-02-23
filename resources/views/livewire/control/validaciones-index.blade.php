@@ -15,9 +15,7 @@
     {{-- Header + filtros --}}
     <div class="flex flex-wrap gap-2 justify-between items-center mb-4">
 
-
         <div class="flex flex-wrap gap-2 items-center">
-
             {{-- Ejercicio --}}
             <select wire:model.live="filtroEjercicio"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
@@ -26,7 +24,6 @@
                     <option value="{{ $anio }}">{{ $anio }}</option>
                 @endforeach
             </select>
-
             {{-- Mes --}}
             <select wire:model.live="filtroMes"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
@@ -49,6 +46,12 @@
                 @endforeach
             </select>
 
+        </div>
+        <div class="flex flex-wrap gap-2 items-center">
+
+
+
+
             {{-- Estatus --}}
             <select wire:model.live="filtroEstatus" class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
 
@@ -65,9 +68,66 @@
             </select>
 
             {{-- Buscar --}}
-            <input type="text" wire:model.live="search" placeholder="Buscar cliente..."
+            {{-- Cliente --}}
+            {{-- Cliente con autocompletar --}}
+            <div 
+            x-data="{
+                open: false,
+                search: '',
+                clientes: @js($clientesDisponibles),
+        
+                get filtered() {
+                    if (this.search === '') return this.clientes;
+                    return this.clientes.filter(c => 
+                        c.nombre.toLowerCase().includes(this.search.toLowerCase())
+                    );
+                },
+        
+                init() {
+                    this.$watch('search', value => {
+                        if (value === '') {
+                            $wire.set('clienteSeleccionado', null);
+                        }
+                    });
+                }
+            }"
+            class="relative w-64"
+        >
+        
+            <input type="text"
+                x-model="search"
+                @focus="open = true"
+                @click.away="open = false"
+                placeholder="Seleccionar cliente..."
+                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600"
+            >
+        
+            <div 
+                x-show="open"
+                x-transition
+                class="absolute z-50 w-full bg-white dark:bg-gray-800 border rounded shadow max-h-60 overflow-y-auto"
+            >
+                <template x-for="cliente in filtered" :key="cliente.id">
+                    <div 
+                        @click="
+                            $wire.set('clienteSeleccionado', cliente.id);
+                            search = cliente.nombre;
+                            open = false;
+                        "
+                        class="px-3 py-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-gray-700"
+                    >
+                        <span x-text="cliente.nombre"></span>
+                    </div>
+                </template>
+        
+                <div x-show="filtered.length === 0"
+                    class="px-3 py-2 text-sm text-gray-400">
+                    Sin resultados
+                </div>
+            </div>
+        </div>
+            <input type="text" wire:model.live="buscarObligacion" placeholder="Filtrar obligación..."
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
-
         </div>
     </div>
 
@@ -90,7 +150,7 @@
 
             <tbody class="divide-y divide-gray-300 dark:divide-gray-700 text-sm">
                 @forelse($obligaciones as $oc)
-                
+
                     @php
                         $open = $expandida[$oc->id] ?? false;
                         $totalTareas = $oc->tareasAsignadas->count();
@@ -128,7 +188,7 @@
                         <td class="px-3 py-2 text-center whitespace-nowrap">
                             {{ \Carbon\Carbon::parse($oc->fecha_vencimiento)->format('Y-m-d') }}
                         </td>
-                        
+
                         <td class="px-3 py-2 text-center">
                             @if ($totalTareas > 0)
                                 <span class="text-xs">
@@ -212,8 +272,8 @@
                         <p><strong>Cliente:</strong> {{ $obligacionSeleccionada->cliente->nombre }}</p>
                         <p><strong>Obligación:</strong> {{ $obligacionSeleccionada->obligacion->nombre }}</p>
                         <p><strong>Contador:</strong> {{ $obligacionSeleccionada->contador->name ?? '—' }}</p>
-                   
-                        
+
+
                         <p class="mt-1">
                             <strong>Estatus:</strong>
                             <span
@@ -229,8 +289,8 @@
 
                                 @foreach ($obligacionSeleccionada->archivos as $archivo)
                                     @if ($archivo->archivo)
-                                        <a href="{{ Storage::disk('public')->url($archivo->archivo) }}" target="_blank"
-                                            class="block text-blue-600 text-sm hover:underline">
+                                        <a href="{{ Storage::disk('public')->url($archivo->archivo) }}"
+                                            target="_blank" class="block text-blue-600 text-sm hover:underline">
                                             📄 {{ $archivo->nombre }}
                                         </a>
                                     @endif
@@ -239,11 +299,9 @@
                         @endif
                         <p>
                             <strong>Fecha vencimiento:</strong>
-                            {{ 
-                                $obligacionSeleccionada->fecha_finalizado
-                                    ? \Carbon\Carbon::parse($obligacionSeleccionada->fecha_finalizado)->format('Y-m-d')
-                                    : '—'
-                            }}
+                            {{ $obligacionSeleccionada->fecha_finalizado
+                                ? \Carbon\Carbon::parse($obligacionSeleccionada->fecha_finalizado)->format('Y-m-d')
+                                : '—' }}
                         </p>
                         {{-- Rechazo obligación --}}
                         @if (!$mostrarRechazoObligacion)

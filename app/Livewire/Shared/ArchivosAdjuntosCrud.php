@@ -29,9 +29,17 @@ class ArchivosAdjuntosCrud extends Component
             'nuevosArchivos' => ['array'],
             'nuevosArchivos.*.nombre' => ['required','string','max:255'],
             'nuevosArchivos.*.file' => [
-                'required','file',
-                'mimes:pdf,zip,jpg,jpeg,png',
-                'max:10240'
+                'required',
+                'file',
+                'max:20480',
+                function ($attribute, $value, $fail) {
+                    $extension = strtolower($value->getClientOriginalExtension());
+                    $bloqueadas = ['exe','php','js','bat','cmd','sh','msi','com'];
+    
+                    if (in_array($extension, $bloqueadas)) {
+                        $fail('Este tipo de archivo no está permitido.');
+                    }
+                },
             ],
         ];
     }
@@ -50,7 +58,7 @@ class ArchivosAdjuntosCrud extends Component
 
     public function agregarArchivo(): void
     {
-        $this->nuevosArchivos[] = ['nombre'=>'','file'=>null];
+        $this->nuevosArchivos[] = ['nombre' => '', 'file' => null];
     }
 
     public function quitarArchivo(int $index): void
@@ -70,7 +78,7 @@ class ArchivosAdjuntosCrud extends Component
         $archivo->delete();
         $this->resetFormulario();
 
-        $this->dispatch('notify', message:'Archivo eliminado');
+        $this->dispatch('notify', message: 'Archivo eliminado');
     }
 
     /* ==========================================
@@ -80,61 +88,61 @@ class ArchivosAdjuntosCrud extends Component
     public function ejecutarDesdePadre($origen = null)
     {
         $this->origen = $origen;
-    
+
         try {
-    
+
             $this->js("window.dispatchEvent(new CustomEvent('spinner-on'))");
-    
+
             $this->guardar();
-    
+
             // devolver según origen
             $this->dispatch("archivos-ok-$origen");
-    
         } catch (\Throwable $e) {
-    
-/*             $this->reset('nuevosArchivos');
- */            $this->resetErrorBag();
+
+            /*             $this->reset('nuevosArchivos');
+ */
+            $this->resetErrorBag();
             $this->resetValidation();
-    
+
             $this->dispatch("archivos-error-$origen");
-    
         } finally {
-    
+
             $this->js("window.dispatchEvent(new CustomEvent('spinner-off'))");
         }
     }
-    
-    
+
+
 
 
     public function guardar(): void
     {
         $this->validate();
-    
+
         $modelo = $this->modelo;
         $cliente = $modelo->cliente ?? $modelo->obligacionClienteContador?->cliente;
         $despacho = $cliente->despacho;
         $politica = $despacho->politica_almacenamiento;
-    
+
         foreach ($this->nuevosArchivos as $item) {
-    
+
             if ($this->modelo->archivos()
                 ->where('nombre', $item['nombre'])
-                ->exists()) {
+                ->exists()
+            ) {
                 $this->addError(
                     'nuevosArchivos',
                     "Ya existe '{$item['nombre']}'"
                 );
                 throw new \Exception('Duplicado');
             }
-    
+
             $extension = $item['file']->getClientOriginalExtension();
-    
+
             /* ===============================
                NOMBRE FINAL DEL ARCHIVO
                mm-aa-rfc-nombre-manual-ss.ext
             =============================== */
-       /*      $fecha = now();
+            /*      $fecha = now();
     
             $mm = $fecha->format('m');
             $aa = $fecha->format('y');
@@ -143,19 +151,19 @@ class ArchivosAdjuntosCrud extends Component
 
             $mesPeriodo = str_pad($modelo->mes ?? now()->month, 2, '0', STR_PAD_LEFT);
             $anioPeriodo = substr((string)($modelo->ejercicio ?? now()->year), -2);
-            
+
             $mm = $mesPeriodo;
             $aa = $anioPeriodo;
-            $ss = now()->format('s'); 
+            $ss = now()->format('s');
             $rfc = \Str::upper($cliente->rfc);
             $nombreManual = \Str::slug($item['nombre'], '-');
-    
+
             $nombreFinal = "{$aa}-{$mm}-{$rfc}-{$nombreManual}-{$ss}.{$extension}";
             /* =============================== */
-    
+
             $rutaStorage = null;
             $urlDrive = null;
-    
+
             if (in_array($politica, ['storage_only', 'both'])) {
                 $rutaStorage = $item['file']->storeAs(
                     'adjuntos',
@@ -163,16 +171,16 @@ class ArchivosAdjuntosCrud extends Component
                     'public'
                 );
             }
-    
+
             if (in_array($politica, ['drive_only', 'both'])) {
-    
+
                 $folderId = null;
-    
+
                 if ($modelo->carpeta_drive_id) {
                     $cd = CarpetaDrive::find($modelo->carpeta_drive_id);
                     $folderId = $cd?->drive_folder_id;
                 }
-    
+
                 if ($folderId) {
                     $drive = app(DriveService::class);
                     $res = $drive->subirArchivo(
@@ -181,28 +189,27 @@ class ArchivosAdjuntosCrud extends Component
                         $folderId,
                         $item['file']->getMimeType()
                     );
-    
+
                     $urlDrive = is_array($res)
                         ? ($res['webViewLink'] ?? null)
                         : $res;
                 }
             }
-    
+
             $this->modelo->archivos()->create([
                 'nombre' => $nombreFinal, // 👈 guardamos el nombre real
                 'archivo' => $rutaStorage,
                 'archivo_drive_url' => $urlDrive,
             ]);
-            
         }
-    
+
         $this->resetFormulario();
     }
-    
+
     public function render()
     {
-        return view('livewire.shared.archivos-adjuntos-crud',[
-            'archivos'=>$this->modelo->archivos()->latest()->get(),
+        return view('livewire.shared.archivos-adjuntos-crud', [
+            'archivos' => $this->modelo->archivos()->latest()->get(),
         ]);
     }
 }
