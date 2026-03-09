@@ -11,11 +11,11 @@
         
         <div class="flex justify-end space-x-2">
             <button wire:click="$set('confirmingDelete', false)"
-                    class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">
+                    class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                 Cancelar
             </button>
             <button wire:click="{{ $action }}"
-                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                    class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                 Eliminar
             </button>
         </div>
@@ -39,8 +39,8 @@
         <p class="text-gray-700 dark:text-gray-300">{{ $mensaje }}</p>
 
         @if (!empty($tareas))
-            <div class="border border-red-300 dark:border-red-600 p-3 rounded bg-red-50 dark:bg-red-900/30">
-                <p class="text-sm text-red-700 dark:text-red-300 font-semibold mb-2">Tareas relacionadas:</p>
+            <div class="border border-amber-300 dark:border-amber-700 p-3 rounded bg-amber-50 dark:bg-amber-900/30">
+                <p class="text-sm text-amber-800 dark:text-amber-300 font-semibold mb-2">Tareas relacionadas:</p>
                 <ul class="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 max-h-40 overflow-auto">
                     @foreach($tareas as $tarea)
                         <li>{{ $tarea->tareaCatalogo->nombre ?? 'Tarea sin nombre' }}</li>
@@ -51,11 +51,11 @@
 
         <div class="flex justify-end space-x-2">
             <button wire:click="$set('confirmarEliminacion', false)"
-                    class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">
+                    class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                 Cancelar
             </button>
             <button wire:click="{{ $action }}"
-                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                    class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                 Eliminar
             </button>
         </div>

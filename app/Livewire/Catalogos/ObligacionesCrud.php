@@ -139,7 +139,7 @@ class ObligacionesCrud extends Component
 
         $this->modalFormVisible = false;
         $this->resetForm();
-        session()->flash('success', 'Obligación guardada correctamente.');
+        $this->dispatch('notify', message: 'Obligación guardada correctamente.');
     }
 
     public function confirmarEliminacion($id)
@@ -153,10 +153,10 @@ class ObligacionesCrud extends Component
         $obligacion = Obligacion::findOrFail($this->obligacionAEliminar);
 
         if ($obligacion->obligacionesAsignadas()->exists()) {
-            session()->flash('error', 'No se puede eliminar esta obligación porque ya fue asignada.');
+            $this->dispatch('notify', message: 'No se puede eliminar esta obligación porque ya fue asignada.');
         } else {
             $obligacion->delete();
-            session()->flash('success', 'Obligación eliminada correctamente.');
+            $this->dispatch('notify', message: 'Obligación eliminada correctamente.');
         }
 
         $this->confirmingDelete = false;

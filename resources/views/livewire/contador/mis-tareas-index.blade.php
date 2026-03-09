@@ -96,17 +96,6 @@
                         @php
                             $vence = $t->fecha_limite ? \Carbon\Carbon::parse($t->fecha_limite) : null;
         
-                            $chip = match ($t->estatus) {
-                                'en_progreso' => 'bg-amber-600',
-                                'realizada' => 'bg-green-600',
-                                'revisada' => 'bg-blue-600',
-                                'rechazada' => 'bg-red-600',
-                                'cancelada' => 'bg-gray-600',
-                                'cerrada' => 'bg-stone-800',
-                                'reabierta' => 'bg-purple-600',
-                                default => 'bg-stone-600',
-                            };
-        
                             $vencida = $vence && $vence->isPast() && $t->estatus !== 'cerrada';
                         @endphp
         
@@ -146,9 +135,7 @@
                             </td>
         
                             <td class="px-4 py-2">
-                                <span class="text-xs px-2 py-1 rounded text-white {{ $chip }}">
-                                    {{ str_replace('_', ' ', ucfirst($t->estatus)) }}
-                                </span>
+                                <x-status-badge :status="$t->estatus" />
                             </td>
         
                             <td class="px-4 py-2">
@@ -159,32 +146,28 @@
                                 {{ $t->duracion_minutos ? $t->duracion_minutos . ' min' : '—' }}
                             </td>
         
-                            <td class="px-4 py-2 space-x-2">
-        
+                            <td class="px-4 py-2">
+                                <div class="flex items-center gap-1">
+
                                 {{-- ASIGNADA --}}
                                 @if ($t->estatus === 'asignada')
-                                    <button wire:click="iniciar({{ $t->id }})"
-                                        class="px-3 py-1 bg-stone-600 text-white rounded hover:bg-stone-700">
-                                        Iniciar
-                                    </button>
+                                    <x-action-icon icon="play" label="Iniciar" variant="neutral"
+                                        wire:click="iniciar({{ $t->id }})" />
                                 @endif
-        
+
                                 {{-- EN PROGRESO --}}
                                 @if ($t->estatus === 'en_progreso')
-                                    <button wire:click="terminar({{ $t->id }})"
-                                        class="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700">
-                                        Terminar
-                                    </button>
+                                    <x-action-icon icon="check" label="Terminar" variant="primary"
+                                        wire:click="terminar({{ $t->id }})" />
                                 @endif
-        
+
                                 {{-- RECHAZADA --}}
                                 @if ($t->estatus === 'rechazada')
-                                    <button wire:click="verRechazo({{ $t->id }})"
-                                        class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700">
-                                        Ver rechazo
-                                    </button>
+                                    <x-action-icon icon="eye" label="Ver rechazo" variant="danger"
+                                        wire:click="verRechazo({{ $t->id }})" />
                                 @endif
-        
+
+                                </div>
                             </td>
         
                         </tr>
@@ -254,7 +237,7 @@
                     <div class="flex justify-end space-x-2 mt-6">
                         {{-- Cerrar modal --}}
                         <button wire:click="$set('openModal', false)"
-                            class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded text-black dark:text-white hover:bg-gray-400">
+                            class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
                             Cerrar
                         </button>
 
@@ -270,7 +253,7 @@
                         @if ($tareaSeleccionada->estatus === 'en_progreso')
                             <button wire:click="saveResultTarea"
                                 @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
-                                class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">
+                                class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded text-white">
                                 Marcar como realizada
                             </button>
                         @endif
@@ -280,7 +263,6 @@
         @endif
 
 
-        <x-notification />
         <script>
             window.addEventListener('limpiar-highlight', () => {
                 setTimeout(() => {

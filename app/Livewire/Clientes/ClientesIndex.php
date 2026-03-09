@@ -300,7 +300,7 @@ class ClientesIndex extends Component
                 );
             }
 
-            session()->flash('message', $this->clienteId ? 'Cliente actualizado.' : 'Cliente creado correctamente.');
+            $this->dispatch('notify', message: $this->clienteId ? 'Cliente actualizado.' : 'Cliente creado correctamente.');
             $this->modalFormVisible = false;
             $this->resetPage();
         } catch (\Exception $e) {
@@ -334,7 +334,7 @@ class ClientesIndex extends Component
         $this->confirmingDelete = false;
         $this->resetPage();
 
-        session()->flash('message', 'Cliente y usuario eliminados correctamente.');
+        $this->dispatch('notify', message: 'Cliente y usuario eliminados correctamente.');
     }
 
     public function tooltip($cliente)

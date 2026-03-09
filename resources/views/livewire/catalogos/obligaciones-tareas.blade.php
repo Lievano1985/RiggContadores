@@ -118,16 +118,19 @@
                         </td>
 
                         {{-- Acciones --}}
-                        <td class="px-4 py-2 text-right space-x-2">
+                        <td class="px-4 py-2">
+                            <div class="flex items-center justify-end gap-1">
                             @hasrole('admin_despacho')
-                                <button wire:click="abrirCrearTarea({{ $obligacion->id }})"
-                                    class="px-2 py-1 text-xs bg-amber-100 dark:bg-amber-900/40 rounded"> + Tarea </button>
-                                <button wire:click="abrirEditarObligacion({{ $obligacion->id }})"
-                                    class="px-2 py-1 text-xs border rounded"> Editar </button>
-                                <button wire:click="eliminarObligacion({{ $obligacion->id }})"
+                                <x-action-icon icon="upload" label="Nueva tarea" variant="warning"
+                                    wire:click="abrirCrearTarea({{ $obligacion->id }})" />
+                                <x-action-icon icon="edit" label="Editar obligación" variant="primary"
+                                    wire:click="abrirEditarObligacion({{ $obligacion->id }})" />
+                                <x-action-icon icon="trash" label="Eliminar obligación" variant="danger"
+                                    wire:click="eliminarObligacion({{ $obligacion->id }})"
                                     onclick="return confirm('¿Eliminar esta obligación y sus tareas?')"
-                                    class="px-2 py-1 text-xs border border-red-400 text-red-600 rounded"> Eliminar </button>
+                                />
                             @endhasrole
+                            </div>
                         </td>
                     </tr>
 
@@ -164,15 +167,15 @@
                                                         </td>
                                                         <td class="px-3 py-2 text-sm"> {{ $tarea->descripcion ?: '—' }}
                                                         </td>
-                                                        <td class="px-3 py-2 text-right">
-                                                            <button wire:click="abrirEditarTarea({{ $tarea->id }})"
-                                                                class="px-2 py-1 text-xs border rounded"> Editar
-                                                            </button>
-                                                            <button wire:click="eliminarTarea({{ $tarea->id }})"
+                                                        <td class="px-3 py-2">
+                                                            <div class="flex items-center justify-end gap-1">
+                                                            <x-action-icon icon="edit" label="Editar tarea" variant="primary"
+                                                                wire:click="abrirEditarTarea({{ $tarea->id }})" />
+                                                            <x-action-icon icon="trash" label="Eliminar tarea" variant="danger"
+                                                                wire:click="eliminarTarea({{ $tarea->id }})"
                                                                 onclick="return confirm('¿Eliminar esta tarea?')"
-                                                                class="px-2 py-1 text-xs border border-red-400 text-red-600 rounded ml-1">
-                                                                Eliminar
-                                                            </button>
+                                                            />
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 @endforeach
@@ -358,16 +361,16 @@
 
             {{-- FOOTER --}}
             <div class="px-4 py-3 border-t flex justify-end space-x-3">
-                <button @click="$wire.cerrarSidebar()" class="px-3 py-2 bg-gray-200 rounded"> Cancelar </button>
+                <button @click="$wire.cerrarSidebar()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded"> Cancelar </button>
 
                 {{-- Guardar --}}
                 @if (in_array($sidebarModo, ['crear_obligacion', 'editar_obligacion']))
-                    <button wire:click="guardarObligacion" class="px-4 py-2 bg-amber-600 text-white rounded"> Guardar
+                    <button wire:click="guardarObligacion" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded"> Guardar
                     </button>
                 @endif
 
                 @if (in_array($sidebarModo, ['crear_tarea', 'editar_tarea']))
-                    <button wire:click="guardarTarea" class="px-4 py-2 bg-amber-600 text-white rounded"> Guardar
+                    <button wire:click="guardarTarea" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded"> Guardar
                     </button>
                 @endif
             </div>

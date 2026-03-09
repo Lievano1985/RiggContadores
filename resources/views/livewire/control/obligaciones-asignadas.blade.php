@@ -95,55 +95,20 @@
                         </td>
 
                         <td class="px-4 py-2">
-                            <span
-                                class="
-                                    px-2 py-1 rounded text-xs font-semibold
-                        
-                                    @if($a->estatus === 'asignada')
-                                        bg-gray-200 text-gray-800
-                        
-                                    @elseif($a->estatus === 'en_progreso')
-                                        bg-blue-200 text-blue-800
-                        
-                                    @elseif($a->estatus === 'realizada')
-                                        bg-indigo-200 text-indigo-800
-                        
-                                    @elseif($a->estatus === 'enviada_cliente')
-                                        bg-yellow-200 text-yellow-800
-                        
-                                    @elseif($a->estatus === 'respuesta_cliente')
-                                        bg-orange-200 text-orange-800
-                        
-                                    @elseif($a->estatus === 'respuesta_revisada')
-                                        bg-purple-200 text-purple-800
-                        
-                                    @elseif($a->estatus === 'finalizado')
-                                        bg-green-200 text-green-800
-                        
-                                    @elseif($a->estatus === 'rechazada')
-                                        bg-red-200 text-red-800
-                        
-                                    @elseif($a->estatus === 'reabierta')
-                                        bg-pink-200 text-pink-800
-                        
-                                    @else
-                                        bg-gray-100 text-gray-600
-                                    @endif
-                                "
-                            >
-                                {{ str_replace('_',' ', $a->estatus) }}
-                            </span>
+                            <x-status-badge :status="$a->estatus" />
                         </td>
                         
                         
                         <td class="px-4 py-2 text-center">
+                            <div class="flex items-center justify-center gap-1">
                             @if ($a->is_activa)
-                                <button wire:click="editarAsignacion({{ $a->id }})"
-                                    class="text-amber-600 hover:underline">Editar</button>
+                                <x-action-icon icon="edit" label="Editar" variant="primary"
+                                    wire:click="editarAsignacion({{ $a->id }})" />
 
-                                <button wire:click="confirmarBajaAsignacion({{ $a->id }})"
-                                    class="text-red-600 hover:underline ml-2">Dar de baja</button>
+                                <x-action-icon icon="trash" label="Dar de baja" variant="danger"
+                                    wire:click="confirmarBajaAsignacion({{ $a->id }})" />
                             @endif
+                            </div>
                         </td>
 
                     </tr>
@@ -237,7 +202,7 @@
                     {{-- Botones --}}
                     <div class="flex justify-end space-x-2 mt-6">
                         <button type="button" wire:click="$set('modalVisible', false)"
-                            class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded">
+                            class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
                             Cancelar
                         </button>
 
@@ -263,7 +228,7 @@
 
                 <div class="mt-4 flex justify-end gap-2">
                     <button wire:click="$set('confirmarBaja',false)"
-                        class="bg-gray-300 px-3 py-2 rounded">Cancelar</button>
+                        class="bg-amber-600 text-white px-3 py-2 rounded hover:bg-amber-700">Cancelar</button>
 
                     <button wire:click="darDeBajaAsignacionConfirmada"
                         class="bg-amber-600 text-white px-3 py-2 rounded">
@@ -274,6 +239,5 @@
             </div>
         </div>
     @endif
-    <x-notification />
 
 </div>

@@ -114,26 +114,15 @@
                     </td>
                     {{-- ESTATUS --}}
                     <td class="px-4 py-2">
-                        <span
-                            class="px-2 py-1 rounded text-xs font-semibold
-                            @if ($tarea->estatus === 'asignada') bg-gray-200 text-gray-800
-                             @elseif($tarea->estatus === 'en_progreso') bg-blue-200 text-blue-800
-                             @elseif($tarea->estatus === 'realizada') bg-indigo-200 text-indigo-800
-                             @elseif($tarea->estatus === 'revisada') bg-purple-200 text-purple-800 
-                             @elseif($tarea->estatus === 'rechazada') bg-red-200 text-red-800
-                             @elseif($tarea->estatus === 'reabierta') bg-pink-200 text-pink-800 
-                             @else bg-gray-100 text-gray-600 @endif ">
-                            {{ str_replace('_', ' ', $tarea->estatus) }}
-                        </span>
+                        <x-status-badge :status="$tarea->estatus" />
                     </td>
 
 
                     {{-- ACCIONES --}}
-                    <td class="px-4 py-2 text-center space-x-2">
+                    <td class="px-4 py-2 text-center">
                         @if ($tarea->estatus !== 'cancelada')
-                            <button wire:click="editar({{ $tarea->id }})" class="text-amber-600 hover:underline">
-                                Editar
-                            </button>
+                            <x-action-icon icon="edit" label="Editar" variant="primary"
+                                wire:click="editar({{ $tarea->id }})" />
                         @else
                             <span class="text-gray-500 text-sm italic">
                                 Sin acciones
@@ -285,7 +274,7 @@
                     {{-- Botones --}}
                     <div class="mt-6 flex justify-end space-x-2">
                         <button type="button" wire:click="cerrarModal"
-                            class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded hover:bg-gray-400">Cancelar</button>
+                            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">Cancelar</button>
                         <button type="submit"
                             class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">Guardar</button>
                     </div>

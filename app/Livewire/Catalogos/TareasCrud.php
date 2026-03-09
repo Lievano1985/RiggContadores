@@ -99,7 +99,7 @@ $obligaciones = \App\Models\Obligacion::orderBy('nombre')->get();
         }
 
         $this->modalVisible = false;
-        session()->flash('success', 'Tarea guardada correctamente.');
+        $this->dispatch('notify', message: 'Tarea guardada correctamente.');
     }
 
     public function toggleActivo($id)
@@ -114,12 +114,12 @@ $obligaciones = \App\Models\Obligacion::orderBy('nombre')->get();
         $tarea = TareaCatalogo::findOrFail($id);
 
         if ($tarea->tareasAsignadas()->exists()) {
-            session()->flash('error', 'No se puede eliminar esta tarea porque ya fue asignada.');
+            $this->dispatch('notify', message: 'No se puede eliminar esta tarea porque ya fue asignada.');
             return;
         }
 
         $tarea->delete();
-        session()->flash('success', 'Tarea eliminada correctamente.');
+        $this->dispatch('notify', message: 'Tarea eliminada correctamente.');
     }
 
     public function confirmarEliminacion($id)
@@ -133,10 +133,10 @@ $obligaciones = \App\Models\Obligacion::orderBy('nombre')->get();
         $tarea = TareaCatalogo::findOrFail($this->tareaAEliminar);
 
         if ($tarea->tareasAsignadas()->exists()) {
-            session()->flash('error', 'No se puede eliminar esta tarea porque ya fue asignada.');
+            $this->dispatch('notify', message: 'No se puede eliminar esta tarea porque ya fue asignada.');
         } else {
             $tarea->delete();
-            session()->flash('success', 'Tarea eliminada correctamente.');
+            $this->dispatch('notify', message: 'Tarea eliminada correctamente.');
         }
 
         $this->confirmingDelete = false;

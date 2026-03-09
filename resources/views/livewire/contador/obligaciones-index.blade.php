@@ -79,22 +79,6 @@
             <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
                 @forelse ($obligaciones as $item)
                     @php
-                        $chip = match ($item->estatus) {
-                            'asignada' => 'bg-stone-600',
-                            'en_progreso' => 'bg-amber-600',
-                            'realizada' => 'bg-green-600',
-                            'enviada_cliente' => 'bg-blue-600',
-                            'respuesta_cliente' => 'bg-indigo-600',
-                            'respuesta_revisada' => 'bg-purple-600',
-                            'finalizado' => 'bg-emerald-700',
-                            'rechazada' => 'bg-red-600',
-
-                            'reabierta' => 'bg-red-600',
-                            default => 'bg-gray-500',
-                        };
-                    @endphp
-
-                    @php
                         $vencida =
                             $item->fecha_vencimiento &&
                             \Carbon\Carbon::parse($item->fecha_vencimiento)->isPast() &&
@@ -122,41 +106,36 @@
                         <td class="px-4 py-2">{{ ucfirst($item->obligacion->periodicidad ?? '—') }}</td>
 
                         <td class="px-4 py-2">
-                            <span class="text-xs px-2 py-1 rounded text-white {{ $chip }}">
-                                {{ ucfirst(str_replace('_', ' ', $item->estatus)) }}
-                            </span>
+                            <x-status-badge :status="$item->estatus" />
                         </td>
 
                         <td class="px-4 py-2 whitespace-nowrap">
                             {{ $item->fecha_vencimiento ? \Carbon\Carbon::parse($item->fecha_vencimiento)->format('Y-m-d') : '—' }}
                         </td>
 
-                        <td class="px-4 py-2 space-x-2">
+                        <td class="px-4 py-2">
+                            <div class="flex items-center gap-1">
 
                             {{-- ASIGNADA --}}
                             @if ($item->estatus === 'asignada')
-                                <button wire:click="iniciarObligacion({{ $item->id }})"
-                                    class="bg-amber-600 text-white px-3 py-1 rounded hover:bg-amber-700">
-                                    Iniciar
-                                </button>
+                                <x-action-icon icon="play" label="Iniciar" variant="primary"
+                                    wire:click="iniciarObligacion({{ $item->id }})" />
                             @endif
 
                             {{-- EN PROGRESO / REALIZADA --}}
                             @if (in_array($item->estatus, ['en_progreso', 'realizada'], true))
-                                <button wire:click="openResultModal({{ $item->id }})"
-                                    class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
-                                    {{ $item->estatus === 'realizada' ? 'Editar resultados' : 'Subir resultados' }}
-                                </button>
+                                <x-action-icon icon="upload"
+                                    :label="$item->estatus === 'realizada' ? 'Editar resultados' : 'Subir resultados'"
+                                    variant="success" wire:click="openResultModal({{ $item->id }})" />
                             @endif
 
                             {{-- RECHAZADA --}}
                             @if ($item->estatus === 'rechazada')
-                                <button wire:click="verRechazoObligacion({{ $item->id }})"
-                                    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
-                                    Ver rechazo
-                                </button>
+                                <x-action-icon icon="eye" label="Ver rechazo" variant="danger"
+                                    wire:click="verRechazoObligacion({{ $item->id }})" />
                             @endif
 
+                            </div>
                         </td>
 
                     </tr>
@@ -260,8 +239,7 @@
 
                     {{-- Cerrar --}}
                     <button wire:click="$set('openModal', false)"
-                        class="px-4 py-2 bg-gray-300 dark:bg-gray-700
-                           text-black dark:text-white rounded hover:bg-gray-400">
+                        class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                         Cerrar
                     </button>
 
@@ -286,7 +264,6 @@
 
 
 
-    <x-notification />
     <script>
         window.addEventListener('limpiar-highlight', () => {
             setTimeout(() => {

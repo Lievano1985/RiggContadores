@@ -170,17 +170,7 @@
 
                         {{-- Badge estatus obligación --}}
                         <td class="px-3 py-2 text-center">
-                            <span
-                                class="px-2 py-1 rounded text-xs
-                                @if ($oc->estatus == 'asignada') bg-gray-200 text-gray-800
-                                @elseif($oc->estatus == 'en_progreso') bg-yellow-200 text-yellow-800
-                                @elseif($oc->estatus == 'realizada') bg-green-200 text-green-800
-                                @elseif($oc->estatus == 'finalizado') bg-emerald-200 text-emerald-800
-                                @elseif($oc->estatus == 'rechazada') bg-red-200 text-red-800
-                                @elseif($oc->estatus == 'reabierta') bg-purple-200 text-purple-800
-                                @else bg-gray-300 text-gray-800 @endif">
-                                {{ ucfirst(str_replace('_', ' ', $oc->estatus)) }}
-                            </span>
+                            <x-status-badge :status="$oc->estatus" />
                         </td>
                         <td class="px-3 py-2 text-center whitespace-nowrap">
                             {{ $oc->ejercicio }}-{{ str_pad($oc->mes, 2, '0', STR_PAD_LEFT) }}
@@ -200,10 +190,8 @@
                         </td>
 
                         <td class="px-3 py-2 text-right">
-                            <button wire:click="abrirSidebar({{ $oc->id }})"
-                                class="bg-amber-600 text-white px-3 py-1 rounded hover:bg-amber-700 text-sm">
-                                Revisar
-                            </button>
+                            <x-action-icon icon="eye" label="Revisar" variant="primary"
+                                wire:click="abrirSidebar({{ $oc->id }})" />
                         </td>
                     </tr>
 
@@ -221,10 +209,8 @@
                                             <li>
                                                 {{ $tarea->tareaCatalogo->nombre ?? 'Sin nombre' }}
                                                 —
-                                                <span class="text-xs">
-                                                    {{ ucfirst($tarea->estatus) }}
-                                                    | {{ $tarea->contador->name ?? 'Sin contador' }}
-                                                </span>
+                                                <span class="text-xs">{{ $tarea->contador->name ?? 'Sin contador' }}</span>
+                                                <x-status-badge :status="$tarea->estatus" class="ml-2" />
                                             </li>
                                         @endforeach
                                     </ul>
@@ -306,7 +292,7 @@
                         {{-- Rechazo obligación --}}
                         @if (!$mostrarRechazoObligacion)
                             <button wire:click="$set('mostrarRechazoObligacion', true)"
-                                class="mt-3 text-sm text-red-600 border border-red-400 px-3 py-1 rounded">
+                                class="mt-3 text-sm text-white bg-red-600 px-3 py-1 rounded hover:bg-red-700">
                                 Rechazar obligación
                             </button>
                         @else
@@ -316,7 +302,7 @@
 
                                 <div class="mt-2 text-right space-x-2">
                                     <button wire:click="rechazarObligacion"
-                                        class="bg-red-600 text-white px-4 py-1 rounded text-sm">
+                                        class="bg-red-600 text-white px-4 py-1 rounded text-sm hover:bg-red-700">
                                         Confirmar
                                     </button>
                                     <button wire:click="$set('mostrarRechazoObligacion', false)"
@@ -341,12 +327,12 @@
                         <div class="mt-4">
                             @if ($puedeFinalizar)
                                 <button wire:click="finalizarObligacion"
-                                    class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700 text-sm">
+                                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
                                     Finalizar obligación
                                 </button>
                             @else
                                 <button disabled
-                                    class="bg-gray-200 text-gray-500 px-4 py-2 rounded text-sm cursor-not-allowed">
+                                    class="bg-green-300 text-white/80 px-4 py-2 rounded text-sm cursor-not-allowed">
                                     Finalizar obligación
                                 </button>
                                 <p class="text-xs text-gray-500 mt-2">
@@ -400,12 +386,12 @@
                                     {{-- Botón revisar tarea --}}
                                     @if ($tarea->estatus === 'realizada')
                                         <button wire:click="marcarTareaRevisada({{ $tarea->id }})"
-                                            class="mt-2 bg-emerald-600 text-white px-3 py-1 rounded text-sm hover:bg-emerald-700">
+                                            class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
                                             Marcar como revisada
                                         </button>
                                     @elseif($tarea->estatus === 'revisada')
                                         <span
-                                            class="mt-2 inline-block text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-800">
+                                            class="mt-2 inline-block text-xs px-2 py-1 rounded bg-green-600 text-white">
                                             Revisada
                                         </span>
                                     @endif
@@ -413,7 +399,7 @@
                                     {{-- Rechazo tarea --}}
                                     @if (!($mostrarRechazoTarea[$tarea->id] ?? false))
                                         <button wire:click="$set('mostrarRechazoTarea.{{ $tarea->id }}', true)"
-                                            class="mt-2 text-sm text-red-600 border border-red-400 px-3 py-1 rounded">
+                                            class="mt-2 text-sm text-white bg-red-600 px-3 py-1 rounded hover:bg-red-700">
                                             Rechazar tarea
                                         </button>
                                     @else
@@ -423,7 +409,7 @@
 
                                             <div class="mt-2 text-right space-x-2">
                                                 <button wire:click="rechazarTarea({{ $tarea->id }})"
-                                                    class="bg-red-600 text-white px-4 py-1 rounded text-sm">
+                                                    class="bg-red-600 text-white px-4 py-1 rounded text-sm hover:bg-red-700">
                                                     Confirmar
                                                 </button>
                                                 <button
@@ -444,6 +430,5 @@
             </div>
         </div>
     </div>
-    <x-notification />
 
 </div>

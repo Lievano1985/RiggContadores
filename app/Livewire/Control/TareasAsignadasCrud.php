@@ -332,14 +332,14 @@ class TareasAsignadasCrud extends Component
         $this->cargarTareasDisponibles();
         $this->verificarTareasCompletadas();
 
-        session()->flash('success', 'Tarea asignada correctamente.');
+        $this->dispatch('notify', message: 'Tarea asignada correctamente.');
     }
 
     public function eliminar($id)
     {
         TareaAsignada::findOrFail($id)->delete();
         $this->cargarTareasDisponibles();
-        session()->flash('success', 'Tarea eliminada.');
+        $this->dispatch('notify', message: 'Tarea eliminada.');
         $this->verificarTareasCompletadas();
     }
 

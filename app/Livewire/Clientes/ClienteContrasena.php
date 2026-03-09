@@ -172,7 +172,7 @@ class ClienteContrasena extends Component
 
         $this->modalFormVisible = false;
         $this->loadContrasenas();
-        session()->flash('message', 'Contraseña guardada exitosamente.');
+        $this->dispatch('notify', message: 'Contraseña guardada exitosamente.');
     }
 
 

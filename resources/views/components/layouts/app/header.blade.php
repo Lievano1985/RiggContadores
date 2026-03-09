@@ -119,6 +119,8 @@
 
         {{ $slot }}
 
+        <x-notification />
+        <x-button-theme-style />
         @fluxScripts
     </body>
 </html>

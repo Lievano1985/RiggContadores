@@ -136,5 +136,4 @@
             </div>
         @endif
     </div>
-    <x-notification/>
 </div>

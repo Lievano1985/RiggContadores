@@ -203,7 +203,7 @@
     {{-- ========================= --}}
     <div class="flex justify-end">
         <button wire:click="guardar"
-            class="bg-stone-600 hover:bg-stone-700
+            class="bg-amber-600 hover:bg-amber-700
                    text-white px-4 py-2 rounded">
             Enviar notificación
         </button>
@@ -212,5 +212,4 @@
     {{-- Mensaje éxito --}}
     {{-- ========================= --}}
 
-    <x-notification />
 </div>

@@ -174,8 +174,8 @@ class MisTareasIndex extends Component
                 'obligacionClienteContador.obligacion',
             ])
             ->where('contador_id', Auth::id())
-            ->whereIn('estatus',['asignada','en_progreso','rechazada'])
-           
+/*             ->whereIn('estatus',['asignada','en_progreso','rechazada'])
+ */           
             ->when(
                 $this->cliente_id,
                 fn ($q) => $q->where('cliente_id', $this->cliente_id)

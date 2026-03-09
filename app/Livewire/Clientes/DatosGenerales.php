@@ -80,7 +80,7 @@ class DatosGenerales extends Component
         $this->modoEdicion = false;
         $this->modoKey++; // fuerza repintado del switch
 
-        session()->flash('message', 'Datos generales actualizados correctamente.');
+        $this->dispatch('notify', message: 'Datos generales actualizados correctamente.');
         $this->dispatch('DatosFiscalesActualizados');
     }
     public function updatedClienteTieneTrabajadores($value)

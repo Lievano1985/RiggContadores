@@ -2,7 +2,7 @@
     <div class="space-y-4">
         <!-- Botón agregar -->
         <div class="flex justify-end">
-            <button wire:click="crear" class="px-4 py-2 bg-amber-950 text-white rounded hover:bg-amber-700">
+            <button wire:click="crear" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                 + Nuevo portal
             </button>
         </div>
@@ -149,7 +149,7 @@
 
                         <div class="text-right space-x-2">
                             <button type="button" wire:click="$set('modalFormVisible', false)"
-                                class="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-2 rounded hover:bg-gray-400">
+                                class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
                                 Cancelar
                             </button>
                             <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">

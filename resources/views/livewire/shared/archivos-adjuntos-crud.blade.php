@@ -25,7 +25,7 @@
                             </a>
                         @endif
 
-                        <button wire:click="eliminarArchivo({{ $a->id }})" class="text-red-600 hover:underline">
+                        <button wire:click="eliminarArchivo({{ $a->id }})" class="text-amber-700 hover:underline">
                             Eliminar
                         </button>
                     </div>
@@ -85,8 +85,8 @@
                 <div class="flex items-start">
                     <button
                         wire:click="quitarArchivo({{ $i }})"
-                        class="bg-red-600 text-white rounded
-                               hover:bg-red-700 px-2 h-[38px]"
+                        class="bg-amber-600 text-white rounded
+                               hover:bg-amber-700 px-2 h-[38px]"
                     >
                         ✕
                     </button>
@@ -111,7 +111,6 @@
             </button>
         </div> --}}
 
-        <x-notification />
 
     </div>
 </div>

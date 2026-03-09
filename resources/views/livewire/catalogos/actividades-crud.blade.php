@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center">
         <h2 class="text-xl font-bold text-stone-600 dark:text-white">Catálogo de Actividades Económicas</h2>
         <button wire:click="showCreateForm"
-            class="px-4 py-2 bg-amber-950 text-white rounded hover:bg-amber-700">
+            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
             + Nueva actividad
         </button>
     </div>
@@ -42,11 +42,13 @@
                     <tr>
                         <td class="px-4 py-2">{{ $actividad->nombre }}</td>
                         <td class="px-4 py-2">{{ $actividad->clave }}</td>
-                        <td class="px-4 py-2 space-x-2">
-                            <button wire:click="showEditForm({{ $actividad->id }})"
-                                class="text-amber-600 hover:underline">Editar</button>
-                            <button wire:click="delete({{ $actividad->id }})"
-                                class="text-red-600 hover:underline">Eliminar</button>
+                        <td class="px-4 py-2">
+                            <div class="flex items-center gap-1">
+                                <x-action-icon icon="edit" label="Editar" variant="primary"
+                                    wire:click="showEditForm({{ $actividad->id }})" />
+                                <x-action-icon icon="trash" label="Eliminar" variant="danger"
+                                    wire:click="delete({{ $actividad->id }})" />
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -88,7 +90,7 @@
 
                     <div class="flex justify-end space-x-2 pt-4">
                         <button type="button" wire:click="$set('modalFormVisible', false)"
-                            class="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-2 rounded hover:bg-gray-400">
+                            class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
                             Cancelar
                         </button>
                         <button type="submit"

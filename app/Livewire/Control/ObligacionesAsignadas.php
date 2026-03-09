@@ -215,7 +215,7 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
         $this->refrescarComponente();
         $this->dispatch('obligacionEliminada');
     
-        session()->flash('success', 'Obligación procesada correctamente.');
+        $this->dispatch('notify', message: 'Obligación procesada correctamente.');
     }
     
 
@@ -268,7 +268,7 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
         $this->resetFormulario();
         $this->refrescarComponente();
 
-        session()->flash('success','Asignación actualizada.');
+        $this->dispatch('notify', message: 'Asignación actualizada.');
     }
 
     private function resetFormulario()

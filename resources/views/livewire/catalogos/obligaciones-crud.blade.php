@@ -58,11 +58,13 @@ Autor: Luis Liévano - JL3 Digital
                                 {{ $obligacion->activa ? 'Sí' : 'No' }}
                             </span>
                         </td>
-                        <td class="px-4 py-2 space-x-2">
-                            <button wire:click="showEditForm({{ $obligacion->id }})"
-                                class="text-amber-600 hover:underline">Editar</button>
-                            <button wire:click="confirmarEliminacion({{ $obligacion->id }})"
-                                class="text-red-600 hover:underline">Eliminar</button>
+                        <td class="px-4 py-2">
+                            <div class="flex items-center gap-1">
+                                <x-action-icon icon="edit" label="Editar" variant="primary"
+                                    wire:click="showEditForm({{ $obligacion->id }})" />
+                                <x-action-icon icon="trash" label="Eliminar" variant="danger"
+                                    wire:click="confirmarEliminacion({{ $obligacion->id }})" />
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -139,7 +141,7 @@ Autor: Luis Liévano - JL3 Digital
 
                     <div class="flex justify-end space-x-2 pt-4">
                         <button type="button" wire:click="$set('modalFormVisible', false)"
-                            class="bg-gray-300 dark:bg-gray-600 px-4 py-2 rounded">
+                            class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
                             Cancelar
                         </button>
                         <button type="submit"
@@ -154,5 +156,4 @@ Autor: Luis Liévano - JL3 Digital
     @endif
 
     <x-confirmacion-eliminacion :confirmingDelete="$confirmingDelete" action="eliminarConfirmada" />
-    <x-notification />
 </div>

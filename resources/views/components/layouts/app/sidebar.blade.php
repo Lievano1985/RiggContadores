@@ -204,6 +204,8 @@
 
 
 
+    <x-notification />
+    <x-button-theme-style />
     @fluxScripts
     <x-spinner />
 </body>

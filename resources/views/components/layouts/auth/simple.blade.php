@@ -17,6 +17,7 @@
                 </div>
             </div>
         </div>
+        <x-button-theme-style />
         @fluxScripts
     </body>
 </html>

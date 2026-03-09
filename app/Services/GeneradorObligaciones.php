@@ -194,6 +194,8 @@ class GeneradorObligaciones
                     'mes'                            => $occ->mes,
                 ],
                 [
+                    'contador_id'      => $occ->contador_id,
+                    'carpeta_drive_id' => $occ->carpeta_drive_id,
                     'fecha_asignacion' => now(),
                     'fecha_limite'     => $fechaVenc?->toDateString(),
                     'estatus'          => 'asignada',

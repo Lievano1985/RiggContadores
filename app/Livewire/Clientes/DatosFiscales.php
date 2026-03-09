@@ -194,7 +194,7 @@ class DatosFiscales extends Component
             $this->obligacionesUnicasSeleccionadas = [];
         }
 
-        session()->flash('message', 'Datos fiscales actualizados correctamente.');
+        $this->dispatch('notify', message: 'Datos fiscales actualizados correctamente.');
 
         $this->modoEdicion = false;
         $this->modoKey++;

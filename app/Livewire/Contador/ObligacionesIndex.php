@@ -249,7 +249,7 @@ public ?string $modalObligacion = null;
         $o = $this->findMine($id);
 
         if ($o->estatus !== 'asignada') {
-            session()->flash('error', 'Solo puedes iniciar obligaciones asignadas.');
+            $this->dispatch('notify', message: 'Solo puedes iniciar obligaciones asignadas.');
             return;
         }
 
@@ -260,7 +260,7 @@ public ?string $modalObligacion = null;
         // 👇 HIGHLIGHT FLASH
         $this->highlightId = $o->id;
         $this->dispatch('limpiar-highlight');
-        session()->flash('success', 'Obligación iniciada.');
+        $this->dispatch('notify', message: 'Obligación iniciada.');
     }
 
     public function openResultModal(int $id): void

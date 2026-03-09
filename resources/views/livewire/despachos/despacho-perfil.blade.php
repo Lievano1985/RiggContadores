@@ -118,7 +118,7 @@
         </div>
 
         <div class="flex justify-end mt-6">
-            <button type="submit" class="px-6 py-2 bg-amber-950 text-white rounded hover:bg-stone-700">
+            <button type="submit" class="px-6 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                 Actualizar
             </button>
         </div>
@@ -131,11 +131,10 @@
         <button
             wire:click="ejecutarGeneracionMensual"
             onclick="return confirm('¿Deseas ejecutar la generación de obligaciones del periodo actual?')"
-            class="px-4 py-2 bg-stone-600 text-white rounded hover:bg-stone-700"
+            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700"
         >
             Ejecutar generación mensual
         </button>
     </div>
-    <x-notification />
 
 </div>

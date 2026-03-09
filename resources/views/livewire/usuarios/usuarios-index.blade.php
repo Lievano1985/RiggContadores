@@ -1,7 +1,7 @@
 <div class="p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
     <div class="flex justify-between mb-4">
         <h2 class="text-xl font-bold text-stone-600">Gestión de Usuarios</h2>
-        <button wire:click="crear" class="px-4 py-2 bg-amber-950 text-white rounded hover:bg-amber-700">
+        <button wire:click="crear" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
             + Crear Usuario
         </button>
     </div>
@@ -24,9 +24,13 @@
                         <td class="px-4 py-2">{{ $user->email }}</td>
                         <td class="px-4 py-2">{{ $user->roles->pluck('name')->join(', ') }}</td>
                         <td class="px-4 py-2">{{ $user->despacho->nombre ?? '—' }}</td>
-                        <td class="px-4 py-2 space-x-2">
-                            <button wire:click="editar({{ $user->id }})" class="text-amber-600 hover:underline">Editar</button>
-                            <button wire:click="eliminar({{ $user->id }})" class="text-red-600 hover:underline">Eliminar</button>
+                        <td class="px-4 py-2">
+                            <div class="flex items-center gap-1">
+                                <x-action-icon icon="edit" label="Editar" variant="primary"
+                                    wire:click="editar({{ $user->id }})" />
+                                <x-action-icon icon="trash" label="Eliminar" variant="danger"
+                                    wire:click="eliminar({{ $user->id }})" />
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -92,7 +96,7 @@
                 </div>
 
                 <div class="flex justify-end space-x-2">
-                    <button wire:click="$set('modalFormVisible', false)" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">Cancelar</button>
+                    <button wire:click="$set('modalFormVisible', false)" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">Cancelar</button>
                     <button wire:click="guardar" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">Guardar</button>
                 </div>
             </div>

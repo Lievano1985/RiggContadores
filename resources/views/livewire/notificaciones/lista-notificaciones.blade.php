@@ -40,11 +40,8 @@
                         {{ $n->usuario->name ?? '-' }}
                     </td>
                     <td class="px-3 py-2 text-right">
-                        <button
-                            wire:click="abrirSidebar({{ $n->id }})"
-                            class="bg-amber-600 text-white px-3 py-1 rounded hover:bg-amber-700 text-sm">
-                            Ver
-                        </button>
+                        <x-action-icon icon="eye" label="Ver detalle" variant="primary"
+                            wire:click="abrirSidebar({{ $n->id }})" />
                     </td>
                     
                 </tr>

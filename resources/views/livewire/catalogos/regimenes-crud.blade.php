@@ -4,7 +4,7 @@
     <div class="flex justify-between items-center">
         <h2 class="text-xl font-bold text-stone-600 dark:text-white">Catálogo de Regímenes</h2>
         <button wire:click="showCreateForm"
-            class="px-4 py-2 bg-amber-950 text-white rounded hover:bg-amber-700">
+            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
             + Nuevo régimen
         </button>
     </div>
@@ -51,11 +51,13 @@
                         <td class="px-4 py-2">{{ $regimen->nombre }}</td>
                         <td class="px-4 py-2">{{ $regimen->clave_sat }}</td>
                         <td class="px-4 py-2 capitalize">{{ $regimen->tipo_persona }}</td>
-                        <td class="px-4 py-2 space-x-2">
-                            <button wire:click="showEditForm({{ $regimen->id }})"
-                                class="text-amber-600 hover:underline">Editar</button>
-                            <button wire:click="delete({{ $regimen->id }})"
-                                class="text-red-600 hover:underline">Eliminar</button>
+                        <td class="px-4 py-2">
+                            <div class="flex items-center gap-1">
+                                <x-action-icon icon="edit" label="Editar" variant="primary"
+                                    wire:click="showEditForm({{ $regimen->id }})" />
+                                <x-action-icon icon="trash" label="Eliminar" variant="danger"
+                                    wire:click="delete({{ $regimen->id }})" />
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -118,7 +120,7 @@
 
                     <div class="flex justify-end space-x-2 pt-4">
                         <button type="button" wire:click="$set('modalFormVisible', false)"
-                            class="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-2 rounded hover:bg-gray-400">
+                            class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
                             Cancelar
                         </button>
                         <button type="submit"

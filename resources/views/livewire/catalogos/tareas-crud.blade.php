@@ -54,13 +54,12 @@
                         </label>
                     </td>
                     <td class="px-4 py-2 text-center">
-                        <button wire:click="editar({{ $tarea->id }})"
-                            class="text-blue-600 hover:underline">Editar</button>
-
-                        <button wire:click="confirmarEliminacion({{ $tarea->id }})"
-                            class="text-red-600 hover:underline">
-                            Eliminar
-                        </button>
+                        <div class="flex items-center justify-center gap-1">
+                            <x-action-icon icon="edit" label="Editar" variant="info"
+                                wire:click="editar({{ $tarea->id }})" />
+                            <x-action-icon icon="trash" label="Eliminar" variant="danger"
+                                wire:click="confirmarEliminacion({{ $tarea->id }})" />
+                        </div>
                     </td>
                 </tr>
             @endforeach
@@ -126,7 +125,7 @@
 
                 <div class="flex justify-end space-x-2">
                     <button wire:click="$set('modalVisible', false)"
-                        class="bg-gray-300 dark:bg-gray-600 text-black dark:text-white px-4 py-2 rounded">
+                        class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700">
                         Cancelar
                     </button>
                     <button wire:click="guardar" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded">
@@ -139,6 +138,5 @@
     @endif
     {{--     confirmacion de eliminacion --}}
     <x-confirmacion-eliminacion :confirmingDelete="$confirmingDelete" action="eliminarConfirmada" />
-    <x-notification />
 
 </div>

@@ -1,7 +1,7 @@
 <div class="p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-bold text-stone-600">Gestión de Despachos</h2>
-        <button wire:click="crear" class="px-4 py-2 bg-amber-950 text-white rounded hover:bg-stone-700">
+        <button wire:click="crear" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
             + Nuevo Despacho
         </button>
     </div>
@@ -24,9 +24,13 @@
                         <td class="px-4 py-2">{{ $d->rfc }}</td>
                         <td class="px-4 py-2">{{ $d->correo_contacto }}</td>
                         <td class="px-4 py-2">{{ $d->telefono_contacto }}</td>
-                        <td class="px-4 py-2 space-x-2">
-                            <button wire:click="editar({{ $d->id }})" class="text-stone-600 hover:underline">Editar</button>
-                            <button wire:click="confirmarEliminar({{ $d->id }})" class="text-red-600 hover:underline">Eliminar</button>
+                        <td class="px-4 py-2">
+                            <div class="flex items-center gap-1">
+                                <x-action-icon icon="edit" label="Editar" variant="primary"
+                                    wire:click="editar({{ $d->id }})" />
+                                <x-action-icon icon="trash" label="Eliminar" variant="danger"
+                                    wire:click="confirmarEliminar({{ $d->id }})" />
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -131,10 +135,10 @@
                     @endif
 
                     <div class="flex justify-end space-x-2 mt-4">
-                        <button type="button" wire:click="resetForm" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">
+                        <button type="button" wire:click="resetForm" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                             Cancelar
                         </button>
-                        <button type="submit" class="px-4 py-2 bg-stone-600 text-white rounded hover:bg-stone-700">
+                        <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                             Guardar
                         </button>
                     </div>
@@ -149,10 +153,10 @@
                 <h3 class="text-lg font-semibold mb-4 text-stone-600">¿Eliminar Despacho?</h3>
                 <p class="mb-4">Esta acción no se puede deshacer.</p>
                 <div class="flex justify-end space-x-2">
-                    <button wire:click="resetForm" class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">
+                    <button wire:click="resetForm" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                         Cancelar
                     </button>
-                    <button wire:click="eliminar" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                    <button wire:click="eliminar" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                         Eliminar
                     </button>
                 </div>

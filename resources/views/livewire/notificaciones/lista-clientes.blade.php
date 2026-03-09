@@ -42,16 +42,11 @@
                         @if (auth()->user()->hasRole('super_admin'))
                             <td class="px-4 py-2">{{ $cliente->despacho->nombre ?? '-' }}</td>
                         @endif
-                        <td class="px-4 py-2 space-x-2 flex justify-center items-center">
-
-
-                            <a href="{{ route('clientes.notificaciones.show', $cliente->id) }}"
-                                class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-2 rounded inline-flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-                                  </svg>
-                                  
-                            </a>
+                        <td class="px-4 py-2">
+                            <div class="flex justify-center items-center">
+                                <x-action-icon icon="send" label="Notificaciones" variant="primary"
+                                    :href="route('clientes.notificaciones.show', $cliente->id)" />
+                            </div>
                         </td>
                     </tr>
                 @empty

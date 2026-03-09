@@ -4,7 +4,7 @@
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-bold text-stone-600">Clientes</h2>
 
-        <button wire:click="abrirModalCrear" class="px-4 py-2 bg-amber-950 text-white rounded hover:bg-amber-700">
+        <button wire:click="abrirModalCrear" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
             + Crear Cliente
         </button>
     </div>
@@ -47,17 +47,19 @@
                         @if (auth()->user()->hasRole('super_admin'))
                             <td class="px-4 py-2">{{ $cliente->despacho->nombre ?? '-' }}</td>
                         @endif
-                        <td class="px-4 py-2 space-x-2">
+                        <td class="px-4 py-2">
+                            <div class="flex items-center gap-1">
                             {{--  <button wire:click="abrirModalEditar({{ $cliente->id }})"
                                 class="text-stone-600 hover:underline">Editar</button> --}}
                             @hasrole('admin_despacho')
-                                <button wire:click="confirmarEliminar({{ $cliente->id }})"
-                                    class="text-red-600 hover:underline">Eliminar</button>
+                                <x-action-icon icon="trash" label="Eliminar" variant="danger"
+                                    wire:click="confirmarEliminar({{ $cliente->id }})" />
                             @endhasrole
 
-                            <a href="{{ route('clientes.expediente.show', $cliente->id) }}"
-                                class="text-green-600 hover:underline">Expediente</a>
+                            <x-action-icon icon="eye" label="Expediente" variant="success"
+                                :href="route('clientes.expediente.show', $cliente->id)" />
 
+                            </div>
                         </td>
                         <td class="text-center">
 
@@ -233,10 +235,10 @@
 
                     <div class="flex justify-end space-x-2 mt-6">
                         <button type="button" wire:click="$set('modalFormVisible', false)"
-                            class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">
+                            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                             Cancelar
                         </button>
-                        <button type="submit" class="px-4 py-2 bg-stone-600 text-white rounded hover:bg-stone-700">
+                        <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                             Guardar
                         </button>
                     </div>
@@ -255,24 +257,15 @@
                     ¿Estás seguro que deseas eliminar este cliente?
                 </p>
                 <div class="flex justify-center space-x-4">
-                    <button wire:click="eliminar" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                    <button wire:click="eliminar" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                         Sí, eliminar
                     </button>
                     <button wire:click="$set('confirmingDelete', false)"
-                        class="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-black dark:text-white rounded hover:bg-gray-400">
+                        class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                         Cancelar
                     </button>
                 </div>
             </div>
-        </div>
-    @endif
-    @if (session()->has('message'))
-        <div x-data="{ show: true }" x-init="setTimeout(() => show = false, 3000)" x-show="show"
-            x-transition:leave="transition ease-in duration-500"
-            x-transition:leave-start="opacity-100 transform translate-y-0"
-            x-transition:leave-end="opacity-0 transform -translate-y-10"
-            class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm p-4 text-sm text-green-800 bg-green-200 rounded-lg shadow-lg dark:bg-green-200 dark:text-green-900">
-            {{ session('message') }}
         </div>
     @endif
 </div>
