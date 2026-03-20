@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Usuarios;
 
+use App\Livewire\Shared\HasPerPage;
 use App\Models\User;
 use App\Models\Despacho;
 use Livewire\Component;
@@ -10,7 +11,9 @@ use Spatie\Permission\Models\Role;
 
 class UsuariosIndex extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
+    public string $sortField = 'name';
+    public string $sortDirection = 'asc';
 
     public $modalFormVisible = false;
     public $modoEdicion = false;
@@ -51,7 +54,18 @@ class UsuariosIndex extends Component
                 ->where('despacho_id', auth()->user()->despacho_id);
         }
 
-        $usuarios = $query->paginate(10);
+        if ($this->sortField === 'despacho') {
+            $query->orderBy(
+                Despacho::select('nombre')
+                    ->whereColumn('despachos.id', 'users.despacho_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif (in_array($this->sortField, ['name', 'email'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        }
+
+        $usuarios = $query->paginate($this->perPageValue($query, 10));
 
         return view('livewire.usuarios.usuarios-index', compact('usuarios'));
     }
@@ -144,5 +158,21 @@ class UsuariosIndex extends Component
         } else {
             $this->despacho_id = null;
         }
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['name', 'email', 'despacho'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Control;
 
+use App\Livewire\Shared\HasPerPage;
 use App\Models\Cliente;
+use App\Models\Obligacion;
 use App\Models\ObligacionClienteContador;
 use App\Models\TareaAsignada;
 use App\Models\User;
@@ -14,7 +16,9 @@ use Livewire\WithPagination;
 
 class ObligacionesAsignadas extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
+    public string $sortField = 'fecha_vencimiento';
+    public string $sortDirection = 'asc';
 
     protected $paginationTheme = 'tailwind';
 
@@ -149,7 +153,7 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
                   ->where('mes',$this->filtroMes);
         }
 
-        return $query->orderBy('fecha_vencimiento','asc');
+        return $query;
     }
 
     /* =====================================================
@@ -290,8 +294,46 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
      ===================================================== */
     public function render()
     {
+        $query = $this->queryAsignaciones();
+
+        if ($this->sortField === 'obligacion') {
+            $query->orderBy(
+                Obligacion::select('nombre')
+                    ->whereColumn('obligaciones.id', 'obligacion_cliente_contador.obligacion_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'contador') {
+            $query->orderBy(
+                User::select('name')
+                    ->whereColumn('users.id', 'obligacion_cliente_contador.contador_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif (in_array($this->sortField, ['fecha_vencimiento', 'estatus', 'ejercicio', 'mes'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        } else {
+            $query->orderBy('fecha_vencimiento', 'asc');
+        }
+
         return view('livewire.control.obligaciones-asignadas',[
-            'asignaciones'=>$this->queryAsignaciones()->paginate(10)
+            'asignaciones' => $query->paginate($this->perPageValue($query, 10))
         ]);
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['obligacion', 'contador', 'fecha_vencimiento', 'estatus', 'ejercicio', 'mes'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
     }
 }

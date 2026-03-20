@@ -17,15 +17,21 @@
 
 namespace App\Livewire\Control;
 
+use App\Models\Cliente;
 use App\Models\ObligacionClienteContador;
+use App\Models\Obligacion;
 use App\Models\TareaAsignada;
+use App\Models\User;
+use App\Livewire\Shared\HasPerPage;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class ValidacionesIndex extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
+    public string $sortField = 'fecha_vencimiento';
+    public string $sortDirection = 'asc';
 
     /* ===========================
      | Filtros / UI
@@ -157,6 +163,22 @@ class ValidacionesIndex extends Component
     {
         // Al tocar filtros manuales salimos de modo automático
         $this->incluirVencidas = false;
+
+        $this->resetPage();
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['cliente', 'obligacion', 'contador', 'estatus', 'periodo', 'fecha_vencimiento'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
 
         $this->resetPage();
     }
@@ -439,10 +461,38 @@ class ValidacionesIndex extends Component
             });
         }
     
-        $obligaciones = $query
-            ->orderBy('fecha_vencimiento')
-            ->orderByDesc('updated_at')
-            ->paginate(10);
+        if ($this->sortField === 'cliente') {
+            $query->orderBy(
+                Cliente::select('nombre')
+                    ->whereColumn('clientes.id', 'obligacion_cliente_contador.cliente_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'obligacion') {
+            $query->orderBy(
+                Obligacion::select('nombre')
+                    ->whereColumn('obligaciones.id', 'obligacion_cliente_contador.obligacion_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'contador') {
+            $query->orderBy(
+                User::select('name')
+                    ->whereColumn('users.id', 'obligacion_cliente_contador.contador_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'periodo') {
+            $query->orderBy('ejercicio', $this->sortDirection)
+                ->orderBy('mes', $this->sortDirection);
+        } elseif (in_array($this->sortField, ['estatus', 'fecha_vencimiento'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        } else {
+            $query->orderBy('fecha_vencimiento')
+                ->orderByDesc('updated_at');
+        }
+
+        $obligaciones = $query->paginate($this->perPageValue($query, 10));
     
         $obligacionSeleccionada = $this->obligacionIdSeleccionada
             ? ObligacionClienteContador::with([

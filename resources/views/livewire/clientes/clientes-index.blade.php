@@ -8,10 +8,7 @@
             + Crear Cliente
         </button>
     </div>
-
-    <!-- Tabla de clientes -->
-    <div class="overflow-x-auto rounded shadow">
-        <div class="mb-4">
+<div class="mb-4">
             <input type="text" wire:model.live="buscar" placeholder="Buscar por nombre o RFC..."
             class="uppercase w-full px-3 py-2 border rounded-md 
             dark:bg-gray-700 dark:text-white 
@@ -19,26 +16,29 @@
             focus:border-amber-600 focus:ring focus:ring-amber-500/40 
             focus:outline-none">
         </div>
+    <!-- Tabla de clientes -->
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        
 
-        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-            <thead class="bg-stone-100 dark:bg-stone-900">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
-                    <th class="px-4 py-2 text-left">Nombre</th>
-                    <th class="px-4 py-2 text-left">RFC</th>
-                    <th class="px-4 py-2 text-left">Teléfono</th>
-                    <th class="px-4 py-2 text-left">Correo</th>
-                    <th class="px-4 py-2 text-left">Tipo</th>
+                    <x-sortable-th field="nombre" label="Nombre" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="rfc" label="RFC" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Teléfono</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Correo</th>
+                    <x-sortable-th field="tipo_persona" label="Tipo" :sort-field="$sortField" :sort-direction="$sortDirection" />
                     @if (auth()->user()->hasRole('super_admin'))
-                        <th class="px-4 py-2 text-left">Despacho</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold">Despacho</th>
                     @endif
-                    <th class="px-4 py-2 text-left">Acciones</th>
-                    <th class="px-4 py-2 text-left">Asignaciones</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Acciones</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Asignaciones</th>
 
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 @forelse ($clientes as $cliente)
-                    <tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                         <td class="px-4 py-2">{{ $cliente->nombre }}</td>
                         <td class="px-4 py-2">{{ $cliente->rfc }}</td>
                         <td class="px-4 py-2">{{ $cliente->telefono }}</td>
@@ -97,23 +97,23 @@
                                         {{-- Caso: sin obligaciones --}}
                                         @if ($cliente->total_obligaciones == 0)
                                             <span class="text-yellow-600">
-                                                ⚠️ Cliente sin obligaciones asignadas
+                                                Cliente sin obligaciones asignadas
                                             </span>
 
                                             {{-- Caso: todo asignado --}}
                                         @elseif(empty($cliente->pendientes_detalle['obligaciones']) && empty($cliente->pendientes_detalle['tareas']))
                                             <span class="text-green-600">
-                                                Todo asignado ✔
+                                                Todo asignado
                                             </span>
 
                                             {{-- Caso: pendientes --}}
                                         @else
                                             @foreach ($cliente->pendientes_detalle['obligaciones'] as $obl)
-                                                <div>📌 Obligación: {{ $obl }}</div>
+                                                <div>Obligación: {{ $obl }}</div>
                                             @endforeach
 
                                             @foreach ($cliente->pendientes_detalle['tareas'] as $tar)
-                                                <div>📝 Tarea: {{ $tar }}</div>
+                                                <div>Tarea: {{ $tar }}</div>
                                             @endforeach
                                         @endif
 
@@ -139,7 +139,7 @@
 
     <!-- Paginación -->
     <div class="mt-4">
-        {{ $clientes->links() }}
+        @include('livewire.shared.pagination-controls', ['paginator' => $clientes])
     </div>
 
     <!-- Modal Crear/Editar -->

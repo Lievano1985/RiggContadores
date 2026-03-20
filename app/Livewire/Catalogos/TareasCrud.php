@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Catalogos;
 
+use App\Livewire\Shared\HasPerPage;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\TareaCatalogo;
@@ -9,7 +10,7 @@ use App\Models\Obligacion;
 
 class TareasCrud extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
 
     public $search = '';
     public $obligacionFiltro = '';
@@ -17,6 +18,8 @@ class TareasCrud extends Component
     public $isEditing = false;
     public $confirmingDelete = false;
     public $tareaAEliminar = null;
+    public string $sortField = 'nombre';
+    public string $sortDirection = 'asc';
 
     public $form = [
         'id' => null,
@@ -33,6 +36,8 @@ class TareasCrud extends Component
 
     public function render()
     {
+        $table = (new TareaCatalogo())->getTable();
+
         $query = TareaCatalogo::query()
             ->with('obligacion')
             ->when($this->search, fn($q) =>
@@ -44,8 +49,18 @@ class TareasCrud extends Component
                 } else {
                     $q->where('obligacion_id', $this->obligacionFiltro);
                 }
-            })
-            ->orderBy('nombre');
+            });
+
+        if ($this->sortField === 'obligacion') {
+            $query->orderBy(
+                Obligacion::select('nombre')
+                    ->whereColumn('obligaciones.id', "{$table}.obligacion_id")
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif (in_array($this->sortField, ['nombre', 'activo'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        }
     
         // Obligaciones que tienen tareas en catálogo
        /*  $obligacionesConTareas = \App\Models\Obligacion::whereHas('tareasCatalogo')
@@ -57,7 +72,7 @@ $obligaciones = \App\Models\Obligacion::orderBy('nombre')->get();
 
             
         return view('livewire.catalogos.tareas-crud', [
-            'tareas' => $query->paginate(10),
+            'tareas' => $query->paginate($this->perPageValue($query, 10)),
             'obligaciones' => $obligaciones,
         ]);
     }
@@ -70,6 +85,22 @@ $obligaciones = \App\Models\Obligacion::orderBy('nombre')->get();
 
     public function updatingObligacionFiltro()
     {
+        $this->resetPage();
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['nombre', 'obligacion', 'activo'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
         $this->resetPage();
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\SuperAdmin;
 
+use App\Livewire\Shared\HasPerPage;
 use App\Models\Despacho;
 use App\Models\User;
 use Livewire\Component;
@@ -11,7 +12,9 @@ use Spatie\Permission\Models\Role;
 
 class DespachosIndex extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
+    public string $sortField = 'created_at';
+    public string $sortDirection = 'desc';
 
     public $despachoId;
     public $confirmingDelete = false;
@@ -50,8 +53,16 @@ class DespachosIndex extends Component
 
     public function render()
     {
+        $query = Despacho::query();
+
+        if (in_array($this->sortField, ['nombre', 'rfc', 'correo_contacto', 'created_at'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        } else {
+            $query->latest();
+        }
+
         return view('livewire.super-admin.despachos-index', [
-            'despachos' => Despacho::latest()->paginate(10)
+            'despachos' => $query->paginate($this->perPageValue($query, 10))
         ]);
     }
 
@@ -146,5 +157,21 @@ class DespachosIndex extends Component
             'admin_name', 'admin_email', 'admin_password',
             'modalFormVisible', 'confirmingDelete', 'isEdit'
         ]);
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['nombre', 'rfc', 'correo_contacto'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
     }
 }

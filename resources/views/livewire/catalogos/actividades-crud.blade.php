@@ -9,7 +9,7 @@
     </div>
     <div class="flex items-center gap-4">
         <input type="text" wire:model.live.debounce.500ms="search"
-            class="w-1/2 px-3 py-2 border rounded-md 
+            class="w-full px-3 py-2 border rounded-md 
                    dark:bg-gray-700 dark:text-white 
                    border-gray-300 dark:border-gray-600 
                    focus:border-amber-600 focus:ring focus:ring-amber-500/40 
@@ -18,28 +18,18 @@
     </div>
     
 
-    <div class="overflow-x-auto rounded shadow">
-        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-            <thead class="bg-stone-100 dark:bg-stone-900">
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
-                    <th class="px-4 py-2 text-left cursor-pointer" wire:click="sortBy('nombre')">
-                        Nombre
-                        @if($sortField === 'nombre')
-                            <span>{{ $sortDirection === 'asc' ? '▲' : '▼' }}</span>
-                        @endif
-                    </th>
-                    <th class="px-4 py-2 text-left cursor-pointer" wire:click="sortBy('clave')">
-                        Clave
-                        @if($sortField === 'clave')
-                            <span>{{ $sortDirection === 'asc' ? '▲' : '▼' }}</span>
-                        @endif
-                    </th>
-                    <th class="px-4 py-2 text-left">Acciones</th>
+                    <x-sortable-th field="nombre" label="Nombre" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="clave" label="Clave" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 @forelse ($actividades as $actividad)
-                    <tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                         <td class="px-4 py-2">{{ $actividad->nombre }}</td>
                         <td class="px-4 py-2">{{ $actividad->clave }}</td>
                         <td class="px-4 py-2">
@@ -63,7 +53,7 @@
     </div>
 
     <div class="mt-4">
-        {{ $actividades->links() }}
+        @include('livewire.shared.pagination-controls', ['paginator' => $actividades])
     </div>
 
     @if ($modalFormVisible)
@@ -104,3 +94,4 @@
     @endif
 
 </div>
+

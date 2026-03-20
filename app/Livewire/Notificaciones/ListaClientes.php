@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Notificaciones;
 
+use App\Livewire\Shared\HasPerPage;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Cliente;
@@ -11,8 +12,10 @@ use App\Services\BrevoService;
 
 class ListaClientes extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
     public BrevoService $brevoService;
+    public string $sortField = 'created_at';
+    public string $sortDirection = 'desc';
 
 
     public $modalFormVisible = false;
@@ -46,10 +49,14 @@ class ListaClientes extends Component
                         ->orWhere('nombre_comercial', 'like', '%' . $this->buscar . '%');
                 });
             });
-           
 
-      
-        $clientes = $clientes->latest()->paginate(10);
+        if (in_array($this->sortField, ['nombre', 'rfc', 'tipo_persona', 'created_at'], true)) {
+            $clientes->orderBy($this->sortField, $this->sortDirection);
+        } else {
+            $clientes->latest();
+        }
+
+        $clientes = $clientes->paginate($this->perPageValue($clientes, 10));
 
    
         return view('livewire.notificaciones.lista-clientes', compact('clientes'));
@@ -60,6 +67,22 @@ class ListaClientes extends Component
     //filtro-------------
     public function updatedBuscar()
     {
+        $this->resetPage();
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['nombre', 'rfc', 'tipo_persona'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
         $this->resetPage();
     }
 }

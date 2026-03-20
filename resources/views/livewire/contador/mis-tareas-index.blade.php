@@ -10,20 +10,20 @@
 
             <div class="flex flex-wrap items-center gap-2">
 
-                {{-- Filtro ejercicio (solo años con datos) --}}
+                {{-- Filtro ejercicio (solo anios con datos) --}}
                 <select wire:model.live="ejercicio"
                     class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
-                    <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+                    <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                     <option value="">Ejercicio (todos)</option>
                     @foreach ($ejerciciosDisponibles as $anio)
                         <option value="{{ $anio }}">{{ $anio }}</option>
                     @endforeach
                 </select>
 
-                {{-- Filtro mes (solo meses con datos para el año seleccionado) --}}
+                {{-- Filtro mes (solo meses con datos para el anio seleccionado) --}}
                 <select wire:model.live="mes"
                     class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
-                    <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+                    <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                     <option value="">Mes (todos)</option>
                     @foreach ($mesesManual as $num => $txt)
                         <option value="{{ $num }}">{{ $txt }}</option>
@@ -59,7 +59,7 @@
                 </select>
 
                 {{-- Buscar --}}
-                <input type="text" placeholder="Buscar (tarea / obligación)" wire:model.live="buscar"
+                <input type="text" placeholder="Buscar (tarea / obligacion)" wire:model.live="buscar"
                     class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
             </div>
         </div>
@@ -67,30 +67,30 @@
         {{-- =========================
             TABLA
         ========================== --}}
-        <div class="overflow-x-auto rounded shadow">
-            <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700 text-sm">
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
         
                 {{-- =========================
                     HEADER
                 ========================== --}}
-                <thead class="bg-stone-100 dark:bg-stone-900">
+                                                <thead class="bg-stone-100 dark:bg-stone-900">
                     <tr>
-                        <th class="px-4 py-2 text-left">Cliente</th>
-                        <th class="px-4 py-2 text-left">Ejercicio</th>
-                        <th class="px-4 py-2 text-left">Tarea</th>
-                        <th class="px-4 py-2 text-left">Obligación</th>
-                        <th class="px-4 py-2 text-left">Vence</th>
-                        <th class="px-4 py-2 text-left">Estatus</th>
-                        <th class="px-4 py-2 text-left">Tiempo estimado</th>
-                        <th class="px-4 py-2 text-left">Duración real</th>
-                        <th class="px-4 py-2 text-left">Acciones</th>
+                        <x-sortable-th field="cliente" label="Cliente" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                        <x-sortable-th field="ejercicio" label="Ejercicio" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                        <x-sortable-th field="tarea" label="Tarea" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                        <x-sortable-th field="obligacion" label="Obligacion" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                        <x-sortable-th field="fecha_limite" label="Vence" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                        <x-sortable-th field="estatus" label="Estatus" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                        <th class="px-4 py-2 text-left text-xs font-semibold">Tiempo estimado</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold">Duracion real</th>
+                        <th class="px-4 py-2 text-left text-xs font-semibold">Acciones</th>
                     </tr>
                 </thead>
         
                 {{-- =========================
                     BODY
                 ========================== --}}
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
         
                     @forelse ($tareas as $t)
                         @php
@@ -103,19 +103,19 @@
                         @class([
                             'transition-all duration-400',
                         
-                            // 🔴 vencida SOLO si no está resaltada
+                            // vencida SOLO si no esta resaltada
                             $vencida && $highlightId !== $t->id
                                 ? 'bg-red-50 dark:bg-red-900 dark:text-red-100'
                                 : '',
                         
-                            // 🟡 highlight tiene prioridad
+                            // highlight tiene prioridad
                             'bg-amber-100 dark:bg-amber-900' => $highlightId === $t->id,
                         ])
                            
                         >
         
                             <td class="px-4 py-2">
-                                {{ $t->cliente->nombre ?? ($t->cliente->razon_social ?? '—') }}
+                                {{ $t->cliente->nombre ?? ($t->cliente->razon_social ?? '-') }}
                             </td>
         
                             <td class="px-4 py-2 whitespace-nowrap">
@@ -123,15 +123,15 @@
                             </td>
         
                             <td class="px-4 py-2">
-                                {{ $t->tareaCatalogo?->nombre ?? '—' }}
+                                {{ $t->tareaCatalogo?->nombre ?? '-' }}
                             </td>
         
                             <td class="px-4 py-2">
-                                {{ $t->obligacionClienteContador?->obligacion?->nombre ?? 'Sin obligación' }}
+                                {{ $t->obligacionClienteContador?->obligacion?->nombre ?? 'Sin obligacion' }}
                             </td>
         
                             <td class="px-4 py-2 whitespace-nowrap">
-                                {{ $vence ? $vence->format('Y-m-d') : '—' }}
+                                {{ $vence ? $vence->format('Y-m-d') : '-' }}
                             </td>
         
                             <td class="px-4 py-2">
@@ -139,11 +139,11 @@
                             </td>
         
                             <td class="px-4 py-2">
-                                {{ $t->tiempo_estimado ? $t->tiempo_estimado . ' min' : '—' }}
+                                {{ $t->tiempo_estimado ? $t->tiempo_estimado . ' min' : '-' }}
                             </td>
         
                             <td class="px-4 py-2">
-                                {{ $t->duracion_minutos ? $t->duracion_minutos . ' min' : '—' }}
+                                {{ $t->duracion_minutos ? $t->duracion_minutos . ' min' : '-' }}
                             </td>
         
                             <td class="px-4 py-2">
@@ -186,7 +186,7 @@
         </div>
         
 
-        <div>{{ $tareas->links() }}</div>
+        @include('livewire.shared.pagination-controls', ['paginator' => $tareas])
 
         {{-- =========================
             MODAL SEGUIMIENTO
@@ -204,22 +204,22 @@
                             Resultados de tarea - {{ $modalTarea }}
 
                             @if ($modalObligacion)
-                                – {{ $modalObligacion }}
+                                - {{ $modalObligacion }}
                             @endif
                         </p>
                     </div>
 
-                    {{-- Comentario si está en estatus rechazado --}}
+                    {{-- Comentario si esta en estatus rechazado --}}
                     @if ($tareaSeleccionada->estatus === 'rechazada')
                         <div class="mb-4">
                             <label class="block text-sm mb-1 text-stone-600">Comentario del rechazo</label>
                             <div class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded text-gray-800 dark:text-white">
-                                {{ $tareaSeleccionada->comentario ?? '—' }}
+                                {{ $tareaSeleccionada->comentario ?? '-' }}
                             </div>
                         </div>
                     @endif
 
-                    {{-- Archivos y comentario solo si está en progreso --}}
+                    {{-- Archivos y comentario solo si esta en progreso --}}
                     @if ($tareaSeleccionada->estatus === 'en_progreso')
                         {{-- COMPONENTE DE ARCHIVOS --}}
                         @livewire('shared.archivos-adjuntos-crud', ['modelo' => $tareaSeleccionada], key('archivos-tarea-' . $tareaSeleccionada->id))
@@ -241,7 +241,7 @@
                             Cerrar
                         </button>
 
-                        {{-- Botón "Realizar" si está en rechazado --}}
+                        {{-- Boton "Realizar" si esta en rechazado --}}
                         @if ($tareaSeleccionada->estatus === 'rechazada')
                             <button wire:click="corregir({{ $tareaSeleccionada->id }})"
                                 class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded text-white">
@@ -249,7 +249,7 @@
                             </button>
                         @endif
 
-                        {{-- Botón "Finalizar" si ya está en progreso --}}
+                        {{-- Boton "Finalizar" si ya esta en progreso --}}
                         @if ($tareaSeleccionada->estatus === 'en_progreso')
                             <button wire:click="saveResultTarea"
                                 @click="window.dispatchEvent(new CustomEvent('spinner-on'))"

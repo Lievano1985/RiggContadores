@@ -18,7 +18,10 @@ use App\Models\NotificacionCliente;
 use App\Models\ObligacionClienteContador;
 use App\Models\ArchivoAdjunto;
 use App\Services\BrevoService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
+use ZipArchive;
 
 class CrearNotificacion extends Component
 {
@@ -214,19 +217,21 @@ class CrearNotificacion extends Component
             collect($this->archivosSeleccionados)->pluck('id')
         )->get();
 
-        foreach ($archivos as $archivo) {
+        $archivosValidos = $archivos->filter(function (ArchivoAdjunto $archivo) {
+            return $archivo->tieneArchivoStorage() &&
+                Storage::disk('public')->exists($archivo->archivo);
+        })->values();
 
-            // Solo archivos que existen en Storage
-            if ($archivo->tieneArchivoStorage()) {
-        
-                if (Storage::disk('public')->exists($archivo->archivo)) {
-        
-                    $attachments[] = [
-                        'name' => $archivo->nombre ?? basename($archivo->archivo),
-                        'content' => base64_encode(
-                            Storage::disk('public')->get($archivo->archivo)
-                        ),
-                    ];
+        if ($archivosValidos->count() > 3) {
+            $adjuntoZip = $this->empaquetarMultiplesArchivosEnZip($archivosValidos);
+            if ($adjuntoZip) {
+                $attachments[] = $adjuntoZip;
+            }
+        } else {
+            foreach ($archivosValidos as $archivo) {
+                $adjunto = $this->construirAdjuntoBrevo($archivo);
+                if ($adjunto) {
+                    $attachments[] = $adjunto;
                 }
             }
         }
@@ -282,5 +287,160 @@ class CrearNotificacion extends Component
     {
 
         return view('livewire.notificaciones.crear-notificacion');
+    }
+
+    private function construirAdjuntoBrevo(ArchivoAdjunto $archivo): ?array
+    {
+        if (
+            !$archivo->tieneArchivoStorage() ||
+            !Storage::disk('public')->exists($archivo->archivo)
+        ) {
+            return null;
+        }
+
+        $nombreOriginal = $archivo->nombre ?? basename($archivo->archivo);
+        $contenido = Storage::disk('public')->get($archivo->archivo);
+        $extension = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
+
+        if (in_array($extension, ['cer', 'key'], true)) {
+            return $this->empaquetarArchivoEnZip($nombreOriginal, $contenido);
+        }
+
+        return [
+            'name' => $nombreOriginal,
+            'content' => base64_encode($contenido),
+        ];
+    }
+
+    private function empaquetarArchivoEnZip(string $nombreOriginal, string $contenido): ?array
+    {
+        $tmpBase = tempnam(sys_get_temp_dir(), 'brevo_zip_');
+        if ($tmpBase === false) {
+            logger()->error('No se pudo crear archivo temporal para zip.', [
+                'archivo' => $nombreOriginal,
+            ]);
+            return null;
+        }
+
+        $zipPath = $tmpBase . '.zip';
+        @unlink($tmpBase);
+
+        try {
+            $zip = new ZipArchive();
+            $status = $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+            if ($status !== true) {
+                logger()->error('No se pudo abrir zip temporal para adjunto Brevo.', [
+                    'archivo' => $nombreOriginal,
+                    'status' => $status,
+                ]);
+                @unlink($zipPath);
+                return null;
+            }
+
+            $zip->addFromString($nombreOriginal, $contenido);
+            $zip->close();
+
+            $zipContenido = @file_get_contents($zipPath);
+            @unlink($zipPath);
+
+            if ($zipContenido === false) {
+                logger()->error('No se pudo leer zip temporal para adjunto Brevo.', [
+                    'archivo' => $nombreOriginal,
+                ]);
+                return null;
+            }
+
+            $baseNombre = pathinfo($nombreOriginal, PATHINFO_FILENAME);
+
+            return [
+                'name' => $baseNombre . '.zip',
+                'content' => base64_encode($zipContenido),
+            ];
+        } catch (Throwable $e) {
+            @unlink($zipPath);
+            logger()->error('Error al comprimir adjunto para Brevo.', [
+                'archivo' => $nombreOriginal,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    private function empaquetarMultiplesArchivosEnZip(Collection $archivos): ?array
+    {
+        $tmpBase = tempnam(sys_get_temp_dir(), 'brevo_lote_');
+        if ($tmpBase === false) {
+            logger()->error('No se pudo crear archivo temporal para zip global de adjuntos.');
+            return null;
+        }
+
+        $zipPath = $tmpBase . '.zip';
+        @unlink($tmpBase);
+
+        try {
+            $zip = new ZipArchive();
+            $status = $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+            if ($status !== true) {
+                logger()->error('No se pudo abrir zip global de adjuntos para Brevo.', [
+                    'status' => $status,
+                ]);
+                @unlink($zipPath);
+                return null;
+            }
+
+            $nombresUsados = [];
+
+            foreach ($archivos as $archivo) {
+                $nombreOriginal = $archivo->nombre ?? basename($archivo->archivo);
+                $contenido = Storage::disk('public')->get($archivo->archivo);
+                $nombreUnico = $this->resolverNombreZipUnico($nombreOriginal, $nombresUsados);
+                $zip->addFromString($nombreUnico, $contenido);
+            }
+
+            $zip->close();
+
+            $zipContenido = @file_get_contents($zipPath);
+            @unlink($zipPath);
+
+            if ($zipContenido === false) {
+                logger()->error('No se pudo leer zip global de adjuntos para Brevo.');
+                return null;
+            }
+
+            $nombreZip = 'adjuntos_' . now()->format('Ymd_His') . '.zip';
+
+            return [
+                'name' => $nombreZip,
+                'content' => base64_encode($zipContenido),
+            ];
+        } catch (Throwable $e) {
+            @unlink($zipPath);
+            logger()->error('Error al comprimir adjuntos en zip global para Brevo.', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    private function resolverNombreZipUnico(string $nombre, array &$nombresUsados): string
+    {
+        if (!isset($nombresUsados[$nombre])) {
+            $nombresUsados[$nombre] = 1;
+            return $nombre;
+        }
+
+        $indice = $nombresUsados[$nombre];
+        $nombresUsados[$nombre] = $indice + 1;
+
+        $base = pathinfo($nombre, PATHINFO_FILENAME);
+        $extension = pathinfo($nombre, PATHINFO_EXTENSION);
+        $sufijo = '_' . $indice;
+
+        return $extension !== ''
+            ? $base . $sufijo . '.' . $extension
+            : $base . $sufijo;
     }
 }

@@ -1,18 +1,18 @@
-{{-- Vista: Catálogo de Obligaciones y Tareas Autor: Luis Liévano - JL3 Digital --}}
+{{-- Vista: Catalogo de Obligaciones y Tareas Autor: Luis Lievano - JL3 Digital --}}
 <div x-data="{ openSidebar: @entangle('sidebarVisible') }">
 
     {{-- ===================================== --}}
     {{-- ENCABEZADO --}}
     {{-- ===================================== --}}
     <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-bold text-stone-600 dark:text-white"> Catálogo de Obligaciones y Tareas </h2>
+        <h2 class="text-xl font-bold text-stone-600 dark:text-white"> Catalogo de Obligaciones y Tareas </h2>
         <button wire:click="abrirCrearObligacion"
-            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition"> + Nueva obligación </button>
+            class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700 transition"> + Nueva obligacion </button>
     </div>
 
     {{-- BUSCADOR --}}
     <div class="mb-4">
-        <label class="block text-xs font-semibold text-stone-600 dark:text-white mb-1"> Filtro (obligación o tarea)
+        <label class="block text-xs font-semibold text-stone-600 dark:text-white mb-1"> Filtro (obligacion o tarea)
         </label>
         <input type="text" wire:model.live.debounce.500ms="search" placeholder="Buscar..."
             class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
@@ -23,17 +23,14 @@
     {{-- ===================================== --}}
     <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-stone-100 dark:bg-stone-900">
+                        <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
                     <th class="px-4 py-2"></th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold">Obligación</th>
-
-                    {{-- ✅ NUEVO: Categoría --}}
-                    <th class="px-4 py-2 text-left text-xs font-semibold">Categoría</th>
-
-                    <th class="px-4 py-2 text-left text-xs font-semibold">Periodicidad</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold">Tareas</th>
-                    <th class="px-4 py-2 text-center text-xs font-semibold">Activa</th>
+                    <x-sortable-th field="nombre" label="Obligacion" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="categoria" label="Categoria" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="periodicidad" label="Periodicidad" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="tareas" label="Tareas" :sort-field="$sortField" :sort-direction="$sortDirection" align="center" />
+                    <x-sortable-th field="activa" label="Activa" :sort-field="$sortField" :sort-direction="$sortDirection" align="center" />
                     <th class="px-4 py-2 text-right text-xs font-semibold">Acciones</th>
                 </tr>
             </thead>
@@ -44,7 +41,7 @@
                         $expandida = $obligacionesExpandidas[$obligacion->id] ?? false;
                         $esUnica = in_array(
                             strtolower($obligacion->periodicidad),
-                            ['unica', 'única', 'eventual'],
+                            ['unica', 'unica', 'eventual'],
                             true,
                         );
                     @endphp
@@ -73,19 +70,19 @@
                             <div class="text-sm font-medium">{{ $obligacion->nombre }}</div>
                             <div class="text-xs text-gray-500 dark:text-gray-400">
                                 @if ($esUnica)
-                                    Única / eventual
+                                    Unica / eventual
                                 @else
                                     Mes inicio: {{ $obligacion->mes_inicio }}, Desfase:
-                                    {{ $obligacion->desfase_meses }}, Día corte: {{ $obligacion->dia_corte }}
+                                    {{ $obligacion->desfase_meses }}, Dia corte: {{ $obligacion->dia_corte }}
                                 @endif
                             </div>
                         </td>
 
-                        {{-- ✅ NUEVO: Categoría (primera mayúscula / label bonito) --}}
+                        {{-- x NUEVO: Categoria (primera mayuscula / label bonito) --}}
                         <td class="px-4 py-2">
                             @php
                                 $mapCategorias = [
-                                    'obligacion' => 'Obligación',
+                                    'obligacion' => 'Obligacion',
                                     'proceso' => 'Proceso',
                                 ];
                             @endphp
@@ -121,13 +118,13 @@
                         <td class="px-4 py-2">
                             <div class="flex items-center justify-end gap-1">
                             @hasrole('admin_despacho')
-                                <x-action-icon icon="upload" label="Nueva tarea" variant="warning"
+                                <x-action-icon icon="plus" label="Nueva tarea" variant="warning"
                                     wire:click="abrirCrearTarea({{ $obligacion->id }})" />
-                                <x-action-icon icon="edit" label="Editar obligación" variant="primary"
+                                <x-action-icon icon="edit" label="Editar obligacion" variant="primary"
                                     wire:click="abrirEditarObligacion({{ $obligacion->id }})" />
-                                <x-action-icon icon="trash" label="Eliminar obligación" variant="danger"
+                                <x-action-icon icon="trash" label="Eliminar obligacion" variant="danger"
                                     wire:click="eliminarObligacion({{ $obligacion->id }})"
-                                    onclick="return confirm('¿Eliminar esta obligación y sus tareas?')"
+                                    onclick="return confirm('?Eliminar esta obligacion y sus tareas?')"
                                 />
                             @endhasrole
                             </div>
@@ -142,7 +139,7 @@
                             <td colspan="7" class="px-6 pb-4 pt-1">
                                 @if ($obligacion->tareasCatalogo->isEmpty())
                                     <p class="text-sm text-gray-500 dark:text-gray-400 italic mt-2">
-                                        Esta obligación aún no tiene tareas registradas.
+                                        Esta obligacion aun no tiene tareas registradas.
                                     </p>
                                 @else
                                     <div
@@ -151,7 +148,7 @@
                                             <thead class="bg-gray-100 dark:bg-gray-800/80">
                                                 <tr>
                                                     <th class="px-3 py-2 text-left text-xs font-semibold">Tarea</th>
-                                                    <th class="px-3 py-2 text-left text-xs font-semibold">Descripción
+                                                    <th class="px-3 py-2 text-left text-xs font-semibold">Descripcion
                                                     </th>
                                                     <th class="px-3 py-2 text-right text-xs font-semibold">Acciones</th>
                                                 </tr>
@@ -165,7 +162,7 @@
                                                                 {{ $tarea->nombre }}
                                                             </button>
                                                         </td>
-                                                        <td class="px-3 py-2 text-sm"> {{ $tarea->descripcion ?: '—' }}
+                                                        <td class="px-3 py-2 text-sm"> {{ $tarea->descripcion ?: '-' }}
                                                         </td>
                                                         <td class="px-3 py-2">
                                                             <div class="flex items-center justify-end gap-1">
@@ -173,7 +170,7 @@
                                                                 wire:click="abrirEditarTarea({{ $tarea->id }})" />
                                                             <x-action-icon icon="trash" label="Eliminar tarea" variant="danger"
                                                                 wire:click="eliminarTarea({{ $tarea->id }})"
-                                                                onclick="return confirm('¿Eliminar esta tarea?')"
+                                                                onclick="return confirm('?Eliminar esta tarea?')"
                                                             />
                                                             </div>
                                                         </td>
@@ -190,17 +187,17 @@
                 @empty
                     <tr>
                         <td colspan="7" class="py-6 text-center text-gray-500"> No hay obligaciones registradas
-                            todavía. </td>
+                            todavia. </td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    <div class="mt-6"> {{ $obligaciones->links() }} </div>
+    @include('livewire.shared.pagination-controls', ['paginator' => $obligaciones])
 
     {{-- ===================================== --}}
-    {{-- SIDEBAR (CREAR/EDITAR OBLIGACIÓN O TAREA) --}}
+    {{-- SIDEBAR (CREAR/EDITAR OBLIGACION O TAREA) --}}
     {{-- ===================================== --}}
     <div x-cloak x-show="openSidebar" x-transition.opacity class="fixed inset-0 z-40 flex justify-end bg-black/40 ">
         {{-- Cerrar al fondo --}}
@@ -215,11 +212,11 @@
                 <h3 class="text-sm font-semibold text-stone-700 dark:text-gray-100">
                     @switch($sidebarModo)
                         @case('crear_obligacion')
-                            Nueva obligación
+                            Nueva obligacion
                         @break
 
                         @case('editar_obligacion')
-                            Editar obligación
+                            Editar obligacion
                         @break
 
                         @case('crear_tarea')
@@ -236,26 +233,26 @@
                 </h3>
 
                 <button @click="$wire.cerrarSidebar()"
-                    class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"> ✕ </button>
+                    class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"> x </button>
             </div>
 
             {{-- CONTENIDO --}}
             <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
 
                 {{-- ----------------------------------- --}}
-                {{-- FORM OBLIGACIÓN --}}
+                {{-- FORM OBLIGACION --}}
                 {{-- ----------------------------------- --}}
                 @if (in_array($sidebarModo, ['crear_obligacion', 'editar_obligacion']))
                     @php
                         $esUnicaSidebar = in_array(
                             strtolower($formObligacion['periodicidad'] ?? ''),
-                            ['unica', 'única', 'eventual'],
+                            ['unica', 'unica', 'eventual'],
                             true,
                         );
 
-                        // ✅ NUEVO: catálogo de categorías (sin tocar lógica del componente)
+                        // x NUEVO: catalogo de categorias (sin tocar logica del componente)
                         $categorias = [
-                            'obligacion' => 'Obligación',
+                            'obligacion' => 'Obligacion',
                             'proceso' => 'Proceso',
                         ];
                     @endphp
@@ -267,9 +264,9 @@
                             class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
                     </div>
 
-                    {{-- ✅ NUEVO: CATEGORÍA (ENUM) --}}
+                    {{-- x NUEVO: CATEGORIA (ENUM) --}}
                     <div>
-                        <label class="block text-sm mb-1">Categoría</label>
+                        <label class="block text-sm mb-1">Categoria</label>
                         <select wire:model.defer="formObligacion.categoria"
                             class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
                             <option value="">Seleccione...</option>
@@ -291,7 +288,7 @@
                         </select>
                     </div>
 
-                    {{-- CAMPOS SOLO SI NO ES ÚNICA --}}
+                    {{-- CAMPOS SOLO SI NO ES UNICA --}}
                     @unless ($esUnicaSidebar)
                         <div class="grid grid-cols-3 gap-3">
                             <div>
@@ -309,7 +306,7 @@
                                     class="w-full px-2 py-2 border rounded dark:bg-gray-700 dark:text-white">
                             </div>
                             <div>
-                                <label class="block text-sm mb-1">Día corte</label>
+                                <label class="block text-sm mb-1">Dia corte</label>
                                 <input type="number" wire:model.defer="formObligacion.dia_corte"
                                     class="w-full px-2 py-2 border rounded dark:bg-gray-700 dark:text-white">
                             </div>
@@ -319,7 +316,7 @@
                     {{-- ACTIVA --}}
                     <div class="flex items-center space-x-2">
                         <input type="checkbox" wire:model.defer="formObligacion.activa">
-                        <span class="text-sm">Obligación activa</span>
+                        <span class="text-sm">Obligacion activa</span>
                     </div>
                 @endif
 
@@ -328,14 +325,14 @@
                 {{-- ----------------------------------- --}}
                 @if (in_array($sidebarModo, ['crear_tarea', 'editar_tarea']))
 
-                    {{-- Obligación padre --}}
+                    {{-- Obligacion padre --}}
                     @if ($obligacionSeleccionadaId)
                         @php
                             $obPadre = $obligaciones->firstWhere('id', $obligacionSeleccionadaId);
                         @endphp
                         @if ($obPadre)
                             <div>
-                                <label class="block text-xs text-gray-400 mb-1">Obligación</label>
+                                <label class="block text-xs text-gray-400 mb-1">Obligacion</label>
                                 <div class="px-3 py-2 border rounded bg-gray-100 dark:bg-gray-800">
                                     {{ $obPadre->nombre }}
                                 </div>
@@ -350,9 +347,9 @@
                             class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
                     </div>
 
-                    {{-- Descripción --}}
+                    {{-- Descripcion --}}
                     <div>
-                        <label class="block text-sm mb-1">Descripción</label>
+                        <label class="block text-sm mb-1">Descripcion</label>
                         <textarea rows="4" wire:model.defer="formTarea.descripcion"
                             class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"></textarea>
                     </div>

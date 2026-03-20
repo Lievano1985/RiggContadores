@@ -13,6 +13,8 @@
 
 namespace App\Livewire\Contador;
 
+use App\Livewire\Shared\HasPerPage;
+use App\Models\Cliente;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
@@ -23,7 +25,9 @@ use App\Services\DriveService;
 
 class MisTareasIndex extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithPagination, WithFileUploads, HasPerPage;
+    public string $sortField = '';
+    public string $sortDirection = 'asc';
 
     // -----------------------------
     // Highlight temporal + badge de estatus
@@ -140,6 +144,22 @@ class MisTareasIndex extends Component
         $this->resetPage();
     }
 
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['cliente', 'ejercicio', 'tarea', 'obligacion', 'fecha_limite', 'estatus'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
+    }
+
 
 
     // =========================================================
@@ -167,7 +187,7 @@ class MisTareasIndex extends Component
     // =========================================================
     public function render()
     {
-        $tareas = TareaAsignada::query()
+        $query = TareaAsignada::query()
             ->with([
                 'cliente',
                 'tareaCatalogo',
@@ -210,20 +230,48 @@ class MisTareasIndex extends Component
             })
             
 
-            // Orden
-            ->orderBy('fecha_limite', 'asc')
-            ->orderByRaw("CASE
-                WHEN estatus='asignada' THEN 1
-                WHEN estatus='en_progreso' THEN 2
-                WHEN estatus='realizada' THEN 3
-                WHEN estatus='revisada' THEN 4
-                WHEN estatus='rechazada' THEN 5
-                WHEN estatus='reabierta' THEN 6
-                WHEN estatus='cancelada' THEN 7
-                WHEN estatus='cerrada' THEN 8
-                ELSE 99 END")
+            ;
 
-            ->paginate(15);
+        if ($this->sortField === 'cliente') {
+            $query->orderBy(
+                Cliente::select('nombre')
+                    ->whereColumn('clientes.id', 'tareas_asignadas.cliente_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'tarea') {
+            $query->orderBy(
+                \App\Models\TareaCatalogo::select('nombre')
+                    ->whereColumn('tareas_catalogo.id', 'tareas_asignadas.tarea_catalogo_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'obligacion') {
+            $query->orderBy(
+                \App\Models\Obligacion::select('nombre')
+                    ->whereColumn('obligaciones.id', 'obligacion_cliente_contador.obligacion_id')
+                    ->join('obligacion_cliente_contador', 'obligacion_cliente_contador.obligacion_id', '=', 'obligaciones.id')
+                    ->whereColumn('obligacion_cliente_contador.id', 'tareas_asignadas.obligacion_cliente_contador_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif (in_array($this->sortField, ['ejercicio', 'fecha_limite', 'estatus'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        } else {
+            $query->orderBy('fecha_limite', 'asc')
+                ->orderByRaw("CASE
+                    WHEN estatus='asignada' THEN 1
+                    WHEN estatus='en_progreso' THEN 2
+                    WHEN estatus='realizada' THEN 3
+                    WHEN estatus='revisada' THEN 4
+                    WHEN estatus='rechazada' THEN 5
+                    WHEN estatus='reabierta' THEN 6
+                    WHEN estatus='cancelada' THEN 7
+                    WHEN estatus='cerrada' THEN 8
+                    ELSE 99 END");
+        }
+
+        $tareas = $query->paginate($this->perPageValue($query, 15));
 
         return view('livewire.contador.mis-tareas-index', compact('tareas'));
     }

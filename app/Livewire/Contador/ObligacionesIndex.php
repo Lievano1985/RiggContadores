@@ -13,6 +13,9 @@
 
 namespace App\Livewire\Contador;
 
+use App\Livewire\Shared\HasPerPage;
+use App\Models\Cliente;
+use App\Models\Obligacion;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
@@ -24,7 +27,9 @@ use App\Models\TareaAsignada;
 
 class ObligacionesIndex extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithPagination, WithFileUploads, HasPerPage;
+    public string $sortField = '';
+    public string $sortDirection = 'asc';
     // -----------------------------
     // Highlight temporal (flash)
     // -----------------------------
@@ -159,6 +164,22 @@ public ?string $modalObligacion = null;
     {
         $this->resetPage();
     }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['cliente', 'ejercicio', 'obligacion', 'estatus', 'fecha_vencimiento'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
+    }
     public function limpiarHighlight(): void
     {
         $this->highlightId = null;
@@ -207,19 +228,39 @@ public ?string $modalObligacion = null;
             })
             
 
-            ->orderByRaw("CASE
-                WHEN estatus='asignada' THEN 1
-                WHEN estatus='en_progreso' THEN 2
-                WHEN estatus='realizada' THEN 3
-                WHEN estatus='enviada_cliente' THEN 4
-                WHEN estatus='respuesta_cliente' THEN 5
-                WHEN estatus='respuesta_revisada' THEN 6
-                WHEN estatus='finalizado' THEN 7
-                WHEN estatus='reabierta' THEN 8
-                ELSE 99 END")
-            ->orderBy('fecha_vencimiento', 'asc');
+            ;
 
-        $obligaciones = $q->paginate(15);
+        if ($this->sortField === 'cliente') {
+            $q->orderBy(
+                Cliente::select('nombre')
+                    ->whereColumn('clientes.id', 'obligacion_cliente_contador.cliente_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'obligacion') {
+            $q->orderBy(
+                Obligacion::select('nombre')
+                    ->whereColumn('obligaciones.id', 'obligacion_cliente_contador.obligacion_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif (in_array($this->sortField, ['ejercicio', 'estatus', 'fecha_vencimiento'], true)) {
+            $q->orderBy($this->sortField, $this->sortDirection);
+        } else {
+            $q->orderByRaw("CASE
+                    WHEN estatus='asignada' THEN 1
+                    WHEN estatus='en_progreso' THEN 2
+                    WHEN estatus='realizada' THEN 3
+                    WHEN estatus='enviada_cliente' THEN 4
+                    WHEN estatus='respuesta_cliente' THEN 5
+                    WHEN estatus='respuesta_revisada' THEN 6
+                    WHEN estatus='finalizado' THEN 7
+                    WHEN estatus='reabierta' THEN 8
+                    ELSE 99 END")
+                ->orderBy('fecha_vencimiento', 'asc');
+        }
+
+        $obligaciones = $q->paginate($this->perPageValue($q, 15));
 
         return view('livewire.contador.obligaciones-index', compact('obligaciones'));
     }

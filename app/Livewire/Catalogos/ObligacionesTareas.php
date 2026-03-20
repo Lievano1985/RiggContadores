@@ -2,13 +2,14 @@
 
 /**
  * Componente Livewire: ObligacionesTareas
- * Descripción: Gestión unificada del catálogo de obligaciones y sus tareas hijas,
+ * Descripcion: Gestion unificada del catalogo de obligaciones y sus tareas hijas,
  *              con tabla expandible y sidebar para crear/editar.
- * Autor: Luis Liévano - JL3 Digital
+ * Autor: Luis Lievano - JL3 Digital
  */
 
 namespace App\Livewire\Catalogos;
 
+use App\Livewire\Shared\HasPerPage;
 use App\Models\Obligacion;
 use App\Models\TareaCatalogo;
 use Illuminate\Validation\Rule;
@@ -17,11 +18,13 @@ use Livewire\WithPagination;
 
 class ObligacionesTareas extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
 
     protected $paginationTheme = 'tailwind';
 
     public string $search = '';
+    public string $sortField = 'categoria';
+    public string $sortDirection = 'asc';
     public array $obligacionesExpandidas = [];
 
     public bool $sidebarVisible = false;
@@ -30,11 +33,11 @@ class ObligacionesTareas extends Component
     public ?int $obligacionSeleccionadaId = null;
     public ?int $tareaSeleccionadaId = null;
     public array $categorias = [
-        'obligacion' => 'Obligación',
+        'obligacion' => 'Obligacion',
         'proceso'    => 'Proceso',
     ];
     /* =========================
-     | FORMULARIO OBLIGACIÓN
+     | FORMULARIO OBLIGACION
      ========================= */
     public array $formObligacion = [
         'nombre'        => '',
@@ -62,13 +65,34 @@ class ObligacionesTareas extends Component
         'cuatrimestral' => 'Cuatrimestral',
         'semestral'     => 'Semestral',
         'anual'         => 'Anual',
-        'unica'         => 'Única',
+        'unica'         => 'Unica',
         'eventual'      => 'Eventual',
     ];
 
     public function updatingPage()
     {
         $this->obligacionesExpandidas = [];
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['nombre', 'categoria', 'periodicidad', 'tareas', 'activa'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
     }
 
     public function toggleObligacion(int $id): void
@@ -189,7 +213,7 @@ class ObligacionesTareas extends Component
         $datos['periodicidad'] = strtolower($datos['periodicidad']);
         $datos['tipo'] = 'mixto';
 
-        if (in_array($datos['periodicidad'], ['unica', 'única', 'eventual'], true)) {
+        if (in_array($datos['periodicidad'], ['unica', 'unica', 'eventual'], true)) {
             $datos['mes_inicio'] = 1;
             $datos['desfase_meses'] = null;
             $datos['dia_corte'] = null;
@@ -236,7 +260,7 @@ class ObligacionesTareas extends Component
             $tarea->delete();
         }
     
-        // Eliminar la obligación
+        // Eliminar la obligacion
         $obligacion->delete();
     
         // Limpiar estados visuales
@@ -250,7 +274,7 @@ class ObligacionesTareas extends Component
     {
         $search = trim($this->search);
 
-        $obligaciones = Obligacion::query()
+        $query = Obligacion::query()
             ->when($search !== '', function ($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
                   ->orWhere('categoria', 'like', "%{$search}%")
@@ -259,10 +283,19 @@ class ObligacionesTareas extends Component
                   );
             })
             ->withCount('tareasCatalogo')
-            ->with(['tareasCatalogo' => fn ($q) => $q->orderBy('nombre')])
-            ->orderBy('categoria')
-            ->orderBy('nombre')
-            ->paginate(10);
+            ->with(['tareasCatalogo' => fn ($q) => $q->orderBy('nombre')]);
+
+        if ($this->sortField === 'tareas') {
+            $query->orderBy('tareas_catalogo_count', $this->sortDirection)
+                ->orderBy('nombre', 'asc');
+        } elseif (in_array($this->sortField, ['nombre', 'categoria', 'periodicidad', 'activa'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection)
+                ->orderBy('nombre', 'asc');
+        } else {
+            $query->orderBy('categoria')->orderBy('nombre');
+        }
+
+        $obligaciones = $query->paginate($this->perPageValue($query, 10));
 
         return view('livewire.catalogos.obligaciones-tareas', compact('obligaciones'));
     }

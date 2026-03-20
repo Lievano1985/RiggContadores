@@ -1,61 +1,76 @@
 <?php
 
-
-
 namespace App\Livewire\Catalogos;
 
+use App\Livewire\Shared\HasPerPage;
 use App\Models\Regimen;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class RegimenesCrud extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
 
-    public $regimenId;
-    public $nombre;
-    public $clave_sat;
-    public $tipo_persona;
-    public $modalFormVisible = false;
-    public $isEdit = false;
-    public $search = '';
-    public $sortField = 'nombre';
-    public $sortDirection = 'asc';
-    protected $rules = [
-        'nombre' => 'required|string|min:3',
-        'clave_sat' => 'required|string|min:3|max:10|unique:regimenes,clave_sat',
-        'tipo_persona' => 'required|in:física,moral,física/moral',
-    ];
+    public ?int $regimenId = null;
+    public string $nombre = '';
+    public string $clave_sat = '';
+    public string $tipo_persona = '';
+    public bool $modalFormVisible = false;
+    public bool $isEdit = false;
+    public string $search = '';
+    public string $sortField = 'nombre';
+    public string $sortDirection = 'asc';
 
     public function render()
     {
+        $query = Regimen::query()
+            ->where(function ($q) {
+                $q->where('nombre', 'like', '%' . $this->search . '%')
+                    ->orWhere('clave_sat', 'like', '%' . $this->search . '%')
+                    ->orWhere('tipo_persona', 'like', '%' . $this->search . '%');
+            });
 
-        $regimen = Regimen::query()
-        ->where('nombre', 'like', '%' . $this->search . '%')
-        ->orWhere('clave_sat', 'like', '%' . $this->search . '%')
-        ->orWhere('tipo_persona', 'like', '%' . $this->search . '%')
+        if (in_array($this->sortField, ['nombre', 'clave_sat', 'tipo_persona'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        } else {
+            $query->orderBy('nombre', 'asc');
+        }
 
-        ->orderBy($this->sortField, $this->sortDirection)
-        ->paginate(10);
-
-
- 
+        $regimenes = $query->paginate($this->perPageValue($query, 10));
 
         return view('livewire.catalogos.regimenes-crud', [
-            'regimenes' => $regimen
+            'regimenes' => $regimenes,
         ]);
     }
 
-    public function showCreateForm()
+    protected function rules(): array
+    {
+        return [
+            'nombre' => ['required', 'string', 'min:3'],
+            'clave_sat' => [
+                'required',
+                'string',
+                'min:3',
+                'max:10',
+                Rule::unique('regimenes', 'clave_sat')->ignore($this->regimenId),
+            ],
+            'tipo_persona' => ['required', Rule::in(['fisica', 'moral', 'fisica/moral'])],
+        ];
+    }
+
+    public function showCreateForm(): void
     {
         $this->resetForm();
         $this->modalFormVisible = true;
         $this->isEdit = false;
     }
 
-    public function showEditForm(Regimen $regimen)
+    public function showEditForm(int $regimenId): void
     {
         $this->resetForm();
+        $regimen = Regimen::findOrFail($regimenId);
+
         $this->regimenId = $regimen->id;
         $this->nombre = $regimen->nombre;
         $this->clave_sat = $regimen->clave_sat;
@@ -64,12 +79,14 @@ class RegimenesCrud extends Component
         $this->isEdit = true;
     }
 
-    public function save()
+    public function save(): void
     {
         $this->validate();
 
         if ($this->isEdit && $this->regimenId) {
-            Regimen::find($this->regimenId)->update($this->only(['nombre', 'clave_sat', 'tipo_persona']));
+            Regimen::findOrFail($this->regimenId)->update(
+                $this->only(['nombre', 'clave_sat', 'tipo_persona'])
+            );
         } else {
             Regimen::create($this->only(['nombre', 'clave_sat', 'tipo_persona']));
         }
@@ -78,25 +95,36 @@ class RegimenesCrud extends Component
         $this->resetForm();
     }
 
-    public function delete($id)
+    public function delete(int $id): void
     {
         Regimen::find($id)?->delete();
     }
 
-    public function resetForm()
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['nombre', 'clave_sat', 'tipo_persona'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    private function resetForm(): void
     {
         $this->reset(['regimenId', 'nombre', 'clave_sat', 'tipo_persona']);
-        $this->resetValidation();   // limpia errores
-        $this->resetErrorBag();     // limpia bolsa interna
+        $this->resetValidation();
+        $this->resetErrorBag();
     }
-    public function updatingSearch() { $this->resetPage(); }
-
-public function sortBy($field) {
-    if ($this->sortField === $field) {
-        $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-        $this->sortField = $field;
-        $this->sortDirection = 'asc';
-    }
-}
 }

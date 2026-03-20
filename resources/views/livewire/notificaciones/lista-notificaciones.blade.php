@@ -6,23 +6,24 @@
         Historial de notificaciones
     </h3>
 
-    <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
 
-        <thead class="bg-stone-100 dark:bg-stone-900 text-xs">
+                <thead class="bg-stone-100 dark:bg-stone-900">
             <tr>
-                <th class="px-3 py-2 text-left">Fecha</th>
-                <th class="px-3 py-2 text-left">Asunto</th>
-                <th class="px-3 py-2 text-left">Periodo</th>
-                <th class="px-3 py-2 text-left">Usuario</th>
-                <th class="px-3 py-2 text-right">Acciones</th>
+                <x-sortable-th field="created_at" label="Fecha" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
+                <x-sortable-th field="asunto" label="Asunto" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
+                <x-sortable-th field="periodo_mes" label="Periodo" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
+                <x-sortable-th field="usuario" label="Usuario" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
+                <th class="px-3 py-2 text-right text-xs font-semibold">Acciones</th>
 
             </tr>
         </thead>
 
-        <tbody class="text-sm">
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
 
             @forelse ($notificaciones as $n)
-                <tr class="border-t dark:border-gray-700">
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
 
                     <td class="px-3 py-2">
                         {{ $n->created_at->format('Y-m-d H:i') }}
@@ -56,6 +57,7 @@
         </tbody>
 
     </table>
+    </div>
 {{-- SIDEBAR --}}
 <div x-cloak x-show="sidebar" x-transition.opacity
      class="fixed inset-0 bg-black/40 z-40 flex justify-end">

@@ -1,25 +1,25 @@
 <div class="p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-stone-600">Gestión de Despachos</h2>
+        <h2 class="text-xl font-bold text-stone-600">Gestion de Despachos</h2>
         <button wire:click="crear" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
             + Nuevo Despacho
         </button>
     </div>
 
-    <div class="overflow-x-auto rounded shadow">
-        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-            <thead class="bg-stone-100 dark:bg-stone-900">
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
-                    <th class="px-4 py-2 text-left">Nombre</th>
-                    <th class="px-4 py-2 text-left">RFC</th>
-                    <th class="px-4 py-2 text-left">Correo</th>
-                    <th class="px-4 py-2 text-left">Teléfono</th>
-                    <th class="px-4 py-2 text-left">Acciones</th>
+                    <x-sortable-th field="nombre" label="Nombre" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="rfc" label="RFC" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="correo_contacto" label="Correo" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Teléfono</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 @forelse ($despachos as $d)
-                    <tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                         <td class="px-4 py-2">{{ $d->nombre }}</td>
                         <td class="px-4 py-2">{{ $d->rfc }}</td>
                         <td class="px-4 py-2">{{ $d->correo_contacto }}</td>
@@ -45,7 +45,7 @@
     </div>
 
     <div class="mt-4">
-        {{ $despachos->links() }}
+        @include('livewire.shared.pagination-controls', ['paginator' => $despachos])
     </div>
 
     @if ($modalFormVisible)
@@ -75,7 +75,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm mb-1">Teléfono</label>
+                        <label class="block text-sm mb-1">Telefono</label>
                         <input type="text" wire:model.defer="telefono_contacto" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
                         @error('telefono_contacto') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div> --}}
@@ -87,10 +87,10 @@
                     </div> --}}
 
                     <div>
-                        <label class="block text-sm mb-1">Política de almacenamiento</label>
+                        <label class="block text-sm mb-1">Politica de almacenamiento</label>
                         <select wire:model.live="politica_almacenamiento" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:outline-none">
                          
-                            <option value="">Selecciona una opción</option>
+                            <option value="">Selecciona una opcion</option>
                             <option value="storage_only">Laravel Storage</option>
                             <option value="drive_only">Google Drive</option>
                             <option value="both">Ambos</option>
@@ -115,7 +115,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm mb-1">Contraseña</label>
+                            <label class="block text-sm mb-1">Contrasena</label>
                             <input type="password" wire:model.defer="admin_password" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
                             @error('admin_password') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
@@ -150,8 +150,8 @@
     @if ($confirmingDelete)
         <div class="fixed inset-0 flex items-center justify-center bg-stone-600 bg-opacity-50 z-50">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg max-w-md w-full text-gray-900 dark:text-white">
-                <h3 class="text-lg font-semibold mb-4 text-stone-600">¿Eliminar Despacho?</h3>
-                <p class="mb-4">Esta acción no se puede deshacer.</p>
+                <h3 class="text-lg font-semibold mb-4 text-stone-600">Eliminar Despacho?</h3>
+                <p class="mb-4">Esta accion no se puede deshacer.</p>
                 <div class="flex justify-end space-x-2">
                     <button wire:click="resetForm" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
                         Cancelar

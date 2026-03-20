@@ -11,7 +11,7 @@
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
                    border-gray-300 dark:border-gray-600 focus:border-amber-600
                    focus:ring focus:ring-amber-500/40 focus:outline-none">
-                <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+                <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
 
                 @foreach ($aniosDisponibles as $year)
                     <option value="{{ $year }}">{{ $year }}</option>
@@ -24,7 +24,7 @@
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
             border-gray-300 dark:border-gray-600 focus:border-amber-600
             focus:ring focus:ring-amber-500/40 focus:outline-none">
-                <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+                <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                 @foreach (range(1, 12) as $m)
                     <option value="{{ $m }}">
                         {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}
@@ -43,19 +43,19 @@
         </div>
 
     </div>
-    <div class="overflow-x-auto rounded shadow">
-    <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700 text-sm">
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
         
-        <thead class="bg-stone-100 dark:bg-stone-900">
+                <thead class="bg-stone-100 dark:bg-stone-900">
             <tr>
-                <th class="px-4 py-2 text-left">Tarea</th>
-                <th class="px-4 py-2 text-left">Periodo</th>
-                <th class="px-4 py-2 text-left">Carpeta Drive</th>
-                <th class="px-4 py-2 text-left">Contador</th>
-                <th class="px-4 py-2 text-left">Obligación</th>
-                <th class="px-4 py-2 text-left">Vencimiento</th>
-                <th class="px-4 py-2 text-left">Estatus</th>
-                <th class="px-4 py-2 text-center">Acciones</th>
+                <x-sortable-th field="tarea" label="Tarea" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                <x-sortable-th field="ejercicio" label="Periodo" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                <th class="px-4 py-2 text-left text-xs font-semibold">Carpeta Drive</th>
+                <x-sortable-th field="contador" label="Contador" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                <x-sortable-th field="obligacion" label="Obligación" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                <x-sortable-th field="fecha_limite" label="Vencimiento" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                <x-sortable-th field="estatus" label="Estatus" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                <th class="px-4 py-2 text-center text-xs font-semibold">Acciones</th>
             </tr>
         </thead>
 
@@ -63,6 +63,7 @@
             @foreach ($tareasAsignadas as $tarea)
                 <tr
                     class="
+                        hover:bg-gray-50 dark:hover:bg-gray-800/60
                         {{-- VENCIDA --}}
                         @if (
                             $tarea->fecha_limite &&
@@ -83,7 +84,7 @@
                         @if ($tarea->ejercicio && $tarea->mes)
                             {{ $tarea->ejercicio }}-{{ str_pad($tarea->mes, 2, '0', STR_PAD_LEFT) }}
                         @else
-                            —
+                            -
                         @endif
                     </td>
 
@@ -100,17 +101,17 @@
 
                     {{-- CONTADOR --}}
                     <td class="px-4 py-2">
-                        {{ $tarea->contador->name ?? '—' }}
+                        {{ $tarea->contador->name ?? '-' }}
                     </td>
 
-                    {{-- OBLIGACIÓN --}}
+                    {{-- OBLIGACION --}}
                     <td class="px-4 py-2">
-                        {{ $tarea->obligacionClientecontador?->obligacion?->nombre ?? 'Sin obligación' }}
+                        {{ $tarea->obligacionClientecontador?->obligacion?->nombre ?? 'Sin obligacion' }}
                     </td>
 
                     {{-- FECHA LIMITE --}}
                     <td class="px-4 py-2 whitespace-nowrap">
-                        {{ $tarea->fecha_limite ? \Carbon\Carbon::parse($tarea->fecha_limite)->format('Y-m-d') : '—' }}
+                        {{ $tarea->fecha_limite ? \Carbon\Carbon::parse($tarea->fecha_limite)->format('Y-m-d') : '-' }}
                     </td>
                     {{-- ESTATUS --}}
                     <td class="px-4 py-2">
@@ -138,7 +139,7 @@
 
 
     <div class="mt-4">
-        {{ $tareasAsignadas->links() }}
+        @include('livewire.shared.pagination-controls', ['paginator' => $tareasAsignadas])
     </div>
 
     {{-- Modal --}}
@@ -152,15 +153,15 @@
 
                 <form wire:submit.prevent="guardar" class="space-y-4">
 
-                    {{-- Obligación --}}
+                    {{-- Obligacion --}}
                     <div class="space-y-1">
-                        <label class="block text-sm font-semibold text-stone-600 dark:text-gray-300">Obligación</label>
+                        <label class="block text-sm font-semibold text-stone-600 dark:text-gray-300">Obligacion</label>
                         @if ($modoEdicion)
                             <p
                                 class="text-sm text-gray-800 dark:text-white px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 rounded">
                                 {{ $obligacion_id
                                     ? optional($obligacionesAsignadas->firstWhere('id', $obligacion_id)?->obligacion)->nombre
-                                    : 'Sin obligación' }}
+                                    : 'Sin obligacion' }}
                             </p>
                             <input type="hidden" wire:model="obligacion_id">
                         @else
@@ -170,8 +171,8 @@
                                        border-gray-300 dark:border-gray-600 
                                        focus:border-amber-600 focus:ring focus:ring-amber-500/40 
                                        focus:outline-none">
-                                <option value="">-- Selecciona una opción --</option>
-                                <option value="sin">Sin obligación</option>
+                                <option value="">-- Selecciona una opcion --</option>
+                                <option value="sin">Sin obligacion</option>
                                 @foreach ($obligacionesAsignadas as $pivot)
                                     <option value="{{ $pivot->id }}">{{ $pivot->obligacion->nombre }}</option>
                                 @endforeach
@@ -205,7 +206,7 @@
                                     @endforeach
                                 </select>
                             @else
-                                <p class="text-sm text-gray-500 italic">Selecciona una obligación para ver sus tareas.
+                                <p class="text-sm text-gray-500 italic">Selecciona una obligacion para ver sus tareas.
                                 </p>
                             @endif
                             @error('tarea_catalogo_id')
@@ -254,7 +255,7 @@
 
                     </div>
 
-                    {{-- Árbol de carpetas --}}
+                    {{-- Arbol de carpetas --}}
                     <div x-data="{ abiertos: {}, seleccion: @entangle('carpeta_drive_id') }"
                         class="p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-3">
                         <label class="block text-sm mb-1 text-stone-600 dark:text-gray-300">Carpeta en Drive</label>

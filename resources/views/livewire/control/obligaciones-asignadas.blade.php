@@ -5,7 +5,7 @@
         Obligaciones asignadas
     </h2>
 
-    <!-- 🔍 Filtros -->
+    <!-- Filtros -->
     <div class="flex flex-wrap gap-4 items-center mb-4">
 
         <div>
@@ -14,7 +14,7 @@
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
     border-gray-300 dark:border-gray-600 focus:border-amber-600
     focus:ring focus:ring-amber-500/40 focus:outline-none">
-                <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+                <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                 @foreach ($aniosDisponibles as $year)
                     <option value="{{ $year }}">{{ $year }}</option>
                 @endforeach
@@ -27,7 +27,7 @@
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
     border-gray-300 dark:border-gray-600 focus:border-amber-600
     focus:ring focus:ring-amber-500/40 focus:outline-none">
-                <option value="">Selecciona...</option> {{-- 👈 OPCIÓN INICIAL --}}
+                <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
 
                 @foreach ([
         1 => 'Enero',
@@ -51,28 +51,28 @@
     </div>
 
     {{-- Tabla --}}
-    <div class="overflow-x-auto rounded shadow">
-        <table class="min-w-full text-sm divide-y divide-gray-300 dark:divide-gray-700">
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <table class="min-w-full text-sm divide-y divide-gray-200 dark:divide-gray-700">
 
-            <thead class="bg-stone-100 dark:bg-stone-900">
+                                    <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
-                    <th class="px-4 py-2 text-left">Obligación</th>
-                    <th class="px-4 py-2 text-left">Periodo</th>
-                    <th class="px-4 py-2 text-left">Contador</th>
-                    <th class="px-4 py-2 text-left">Carpeta</th>
-                    <th class="px-4 py-2 text-left">Fecha límite</th>
-                    <th class="px-4 py-2 text-left">Estatus</th>
+                    <x-sortable-th field="obligacion" label="Obligación" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="ejercicio" label="Periodo" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="contador" label="Contador" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Carpeta</th>
+                    <x-sortable-th field="fecha_vencimiento" label="Fecha límite" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="estatus" label="Estatus" :sort-field="$sortField" :sort-direction="$sortDirection" />
 
-                    <th class="px-4 py-2 text-center">Acciones</th>
+                    <th class="px-4 py-2 text-center text-xs font-semibold">Acciones</th>
                 </tr>
             </thead>
 
-            <tbody>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse($asignaciones as $a)
-                    <tr class="@if ($a->fecha_vencimiento && \Carbon\Carbon::parse($a->fecha_vencimiento)->isPast() && $a->estatus != 'finalizado') bg-red-50 dark:bg-red-900/30 @endif">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60 @if ($a->fecha_vencimiento && \Carbon\Carbon::parse($a->fecha_vencimiento)->isPast() && $a->estatus != 'finalizado') bg-red-50 dark:bg-red-900/30 @endif">
 
                         <td class="px-4 py-2">
-                            {{ $a->obligacion->nombre ?? '—' }}
+                            {{ $a->obligacion->nombre ?? '-' }}
                             @if (!$a->is_activa)
                                 <span class="text-xs bg-stone-600 text-white px-2 rounded">Baja</span>
                             @endif
@@ -83,15 +83,15 @@
                         </td>
 
                         <td class="px-4 py-2">
-                            {{ $a->contador->name ?? '—' }}
+                            {{ $a->contador->name ?? '-' }}
                         </td>
 
                         <td class="px-4 py-2">
-                            {{ $a->carpeta->nombre ?? '—' }}
+                            {{ $a->carpeta->nombre ?? '-' }}
                         </td>
 
                         <td class="px-4 py-2 whitespace-nowrap">
-                            {{ $a->fecha_vencimiento ?? '—' }}
+                            {{ $a->fecha_vencimiento ?? '-' }}
                         </td>
 
                         <td class="px-4 py-2">
@@ -125,7 +125,7 @@
     </div>
 
     <div class="mt-4">
-        {{ $asignaciones->links() }}
+        @include('livewire.shared.pagination-controls', ['paginator' => $asignaciones])
     </div>
 
     {{-- MODAL EDITAR --}}
@@ -133,17 +133,17 @@
         <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">
                 <h3 class="text-lg font-semibold text-stone-600 dark:text-white mb-4">
-                    Editar obligación
+                    Editar obligacion
                 </h3>
 
                 <form wire:submit.prevent="guardar" wire:key="modal-obligacion-{{ $formKey }}">
 
-                    {{-- Obligación (solo lectura en edición) --}}
+                    {{-- Obligacion (solo lectura en edicion) --}}
                     <div class="mb-3">
-                        <label class="block text-sm font-medium mb-1">Obligación</label>
+                        <label class="block text-sm font-medium mb-1">Obligacion</label>
                         <div
                             class="px-3 py-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                            {{ $obligacionSeleccionada->nombre ?? '—' }}
+                            {{ $obligacionSeleccionada->nombre ?? '-' }}
                         </div>
                     </div>
 
@@ -166,9 +166,9 @@
                         @enderror
                     </div>
 
-                    {{-- Fecha límite --}}
+                    {{-- Fecha limite --}}
                     {{--   <div class="mb-3">
-                    <label class="block text-sm font-medium mb-1">Fecha límite</label>
+                    <label class="block text-sm font-medium mb-1">Fecha limite</label>
                     <input type="date" wire:model="fecha_vencimiento"
                         class="w-full px-3 py-2 border rounded-md
                                dark:bg-gray-700 dark:text-white

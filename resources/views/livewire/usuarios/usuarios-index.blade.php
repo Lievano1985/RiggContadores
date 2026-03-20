@@ -6,20 +6,20 @@
         </button>
     </div>
 
-    <div class="overflow-x-auto rounded shadow">
-        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-            <thead class="bg-stone-100 dark:bg-stone-900">
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
-                    <th class="px-4 py-2 text-left">Nombre</th>
-                    <th class="px-4 py-2 text-left">Correo</th>
-                    <th class="px-4 py-2 text-left">Rol</th>
-                    <th class="px-4 py-2 text-left">Despacho</th>
-                    <th class="px-4 py-2 text-left">Acciones</th>
+                    <x-sortable-th field="name" label="Nombre" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <x-sortable-th field="email" label="Correo" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Rol</th>
+                    <x-sortable-th field="despacho" label="Despacho" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 @foreach($usuarios as $user)
-                    <tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                         <td class="px-4 py-2">{{ $user->name }}</td>
                         <td class="px-4 py-2">{{ $user->email }}</td>
                         <td class="px-4 py-2">{{ $user->roles->pluck('name')->join(', ') }}</td>
@@ -38,7 +38,7 @@
         </table>
 
         <div class="mt-4">
-            {{ $usuarios->links() }}
+            @include('livewire.shared.pagination-controls', ['paginator' => $usuarios])
         </div>
     </div>
 

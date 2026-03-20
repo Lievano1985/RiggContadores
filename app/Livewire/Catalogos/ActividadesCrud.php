@@ -2,13 +2,14 @@
 
 namespace App\Livewire\Catalogos;
 
+use App\Livewire\Shared\HasPerPage;
 use App\Models\ActividadEconomica;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class ActividadesCrud extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
 
     public $actividadId;
     public $nombre;
@@ -44,11 +45,12 @@ class ActividadesCrud extends Component
 
     public function render()
     {
-        $actividades = ActividadEconomica::query()
+        $query = ActividadEconomica::query()
             ->where('nombre', 'like', '%' . $this->search . '%')
             ->orWhere('clave', 'like', '%' . $this->search . '%')
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(10);
+            ->orderBy($this->sortField, $this->sortDirection);
+
+        $actividades = $query->paginate($this->perPageValue($query, 10));
 
         return view('livewire.catalogos.actividades-crud', [
             'actividades' => $actividades,

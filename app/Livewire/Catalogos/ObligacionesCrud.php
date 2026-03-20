@@ -7,13 +7,14 @@
 
 namespace App\Livewire\Catalogos;
 
+use App\Livewire\Shared\HasPerPage;
 use App\Models\Obligacion;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class ObligacionesCrud extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
 
     public $obligacionAEliminar;
     public $confirmingDelete = false;
@@ -69,15 +70,16 @@ class ObligacionesCrud extends Component
 
     public function render()
     {
-        $obligaciones = Obligacion::query()
+        $query = Obligacion::query()
             ->where(function ($q) {
                 $q->where('nombre', 'like', "%{$this->search}%")
                   ->orWhere('tipo', 'like', "%{$this->search}%")
                   ->orWhere('categoria', 'like', "%{$this->search}%")
                   ->orWhere('periodicidad', 'like', "%{$this->search}%");
             })
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(10);
+            ->orderBy($this->sortField, $this->sortDirection);
+
+        $obligaciones = $query->paginate($this->perPageValue($query, 10));
 
         return view('livewire.catalogos.obligaciones-crud', [
             'obligaciones' => $obligaciones,

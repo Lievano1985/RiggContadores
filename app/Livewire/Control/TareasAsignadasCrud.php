@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Control;
 
+use App\Livewire\Shared\HasPerPage;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\TareaAsignada;
@@ -9,13 +10,16 @@ use App\Models\TareaCatalogo;
 use App\Models\User;
 use App\Models\CarpetaDrive;
 use App\Models\ObligacionClienteContador;
+use App\Models\Obligacion;
 use App\Services\ArbolCarpetas;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class TareasAsignadasCrud extends Component
 {
-    use WithPagination;
+    use WithPagination, HasPerPage;
+    public string $sortField = 'fecha_limite';
+    public string $sortDirection = 'asc';
 
     // === Variables públicas ===
     public $cliente;
@@ -165,9 +169,36 @@ class TareasAsignadasCrud extends Component
                 ->where('mes', $this->filtroMes);
         }
 
-        return $query
-            ->orderBy('fecha_limite', 'asc')
-            ->paginate(10);
+        if ($this->sortField === 'tarea') {
+            $query->orderBy(
+                TareaCatalogo::select('nombre')
+                    ->whereColumn('tareas_catalogo.id', 'tareas_asignadas.tarea_catalogo_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'contador') {
+            $query->orderBy(
+                User::select('name')
+                    ->whereColumn('users.id', 'tareas_asignadas.contador_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif ($this->sortField === 'obligacion') {
+            $query->orderBy(
+                Obligacion::select('nombre')
+                    ->whereColumn('obligaciones.id', 'obligacion_cliente_contador.obligacion_id')
+                    ->join('obligacion_cliente_contador', 'obligacion_cliente_contador.obligacion_id', '=', 'obligaciones.id')
+                    ->whereColumn('obligacion_cliente_contador.id', 'tareas_asignadas.obligacion_cliente_contador_id')
+                    ->limit(1),
+                $this->sortDirection
+            );
+        } elseif (in_array($this->sortField, ['fecha_limite', 'estatus', 'ejercicio', 'mes'], true)) {
+            $query->orderBy($this->sortField, $this->sortDirection);
+        } else {
+            $query->orderBy('fecha_limite', 'asc');
+        }
+
+        return $query->paginate($this->perPageValue($query, 10));
     }
 
 
@@ -188,6 +219,22 @@ class TareasAsignadasCrud extends Component
 
     public function updatedBuscarTarea()
     {
+        $this->resetPage();
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (!in_array($field, ['tarea', 'contador', 'obligacion', 'fecha_limite', 'estatus', 'ejercicio', 'mes'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
         $this->resetPage();
     }
     // === Render del componente ===

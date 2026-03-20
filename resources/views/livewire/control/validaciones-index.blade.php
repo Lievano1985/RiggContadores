@@ -1,6 +1,6 @@
 {{-- Vista: ValidacionesIndex
-     Autor: Luis Liévano - JL3 Digital
-     Bandeja de revisión interna (sin envío a cliente)
+     Autor: Luis Lievano - JL3 Digital
+     Bandeja de revision interna (sin envio a cliente)
 --}}
 @php use Illuminate\Support\Facades\Storage; @endphp
 
@@ -126,29 +126,29 @@
                 </div>
             </div>
         </div>
-            <input type="text" wire:model.live="buscarObligacion" placeholder="Filtrar obligación..."
+            <input type="text" wire:model.live="buscarObligacion" placeholder="Filtrar obligacion..."
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
         </div>
     </div>
 
     {{-- Tabla --}}
-    <div class="bg-white dark:bg-gray-900 border rounded shadow-sm overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700">
-            <thead class="bg-stone-100 dark:bg-stone-900 text-xs">
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead class="bg-stone-100 dark:bg-stone-900 text-xs">
                 <tr>
                     <th class="px-2 py-2"></th>
-                    <th class="px-3 py-2 text-left">Cliente</th>
-                    <th class="px-3 py-2 text-left">Obligación</th>
-                    <th class="px-3 py-2 text-left">Contador</th>
-                    <th class="px-3 py-2 text-center">Estatus</th>
-                    <th class="px-3 py-2 text-center">Periodo</th>
-                    <th class="px-3 py-2 text-center">Vencimiento</th>
-                    <th class="px-3 py-2 text-center">Tareas</th>
-                    <th class="px-3 py-2 text-right">Acciones</th>
+                    <x-sortable-th field="cliente" label="Cliente" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
+                    <x-sortable-th field="obligacion" label="Obligacion" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
+                    <x-sortable-th field="contador" label="Contador" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
+                    <x-sortable-th field="estatus" label="Estatus" :sort-field="$sortField" :sort-direction="$sortDirection" align="center" class="px-3 py-2" />
+                    <x-sortable-th field="periodo" label="Periodo" :sort-field="$sortField" :sort-direction="$sortDirection" align="center" class="px-3 py-2" />
+                    <x-sortable-th field="fecha_vencimiento" label="Vencimiento" :sort-field="$sortField" :sort-direction="$sortDirection" align="center" class="px-3 py-2" />
+                    <th class="px-3 py-2 text-center text-xs font-semibold">Tareas</th>
+                    <th class="px-3 py-2 text-right text-xs font-semibold">Acciones</th>
                 </tr>
             </thead>
 
-            <tbody class="divide-y divide-gray-300 dark:divide-gray-700 text-sm">
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
                 @forelse($obligaciones as $oc)
 
                     @php
@@ -160,15 +160,15 @@
                     <tr wire:key="obligacion-{{ $oc->id }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                         <td class="px-2">
                             <button wire:click="toggleExpandida({{ $oc->id }})" class="hover:underline">
-                                {{ $open ? '−' : '+' }}
+                                {{ $open ? '-' : '+' }}
                             </button>
                         </td>
 
                         <td class="px-3 py-2">{{ $oc->cliente->nombre }}</td>
                         <td class="px-3 py-2">{{ $oc->obligacion->nombre }}</td>
-                        <td class="px-3 py-2">{{ $oc->contador->name ?? '—' }}</td>
+                        <td class="px-3 py-2">{{ $oc->contador->name ?? '-' }}</td>
 
-                        {{-- Badge estatus obligación --}}
+                        {{-- Badge estatus obligacion --}}
                         <td class="px-3 py-2 text-center">
                             <x-status-badge :status="$oc->estatus" />
                         </td>
@@ -198,17 +198,17 @@
                     {{-- Subfila con tareas --}}
                     @if ($open)
                         <tr wire:key="tareas-{{ $oc->id }}" class="bg-gray-50 dark:bg-gray-800/40">
-                            <td colspan="8" class="px-6 pb-4 pt-2">
+                            <td colspan="9" class="px-6 pb-4 pt-2">
                                 @if ($oc->tareasAsignadas->isEmpty())
                                     <p class="text-sm italic text-gray-500 dark:text-gray-400">
-                                        Esta obligación no tiene tareas ligadas.
+                                        Esta obligacion no tiene tareas ligadas.
                                     </p>
                                 @else
                                     <ul class="list-disc ml-4 text-gray-700 dark:text-gray-300 text-sm space-y-1">
                                         @foreach ($oc->tareasAsignadas->sortBy(fn($t) => $t->tareaCatalogo->nombre ?? '') as $tarea)
                                             <li>
                                                 {{ $tarea->tareaCatalogo->nombre ?? 'Sin nombre' }}
-                                                —
+                                                -
                                                 <span class="text-xs">{{ $tarea->contador->name ?? 'Sin contador' }}</span>
                                                 <x-status-badge :status="$tarea->estatus" class="ml-2" />
                                             </li>
@@ -221,7 +221,7 @@
 
                 @empty
                     <tr>
-                        <td colspan="8" class="py-6 text-center text-gray-500">
+                        <td colspan="9" class="py-6 text-center text-gray-500">
                             No hay obligaciones para validar.
                         </td>
                     </tr>
@@ -230,7 +230,7 @@
         </table>
     </div>
 
-    <div class="mt-4">{{ $obligaciones->links() }}</div>
+    @include('livewire.shared.pagination-controls', ['paginator' => $obligaciones])
 
     {{-- SIDEBAR --}}
     <div x-cloak x-show="sidebar" x-transition.opacity class="fixed inset-0 bg-black/40 z-40 flex justify-end">
@@ -241,9 +241,9 @@
             {{-- Header --}}
             <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h3 class="text-lg font-semibold text-stone-700 dark:text-white">
-                    Revisión y validación
+                    Revision y validacion
                 </h3>
-                <button @click="$wire.cerrarSidebar()" class="text-gray-500 hover:text-black">✕</button>
+                <button @click="$wire.cerrarSidebar()" class="text-gray-500 hover:text-black">x</button>
             </div>
 
             {{-- Contenido --}}
@@ -251,13 +251,13 @@
 
                 @if ($obligacionSeleccionada)
 
-                    {{-- OBLIGACIÓN --}}
+                    {{-- OBLIGACION --}}
                     <div class="border p-4 rounded shadow-sm dark:border-gray-700">
-                        <h4 class="font-semibold mb-2">Obligación</h4>
+                        <h4 class="font-semibold mb-2">Obligacion</h4>
 
                         <p><strong>Cliente:</strong> {{ $obligacionSeleccionada->cliente->nombre }}</p>
-                        <p><strong>Obligación:</strong> {{ $obligacionSeleccionada->obligacion->nombre }}</p>
-                        <p><strong>Contador:</strong> {{ $obligacionSeleccionada->contador->name ?? '—' }}</p>
+                        <p><strong>Obligacion:</strong> {{ $obligacionSeleccionada->obligacion->nombre }}</p>
+                        <p><strong>Contador:</strong> {{ $obligacionSeleccionada->contador->name ?? '-' }}</p>
 
 
                         <p class="mt-1">
@@ -266,9 +266,9 @@
                                 class="text-sm">{{ ucfirst(str_replace('_', ' ', $obligacionSeleccionada->estatus)) }}</span>
                         </p>
 
-                        <p class="mt-2"><strong>Comentario:</strong> {{ $obligacionSeleccionada->comentario ?? '—' }}
+                        <p class="mt-2"><strong>Comentario:</strong> {{ $obligacionSeleccionada->comentario ?? '-' }}
                         </p>
-                        {{-- Archivos de la obligación --}}
+                        {{-- Archivos de la obligacion --}}
                         @if ($obligacionSeleccionada->archivos->count())
                             <div class="mt-3 space-y-1">
                                 <strong>Archivos:</strong>
@@ -277,7 +277,7 @@
                                     @if ($archivo->archivo)
                                         <a href="{{ Storage::disk('public')->url($archivo->archivo) }}"
                                             target="_blank" class="block text-blue-600 text-sm hover:underline">
-                                            📄 {{ $archivo->nombre }}
+                                            Archivo: {{ $archivo->nombre }}
                                         </a>
                                     @endif
                                 @endforeach
@@ -287,13 +287,13 @@
                             <strong>Fecha vencimiento:</strong>
                             {{ $obligacionSeleccionada->fecha_finalizado
                                 ? \Carbon\Carbon::parse($obligacionSeleccionada->fecha_finalizado)->format('Y-m-d')
-                                : '—' }}
+                                : '-' }}
                         </p>
-                        {{-- Rechazo obligación --}}
+                        {{-- Rechazo obligacion --}}
                         @if (!$mostrarRechazoObligacion)
                             <button wire:click="$set('mostrarRechazoObligacion', true)"
                                 class="mt-3 text-sm text-white bg-red-600 px-3 py-1 rounded hover:bg-red-700">
-                                Rechazar obligación
+                                Rechazar obligacion
                             </button>
                         @else
                             <div class="mt-3">
@@ -313,7 +313,7 @@
                             </div>
                         @endif
 
-                        {{-- FINALIZAR OBLIGACIÓN --}}
+                        {{-- FINALIZAR OBLIGACION --}}
                         @php
                             $tareasTotal = $obligacionSeleccionada->tareasAsignadas->count();
                             $tareasNoRevisadas = $obligacionSeleccionada->tareasAsignadas
@@ -328,15 +328,15 @@
                             @if ($puedeFinalizar)
                                 <button wire:click="finalizarObligacion"
                                     class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
-                                    Finalizar obligación
+                                    Finalizar obligacion
                                 </button>
                             @else
                                 <button disabled
                                     class="bg-green-300 text-white/80 px-4 py-2 rounded text-sm cursor-not-allowed">
-                                    Finalizar obligación
+                                    Finalizar obligacion
                                 </button>
                                 <p class="text-xs text-gray-500 mt-2">
-                                    * Para finalizar: obligación en <strong>realizada</strong> y todas las tareas en
+                                    * Para finalizar: obligacion en <strong>realizada</strong> y todas las tareas en
                                     <strong>revisada</strong> (o sin tareas).
                                 </p>
                             @endif
@@ -349,7 +349,7 @@
 
                         @if ($obligacionSeleccionada->tareasAsignadas->isEmpty())
                             <p class="text-sm italic text-gray-500 dark:text-gray-400">
-                                Esta obligación no tiene tareas ligadas.
+                                Esta obligacion no tiene tareas ligadas.
                             </p>
                         @else
                             @foreach ($obligacionSeleccionada->tareasAsignadas as $tarea)
@@ -364,7 +364,7 @@
                                     </p>
 
                                     <p><strong>Estatus:</strong> {{ ucfirst($tarea->estatus) }}</p>
-                                    <p><strong>Comentario:</strong> {{ $tarea->comentario ?? '—' }}</p>
+                                    <p><strong>Comentario:</strong> {{ $tarea->comentario ?? '-' }}</p>
                                     {{-- Archivos de la tarea --}}
                                     @if ($tarea->archivos->count())
                                         <div class="mt-2 space-y-1">
@@ -375,7 +375,7 @@
                                                     <a href="{{ Storage::disk('public')->url($archivo->archivo) }}"
                                                         target="_blank"
                                                         class="block text-blue-600 text-sm hover:underline">
-                                                        📄 {{ $archivo->nombre }}
+                                                        Archivo: {{ $archivo->nombre }}
                                                     </a>
                                                 @endif
                                             @endforeach
@@ -383,7 +383,7 @@
                                     @endif
 
 
-                                    {{-- Botón revisar tarea --}}
+                                    {{-- Boton revisar tarea --}}
                                     @if ($tarea->estatus === 'realizada')
                                         <button wire:click="marcarTareaRevisada({{ $tarea->id }})"
                                             class="mt-2 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
@@ -432,3 +432,4 @@
     </div>
 
 </div>
+
