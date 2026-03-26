@@ -82,6 +82,12 @@
                     </p>
                 </div>
                 <div
+                    class="rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-4 dark:border-rose-900/50 dark:from-rose-950/40 dark:to-gray-800">
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Sin contrato</p>
+                    <p class="mt-2 text-2xl font-semibold text-rose-600">{{ $dashboard['kpis']['sin_contrato'] }}
+                    </p>
+                </div>
+                <div
                     class="rounded-xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-4 dark:border-teal-900/50 dark:from-teal-950/40 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Clientes completos</p>
                     <p class="mt-2 text-2xl font-semibold text-teal-600">{{ $dashboard['kpis']['clientes_completos'] }}
@@ -96,21 +102,15 @@
                 </div>
                 <div
                     class="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Obligaciones sin contador</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Obligaciones incompletas</p>
                     <p class="mt-2 text-2xl font-semibold text-red-600">
-                        {{ $dashboard['kpis']['obligaciones_sin_contador'] }}</p>
-                </div>
-                <div
-                    class="rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4 dark:border-orange-900/50 dark:from-orange-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Obligaciones sin carpeta</p>
-                    <p class="mt-2 text-2xl font-semibold text-orange-600">
-                        {{ $dashboard['kpis']['obligaciones_sin_carpeta'] }}</p>
+                        {{ $dashboard['kpis']['obligaciones_incompletas'] }}</p>
                 </div>
                 <div
                     class="rounded-xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-white p-4 dark:border-fuchsia-900/50 dark:from-fuchsia-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Tareas sin contador / carpeta</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Tareas incompletas</p>
                     <p class="mt-2 text-2xl font-semibold text-fuchsia-600">
-                        {{ $dashboard['kpis']['tareas_sin_contador'] + $dashboard['kpis']['tareas_sin_carpeta'] }}
+                        {{ $dashboard['kpis']['tareas_incompletas'] }}
                     </p>
                 </div>
             </div>

@@ -434,18 +434,19 @@ class OperationalDashboardBuilder
                 'clientes_inactivos' => (clone $clientesBase)->where('activo', false)->count(),
                 'contratos_vigentes' => (clone $clientesActivosBase)->whereNotNull('vigencia')->whereDate('vigencia', '>=', $hoy->toDateString())->count(),
                 'contratos_por_vencer' => (clone $clientesActivosBase)->whereNotNull('vigencia')->whereBetween('vigencia', [$hoy->toDateString(), $limiteContrato->toDateString()])->count(),
-                'contratos_vencidos' => (clone $clientesActivosBase)->where(function ($q) use ($hoy) {
-                    $q->whereNull('vigencia')->orWhereDate('vigencia', '<', $hoy->toDateString());
-                })->count(),
+                'contratos_vencidos' => (clone $clientesActivosBase)->whereNotNull('vigencia')->whereDate('vigencia', '<', $hoy->toDateString())->count(),
+                'sin_contrato' => (clone $clientesActivosBase)->whereNull('vigencia')->count(),
                 'clientes_completos' => $clientesCompletos->count(),
                 'clientes_incompletos' => $clientesIncompletos->count(),
-                'obligaciones_sin_contador' => (clone $obligacionesBase)->whereNull('contador_id')->count(),
-                'obligaciones_sin_carpeta' => (clone $obligacionesBase)->whereNull('carpeta_drive_id')->count(),
-                'tareas_sin_contador' => (clone $tareasBase)->whereNull('contador_id')->count(),
-                'tareas_sin_carpeta' => (clone $tareasBase)->whereNull('carpeta_drive_id')->count(),
+                'obligaciones_incompletas' => (clone $obligacionesBase)->where(function ($q) {
+                    $q->whereNull('contador_id')->orWhereNull('carpeta_drive_id');
+                })->count(),
+                'tareas_incompletas' => (clone $tareasBase)->where(function ($q) {
+                    $q->whereNull('contador_id')->orWhereNull('carpeta_drive_id');
+                })->count(),
             ],
             'contratos_por_vencer' => $contratosPorVencer,
-            'clientes_incompletos' => $clientesIncompletos->take(8)->values()->all(),
+            'clientes_incompletos' => $clientesIncompletos->values()->all(),
             'resumen_despacho' => [
                 'clientes_evaluados' => $clientesConMetricas->count(),
                 'clientes_completos' => $clientesCompletos->count(),
