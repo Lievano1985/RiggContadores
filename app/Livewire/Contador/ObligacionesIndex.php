@@ -46,6 +46,7 @@ public ?string $modalObligacion = null;
     public ?string $estatus = '';
     public ?string $ejercicioSeleccionado = null;
     public ?string $mesSeleccionado = null;
+    public string $vistaRapida = '';
     public ?string $cliente_id = null;
     public array $clientesDisponibles = [];
 
@@ -98,6 +99,7 @@ public ?string $modalObligacion = null;
         'estatus' => ['except' => ''],
         'ejercicioSeleccionado' => ['except' => null],
         'mesSeleccionado' => ['except' => null],
+        'vistaRapida' => ['except' => '', 'as' => 'ov'],
     ];
 
     // =========================================================
@@ -142,26 +144,31 @@ public ?string $modalObligacion = null;
     // =========================================================
     public function updatingClienteId()
     {
+        $this->desactivarVistaRapida();
         $this->resetPage();
     }
     
     public function updatingBuscar()
     {
+        $this->desactivarVistaRapida();
         $this->resetPage();
     }
     public function updatingEstatus()
     {
+        $this->desactivarVistaRapida();
         $this->resetPage();
     }
 
     public function updatedEjercicioSeleccionado()
     {
+        $this->desactivarVistaRapida();
         $this->resetPage();
         $this->mesSeleccionado = null;
     }
 
     public function updatedMesSeleccionado()
     {
+        $this->desactivarVistaRapida();
         $this->resetPage();
     }
 
@@ -170,6 +177,8 @@ public ?string $modalObligacion = null;
         if (!in_array($field, ['cliente', 'ejercicio', 'obligacion', 'estatus', 'fecha_vencimiento'], true)) {
             return;
         }
+
+        $this->desactivarVistaRapida();
 
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
@@ -193,16 +202,16 @@ public ?string $modalObligacion = null;
         $q = ObligacionClienteContador::query()
             ->with(['cliente', 'obligacion'])
             ->where('contador_id', Auth::id())
+            ->whereHas('contador', fn ($w) => $w->whereKey(Auth::id()))
+            ->where('is_activa', true)
             ->when(
                 $this->cliente_id,
                 fn ($w) => $w->where('cliente_id', $this->cliente_id)
             )
-            
-            // 🔹 FILTRO AUTOMÁTICO (NO TOCAR)
-            ->where(function ($q) {
-                $q->where('estatus', '!=', 'finalizado')
-                    ->orWhereDate('fecha_vencimiento', '>=', now());
-            })
+            ->when(
+                $this->vistaRapida !== '',
+                fn ($w) => $this->aplicarVistaRapida($w)
+            )
 
             // 🔹 FILTROS MANUALES
             ->when(
@@ -263,6 +272,51 @@ public ?string $modalObligacion = null;
         $obligaciones = $q->paginate($this->perPageValue($q, 15));
 
         return view('livewire.contador.obligaciones-index', compact('obligaciones'));
+    }
+
+    private function desactivarVistaRapida(): void
+    {
+        if ($this->vistaRapida !== '') {
+            $this->vistaRapida = '';
+        }
+    }
+
+    private function aplicarVistaRapida($q): void
+    {
+        $inicioMes = now()->startOfMonth()->toDateString();
+        $finMes = now()->endOfMonth()->toDateString();
+        $estatusCerradas = [
+            'realizada',
+            'declaracion_realizada',
+            'enviada_cliente',
+            'respuesta_cliente',
+            'respuesta_revisada',
+            'finalizado',
+        ];
+        $estatusAbiertas = ['asignada', 'en_progreso', 'rechazada', 'reabierta'];
+
+        if ($this->vistaRapida === 'asignadas_mes') {
+            $q->whereBetween('fecha_vencimiento', [$inicioMes, $finMes]);
+            return;
+        }
+
+        if ($this->vistaRapida === 'atrasadas') {
+            $q->whereNotNull('fecha_vencimiento')
+                ->whereDate('fecha_vencimiento', '<', $inicioMes)
+                ->whereIn('estatus', $estatusAbiertas);
+            return;
+        }
+
+        if ($this->vistaRapida === 'terminadas_mes') {
+            $q->whereBetween('fecha_vencimiento', [$inicioMes, $finMes])
+                ->whereIn('estatus', $estatusCerradas);
+            return;
+        }
+
+        if ($this->vistaRapida === 'faltantes_mes') {
+            $q->whereBetween('fecha_vencimiento', [$inicioMes, $finMes])
+                ->whereIn('estatus', $estatusAbiertas);
+        }
     }
 
     // =========================================================

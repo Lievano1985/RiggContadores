@@ -42,6 +42,7 @@ class MisTareasIndex extends Component
     // -----------------------------
     public ?string $buscar = '';
     public ?string $estatus = '';
+    public string $vistaRapida = '';
     public ?string $cliente_id = null; // 👈 NUEVO
     public array $clientesDisponibles = [];
 
@@ -90,6 +91,14 @@ class MisTareasIndex extends Component
         'archivos-error-tareas' => 'cancelarGuardadoTarea',
     ];
 
+    protected $queryString = [
+        'buscar' => ['except' => ''],
+        'estatus' => ['except' => ''],
+        'ejercicio' => ['except' => null],
+        'mes' => ['except' => null],
+        'vistaRapida' => ['except' => '', 'as' => 'tv'],
+    ];
+
     // -----------------------------
     // Validación
     // -----------------------------
@@ -128,8 +137,9 @@ class MisTareasIndex extends Component
             ])
             ->toArray();
     }
-    public function updatingClienteId()
+public function updatingClienteId()
 {
+    $this->desactivarVistaRapida();
     $this->resetPage();
 }
     // =========================================================
@@ -137,10 +147,23 @@ class MisTareasIndex extends Component
     // =========================================================
     public function updatingBuscar()
     {
+        $this->desactivarVistaRapida();
         $this->resetPage();
     }
     public function updatingEstatus()
     {
+        $this->desactivarVistaRapida();
+        $this->resetPage();
+    }
+    public function updatedEjercicio()
+    {
+        $this->desactivarVistaRapida();
+        $this->resetPage();
+    }
+
+    public function updatedMes()
+    {
+        $this->desactivarVistaRapida();
         $this->resetPage();
     }
 
@@ -149,6 +172,8 @@ class MisTareasIndex extends Component
         if (!in_array($field, ['cliente', 'ejercicio', 'tarea', 'obligacion', 'fecha_limite', 'estatus'], true)) {
             return;
         }
+
+        $this->desactivarVistaRapida();
 
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
@@ -194,6 +219,7 @@ class MisTareasIndex extends Component
                 'obligacionClienteContador.obligacion',
             ])
             ->where('contador_id', Auth::id())
+            ->whereHas('contador', fn ($q) => $q->whereKey(Auth::id()))
 /*             ->whereIn('estatus',['asignada','en_progreso','rechazada'])
  */           
             ->when(
@@ -209,6 +235,10 @@ class MisTareasIndex extends Component
                 $this->mes,
                 fn($q) =>
                 $q->where('mes', $this->mes)
+            )
+            ->when(
+                $this->vistaRapida !== '',
+                fn($q) => $this->aplicarVistaRapida($q)
             )
 
             // Estatus
@@ -274,6 +304,49 @@ class MisTareasIndex extends Component
         $tareas = $query->paginate($this->perPageValue($query, 15));
 
         return view('livewire.contador.mis-tareas-index', compact('tareas'));
+    }
+
+    private function desactivarVistaRapida(): void
+    {
+        if ($this->vistaRapida !== '') {
+            $this->vistaRapida = '';
+        }
+    }
+
+    private function aplicarVistaRapida($q): void
+    {
+        $inicioMes = now()->startOfMonth()->toDateString();
+        $finMes = now()->endOfMonth()->toDateString();
+        $estatusCerradas = ['realizada', 'revisada', 'cerrada', 'terminada', 'cancelada'];
+
+        if ($this->vistaRapida === 'asignadas_mes') {
+            $q->whereBetween('fecha_limite', [$inicioMes, $finMes]);
+            return;
+        }
+
+        if ($this->vistaRapida === 'atrasadas') {
+            $q->whereNotNull('fecha_limite')
+                ->whereDate('fecha_limite', '<', $inicioMes)
+                ->where(function ($w) use ($estatusCerradas) {
+                    $w->where('estatus', 'rechazada')
+                        ->orWhereNotIn('estatus', $estatusCerradas);
+                });
+            return;
+        }
+
+        if ($this->vistaRapida === 'terminadas_mes') {
+            $q->whereBetween('fecha_limite', [$inicioMes, $finMes])
+                ->whereIn('estatus', $estatusCerradas);
+            return;
+        }
+
+        if ($this->vistaRapida === 'faltantes_mes') {
+            $q->whereBetween('fecha_limite', [$inicioMes, $finMes])
+                ->where(function ($w) use ($estatusCerradas) {
+                    $w->where('estatus', 'rechazada')
+                        ->orWhereNotIn('estatus', $estatusCerradas);
+                });
+        }
     }
 
     // =========================================================
