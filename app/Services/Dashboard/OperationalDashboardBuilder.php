@@ -154,9 +154,8 @@ class OperationalDashboardBuilder
 
         $contratosPorVencer = (clone $clientesActivosBase)
             ->whereNotNull('vigencia')
-            ->whereDate('vigencia', '<=', $limiteContrato->toDateString())
+            ->whereBetween('vigencia', [$hoy->toDateString(), $limiteContrato->toDateString()])
             ->orderBy('vigencia')
-            ->limit(8)
             ->get()
             ->map(function (Cliente $cliente) use ($hoy) {
                 $vigencia = $cliente->vigencia ? Carbon::parse($cliente->vigencia)->startOfDay() : null;
@@ -170,6 +169,72 @@ class OperationalDashboardBuilder
                     'vencido' => $vencido,
                 ];
             })
+            ->all();
+
+        $clientesActivosLista = $clientesConMetricas
+            ->filter(fn (array $cliente) => $cliente['cliente_completo'] || !empty($cliente['id']))
+            ->values()
+            ->all();
+
+        $clientesInactivosLista = (clone $clientesBase)
+            ->where('activo', false)
+            ->orderBy('nombre')
+            ->get()
+            ->map(fn (Cliente $cliente) => [
+                'id' => $cliente->id,
+                'nombre' => $cliente->nombre ?: ($cliente->razon_social ?: 'Sin nombre'),
+                'vigencia' => optional($cliente->vigencia)?->format('Y-m-d'),
+            ])
+            ->values()
+            ->all();
+
+        $contratosVigentesLista = $clientesConMetricas
+            ->filter(fn (array $cliente) => $cliente['contrato_vigente'])
+            ->values()
+            ->all();
+
+        $contratosVencidosLista = $clientesConMetricas
+            ->filter(fn (array $cliente) => !empty($cliente['vigencia']) && !$cliente['contrato_vigente'])
+            ->values()
+            ->all();
+
+        $sinContratoLista = $clientesConMetricas
+            ->filter(fn (array $cliente) => empty($cliente['vigencia']))
+            ->values()
+            ->all();
+
+        $obligacionesIncompletasLista = (clone $obligacionesBase)
+            ->where(function ($q) {
+                $q->whereNull('contador_id')->orWhereNull('carpeta_drive_id');
+            })
+            ->with(['cliente:id,nombre,razon_social', 'obligacion:id,nombre', 'contador:id,name'])
+            ->orderBy('fecha_vencimiento')
+            ->get()
+            ->map(fn (ObligacionClienteContador $obligacion) => [
+                'cliente' => $obligacion->cliente?->nombre ?: ($obligacion->cliente?->razon_social ?: 'Sin cliente'),
+                'nombre' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
+                'contador' => $obligacion->contador?->name ?: 'Falta',
+                'carpeta' => !empty($obligacion->carpeta_drive_id),
+                'fecha_vencimiento' => optional($obligacion->fecha_vencimiento)?->format('Y-m-d'),
+            ])
+            ->values()
+            ->all();
+
+        $tareasIncompletasLista = (clone $tareasBase)
+            ->where(function ($q) {
+                $q->whereNull('contador_id')->orWhereNull('carpeta_drive_id');
+            })
+            ->with(['cliente:id,nombre,razon_social', 'tareaCatalogo:id,nombre', 'contador:id,name'])
+            ->orderBy('fecha_limite')
+            ->get()
+            ->map(fn (TareaAsignada $tarea) => [
+                'cliente' => $tarea->cliente?->nombre ?: ($tarea->cliente?->razon_social ?: 'Sin cliente'),
+                'nombre' => $tarea->tareaCatalogo?->nombre ?: 'Sin tarea',
+                'contador' => $tarea->contador?->name ?: 'Falta',
+                'carpeta' => !empty($tarea->carpeta_drive_id),
+                'fecha_limite' => optional($tarea->fecha_limite)?->format('Y-m-d'),
+            ])
+            ->values()
             ->all();
 
         $contadores = User::query()
@@ -210,6 +275,34 @@ class OperationalDashboardBuilder
 
         $obligacionesFaltantesBase = (clone $obligacionesPeriodoBase)
             ->whereIn('estatus', $estatusAbiertos);
+
+        $detalleAtrasadasSeguimiento = (clone $obligacionesAtrasadasBase)
+            ->orderBy('fecha_vencimiento')
+            ->limit(20)
+            ->get()
+            ->map(fn (ObligacionClienteContador $obligacion) => [
+                'cliente' => $obligacion->cliente?->nombre ?: ($obligacion->cliente?->razon_social ?: 'Sin cliente'),
+                'obligacion' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
+                'contador' => $obligacion->contador?->name ?: 'Sin contador',
+                'fecha_vencimiento' => optional($obligacion->fecha_vencimiento)?->format('Y-m-d'),
+                'estatus' => $obligacion->estatus ?: 'Sin estatus',
+            ])
+            ->values()
+            ->all();
+
+        $detalleFaltantesSeguimiento = (clone $obligacionesFaltantesBase)
+            ->orderBy('fecha_vencimiento')
+            ->limit(20)
+            ->get()
+            ->map(fn (ObligacionClienteContador $obligacion) => [
+                'cliente' => $obligacion->cliente?->nombre ?: ($obligacion->cliente?->razon_social ?: 'Sin cliente'),
+                'obligacion' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
+                'contador' => $obligacion->contador?->name ?: 'Sin contador',
+                'fecha_vencimiento' => optional($obligacion->fecha_vencimiento)?->format('Y-m-d'),
+                'estatus' => $obligacion->estatus ?: 'Sin estatus',
+            ])
+            ->values()
+            ->all();
 
         $cargaPorContador = $contadores->map(function (array $contador) use (
             $obligacionesSeguimientoBase,
@@ -369,6 +462,20 @@ class OperationalDashboardBuilder
             ->values()
             ->all();
 
+        $rechazadasAtendidasLista = (clone $validacionesAtendidasBase)
+            ->orderByDesc('updated_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (ObligacionClienteContador $obligacion) => [
+                'cliente' => $obligacion->cliente?->nombre ?: ($obligacion->cliente?->razon_social ?: 'Sin cliente'),
+                'obligacion' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
+                'contador' => $obligacion->contador?->name ?: 'Sin contador',
+                'fecha_vencimiento' => optional($obligacion->fecha_vencimiento)?->format('Y-m-d'),
+                'estatus' => $obligacion->estatus ?: 'Sin estatus',
+            ])
+            ->values()
+            ->all();
+
         $enviosBase = (clone $obligacionesBase)
             ->whereYear('fecha_vencimiento', $ejercicio)
             ->whereMonth('fecha_vencimiento', $mes)
@@ -401,7 +508,35 @@ class OperationalDashboardBuilder
             ->values()
             ->all();
 
+        $enviadasLista = (clone $enviosRealizadosBase)
+            ->orderByDesc('updated_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (ObligacionClienteContador $obligacion) => [
+                'cliente' => $obligacion->cliente?->nombre ?: ($obligacion->cliente?->razon_social ?: 'Sin cliente'),
+                'obligacion' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
+                'contador' => $obligacion->contador?->name ?: 'Sin contador',
+                'fecha_vencimiento' => optional($obligacion->fecha_vencimiento)?->format('Y-m-d'),
+                'estatus' => $obligacion->estatus ?: 'Sin estatus',
+            ])
+            ->values()
+            ->all();
+
         $respuestasPendientes = (clone $respuestasPendientesBase)
+            ->orderByDesc('updated_at')
+            ->limit(10)
+            ->get()
+            ->map(fn (ObligacionClienteContador $obligacion) => [
+                'cliente' => $obligacion->cliente?->nombre ?: ($obligacion->cliente?->razon_social ?: 'Sin cliente'),
+                'obligacion' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
+                'contador' => $obligacion->contador?->name ?: 'Sin contador',
+                'fecha_vencimiento' => optional($obligacion->fecha_vencimiento)?->format('Y-m-d'),
+                'estatus' => $obligacion->estatus ?: 'Sin estatus',
+            ])
+            ->values()
+            ->all();
+
+        $respuestasRevisadasLista = (clone $respuestasRevisadasBase)
             ->orderByDesc('updated_at')
             ->limit(10)
             ->get()
@@ -447,6 +582,14 @@ class OperationalDashboardBuilder
             ],
             'contratos_por_vencer' => $contratosPorVencer,
             'clientes_incompletos' => $clientesIncompletos->values()->all(),
+            'clientes_activos_lista' => $clientesActivosLista,
+            'clientes_inactivos_lista' => $clientesInactivosLista,
+            'contratos_vigentes_lista' => $contratosVigentesLista,
+            'contratos_vencidos_lista' => $contratosVencidosLista,
+            'sin_contrato_lista' => $sinContratoLista,
+            'clientes_completos_lista' => $clientesCompletos->values()->all(),
+            'obligaciones_incompletas_lista' => $obligacionesIncompletasLista,
+            'tareas_incompletas_lista' => $tareasIncompletasLista,
             'resumen_despacho' => [
                 'clientes_evaluados' => $clientesConMetricas->count(),
                 'clientes_completos' => $clientesCompletos->count(),
@@ -466,6 +609,11 @@ class OperationalDashboardBuilder
                     'obligaciones_atrasadas' => (clone $obligacionesAtrasadasBase)->count(),
                     'obligaciones_cerradas' => (clone $obligacionesCerradasBase)->count(),
                     'obligaciones_faltantes' => (clone $obligacionesFaltantesBase)->count(),
+                    'obligaciones_urgentes' => (clone $obligacionesSeguimientoBase)
+                        ->whereIn('estatus', $estatusAbiertos)
+                        ->whereDate('fecha_vencimiento', '<=', $finPeriodo->toDateString())
+                        ->when($contadorId, fn ($q) => $q->where('contador_id', $contadorId))
+                        ->count(),
                     'cumplimiento' => (clone $obligacionesPeriodoBase)->count() > 0
                         ? (int) round(((clone $obligacionesCerradasBase)->count() / (clone $obligacionesPeriodoBase)->count()) * 100)
                         : 0,
@@ -474,6 +622,8 @@ class OperationalDashboardBuilder
                 'contadores_con_atraso' => $cargaPorContador->take(5)->all(),
                 'contador_seleccionado' => $contadorSeleccionado,
                 'obligaciones_urgentes' => $obligacionesUrgentes,
+                'detalle_atrasadas' => $detalleAtrasadasSeguimiento,
+                'detalle_faltantes' => $detalleFaltantesSeguimiento,
             ],
             'validaciones' => [
                 'kpis' => [
@@ -484,6 +634,7 @@ class OperationalDashboardBuilder
                 ],
                 'bandeja' => $bandejaValidacion,
                 'rechazadas_seguimiento' => $rechazadasSeguimiento,
+                'rechazadas_atendidas_lista' => $rechazadasAtendidasLista,
             ],
             'envios' => [
                 'kpis' => [
@@ -494,7 +645,9 @@ class OperationalDashboardBuilder
                     'respuestas_revisadas' => (clone $respuestasRevisadasBase)->count(),
                 ],
                 'pendientes_envio' => $pendientesEnvio,
+                'enviadas_lista' => $enviadasLista,
                 'respuestas_pendientes_lista' => $respuestasPendientes,
+                'respuestas_revisadas_lista' => $respuestasRevisadasLista,
             ],
         ];
     }

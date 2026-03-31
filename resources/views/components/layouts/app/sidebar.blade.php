@@ -36,7 +36,7 @@
 
                 <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
                     wire:navigate
-                    class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600">
+                    class="hover:border-amber-600 border border-transparent transition-all duration-300 data-[current]:border-amber-600 mt-10">
                     {{ __('Dashboard') }}
                 </flux:navlist.item>
 
