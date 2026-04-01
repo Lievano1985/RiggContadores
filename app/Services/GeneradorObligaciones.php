@@ -8,7 +8,7 @@
  * - Excluye obligaciones 'únicas'.
  * - Solo genera si el periodo COMIENZA en el mes/año de referencia.
  * - Evita duplicados con la unique(cliente_id, obligacion_id, ejercicio, mes).
- * - Hereda contador_id y carpeta_drive_id del último periodo (si existe y sigue activa).
+ * - Hereda contador_id, carpeta_drive_id y sin_carpeta del último periodo (si existe y sigue activa).
  * - Crea tareas desde TareaCatalogo (activo = true) para cada obligación generada.
  */
 
@@ -110,6 +110,7 @@ class GeneradorObligaciones
 
                             $contadorId     = $ultimo?->contador_id;
                             $carpetaDriveId = $ultimo?->carpeta_drive_id;
+                            $sinCarpeta     = (bool) ($ultimo?->sin_carpeta ?? false);
 
                             // 7️⃣ Calcular fecha de vencimiento
                             $fechaVenc = $ob->calcularFechaVencimiento($anioActual, $mesActual);
@@ -118,6 +119,7 @@ class GeneradorObligaciones
                                 'obligacion_id'       => $ob->id,
                                 'contador_id'         => $contadorId,
                                 'carpeta_drive_id'    => $carpetaDriveId,
+                                'sin_carpeta'         => $sinCarpeta,
                                 'ejercicio'           => $anioActual,
                                 'mes'                 => $mesActual,
                                 'estatus'             => 'asignada',
@@ -195,7 +197,8 @@ class GeneradorObligaciones
                 ],
                 [
                     'contador_id'      => $occ->contador_id,
-                    'carpeta_drive_id' => $occ->carpeta_drive_id,
+                    'carpeta_drive_id' => $occ->sin_carpeta ? null : $occ->carpeta_drive_id,
+                    'sin_carpeta'      => (bool) $occ->sin_carpeta,
                     'fecha_asignacion' => now(),
                     'fecha_limite'     => $fechaVenc?->toDateString(),
                     'estatus'          => 'asignada',
@@ -250,6 +253,7 @@ class GeneradorObligaciones
 
             $contadorId     = $ultimo?->contador_id ?? $cliente->contador_id;
             $carpetaDriveId = $ultimo?->carpeta_drive_id;
+            $sinCarpeta     = (bool) ($ultimo?->sin_carpeta ?? false);
 
             // Crear obligación completa
             $occ = ObligacionClienteContador::create([
@@ -257,6 +261,7 @@ class GeneradorObligaciones
                 'obligacion_id'      => $obligacionId,
                 'contador_id'        => $contadorId,
                 'carpeta_drive_id'   => $carpetaDriveId,
+                'sin_carpeta'        => $sinCarpeta,
                 'mes'                => $mes,
                 'ejercicio'          => $anio,
                 'estatus'            => 'asignada',

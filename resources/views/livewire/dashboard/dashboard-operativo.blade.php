@@ -1,7 +1,21 @@
-<div x-data="{ clienteDetalle: null, contadorDetalle: null, operacionModal: null, seguimientoModal: null, validacionesModal: null, enviosModal: null }" class="space-y-6">
+﻿@php
+    $seguimientoCumplimiento = (int) ($dashboard['seguimiento_contadores']['resumen_global']['cumplimiento'] ?? 0);
+    $validacionesPendientes = (int) ($dashboard['validaciones']['kpis']['pendientes'] ?? 0);
+    $validacionesAtendidas = (int) ($dashboard['validaciones']['kpis']['rechazadas_atendidas'] ?? 0);
+    $validacionesBase = $validacionesPendientes + $validacionesAtendidas;
+    $validacionesPorcentaje = $validacionesBase > 0 ? (int) round(($validacionesAtendidas / $validacionesBase) * 100) : 0;
+    $enviosRealizados = (int) ($dashboard['envios']['kpis']['enviadas'] ?? 0);
+    $enviosPendientes = (int) ($dashboard['envios']['kpis']['faltantes_envio'] ?? 0);
+    $enviosBase = $enviosRealizados + $enviosPendientes;
+    $enviosPorcentaje = $enviosBase > 0 ? (int) round(($enviosRealizados / $enviosBase) * 100) : 0;
+    $solicitudesPorcentaje = 0;
+    $circleLength = 2 * pi() * 42;
+@endphp
+
+<div x-data="{ clienteDetalle: null, contadorDetalle: null, operacionModal: null, seguimientoModal: null, validacionesModal: null, enviosModal: null }" class="space-y-10">
 
 
-    <section class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
+    <section class="rounded-xl border border-amber-300 bg-gradient-to-br from-amber-200 via-amber-100 to-white p-5 dark:border-amber-800/50 dark:bg-gradient-to-br dark:from-amber-950/30 dark:via-gray-900 dark:to-gray-900">
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-stone-600 dark:text-white">
@@ -42,8 +56,8 @@
                                 stroke-width="12"
                                 stroke-linecap="round"
                                 class="text-amber-600"
-                                stroke-dasharray="{{ 2 * pi() * 42 }}"
-                                stroke-dashoffset="{{ (2 * pi() * 42) - ((2 * pi() * 42) * ($dashboard['header']['porcentaje_cobertura'] / 100)) }}"
+                                stroke-dasharray="{{ $circleLength }}"
+                                stroke-dashoffset="{{ $circleLength - ($circleLength * ($dashboard['header']['porcentaje_cobertura'] / 100)) }}"
                             />
                         </svg>
                         <div class="absolute text-center">
@@ -155,39 +169,53 @@
     </section>
 
     {{-- ############# seguimietno por contador############ --}}
-    <section class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <section class="rounded-xl border border-indigo-300 bg-gradient-to-br from-indigo-200 via-indigo-100 to-white p-5 shadow-sm dark:border-indigo-800/50 dark:bg-gradient-to-br dark:from-indigo-950/30 dark:via-gray-900 dark:to-gray-900">
+        <div>
             <div>
                 <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Seguimiento de Actividades</h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Vista global o individual de las obligaciones.
-                    vencimiento real.</p>
-            </div>
-
-            <div
-                class="w-full rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white p-4 dark:border-indigo-900/50 dark:from-indigo-950/40 dark:to-gray-900 md:max-w-sm">
-                <div class="flex items-end justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700 dark:text-indigo-300">
-                            Cumplimiento Global
-                        </p>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                            {{ $dashboard['seguimiento_contadores']['resumen_global']['obligaciones_cerradas'] }} de
-                            {{ $dashboard['seguimiento_contadores']['resumen_global']['obligaciones_periodo'] }} cerradas
-                        </p>
-                    </div>
-                    <p class="text-4xl font-bold leading-none text-indigo-600 dark:text-indigo-400">
-                        {{ $dashboard['seguimiento_contadores']['resumen_global']['cumplimiento'] }}%
-                    </p>
-                </div>
-
-                <div class="mt-3 h-3 w-full overflow-hidden rounded-full bg-indigo-100 dark:bg-gray-800">
-                    <div class="h-full rounded-full bg-indigo-600 transition-all duration-500"
-                        style="width: {{ $dashboard['seguimiento_contadores']['resumen_global']['cumplimiento'] }}%;"></div>
-                </div>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Vista global o individual de las obligaciones. vencimiento real.</p>
             </div>
         </div>
 
-        <section class="space-y-4 mt-4">
+        <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
+            <div class="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 dark:border-indigo-900/50 dark:from-indigo-950/40 dark:to-gray-900">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700 dark:text-indigo-300">
+                    Cumplimiento Global
+                </p>
+
+                <div class="mt-4 flex flex-col items-center justify-center">
+                    <div class="relative flex h-52 w-52 items-center justify-center">
+                        <svg class="h-52 w-52 -rotate-90" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="42" fill="none" stroke="currentColor" stroke-width="12" class="text-indigo-100 dark:text-gray-700" />
+                            <circle
+                                cx="60"
+                                cy="60"
+                                r="42"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="12"
+                                stroke-linecap="round"
+                                class="text-indigo-600"
+                                stroke-dasharray="{{ $circleLength }}"
+                                stroke-dashoffset="{{ $circleLength - ($circleLength * ($seguimientoCumplimiento / 100)) }}"
+                            />
+                        </svg>
+                        <div class="absolute text-center">
+                            <p class="text-4xl font-bold leading-none text-indigo-600 dark:text-indigo-400">
+                                {{ $seguimientoCumplimiento }}%
+                            </p>
+                            <p class="mt-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Cumplimiento</p>
+                        </div>
+                    </div>
+
+                    <p class="mt-4 text-center text-sm text-gray-600 dark:text-gray-300">
+                        {{ $dashboard['seguimiento_contadores']['resumen_global']['obligaciones_cerradas'] }} de
+                        {{ $dashboard['seguimiento_contadores']['resumen_global']['obligaciones_periodo'] }} obligaciones cerradas
+                    </p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
             <select wire:model.live="filtroEjercicio"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
@@ -231,7 +259,7 @@
                 {{ $dashboard['seguimiento_contadores']['contador_seleccionado']['nombre'] ?? 'Global' }}
             </span>
         </div>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div
                 class="rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-4 dark:border-sky-900/50 dark:from-sky-950/40 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">1. Asignadas del mes</p>
@@ -275,7 +303,8 @@
                     {{ $dashboard['seguimiento_contadores']['kpis']['cumplimiento'] }}%</p>
             </div>
         </div>
-    </section>
+            </div>
+        </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-[1.6fr_1fr] mt-4">
         <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
@@ -358,7 +387,7 @@
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ atrasadas: 'Obligaciones atrasadas', faltantes: 'Faltantes del mes', urgentes: 'Obligaciones urgentes' }[seguimientoModal]"></h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ atrasadas: 'Detalle de obligaciones vencidas de meses anteriores que siguen abiertas.', faltantes: 'Detalle de obligaciones del mes que siguen pendientes.', urgentes: 'Detalle de obligaciones próximas o vencidas dentro del periodo.' }[seguimientoModal]"></p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ atrasadas: 'Detalle de obligaciones vencidas de meses anteriores que siguen abiertas.', faltantes: 'Detalle de obligaciones del mes que siguen pendientes.', urgentes: 'Detalle de obligaciones prÃ³ximas o vencidas dentro del periodo.' }[seguimientoModal]"></p>
                 </div>
 
                 <button
@@ -536,16 +565,16 @@
                         tareas_incompletas: 'Tareas incompletas'
                     }[operacionModal]"></h3>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{
-                        contratos: 'Detalle de contratos próximos a vencer o vencidos.',
+                        contratos: 'Detalle de contratos prÃ³ximos a vencer o vencidos.',
                         incompletos: 'Detalle de clientes con obligaciones o tareas incompletas.',
                         clientes_activos: 'Listado de clientes activos.',
                         clientes_inactivos: 'Listado de clientes inactivos.',
                         contratos_vigentes: 'Clientes con contrato vigente.',
                         contratos_vencidos: 'Clientes con contrato vencido.',
                         sin_contrato: 'Clientes activos sin contrato registrado.',
-                        clientes_completos: 'Clientes completos para operación.',
-                        obligaciones_incompletas: 'Obligaciones que aún requieren contador o carpeta.',
-                        tareas_incompletas: 'Tareas que aún requieren contador o carpeta.'
+                        clientes_completos: 'Clientes completos para operaciÃ³n.',
+                        obligaciones_incompletas: 'Obligaciones que aÃºn requieren contador o carpeta.',
+                        tareas_incompletas: 'Tareas que aÃºn requieren contador o carpeta.'
                     }[operacionModal]"></p>
                 </div>
 
@@ -767,32 +796,52 @@
         </div>
     </div>
 
-    <section class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <section class="rounded-xl border border-emerald-300 bg-gradient-to-br from-emerald-200 via-emerald-100 to-white p-5 shadow-sm dark:border-emerald-800/50 dark:bg-gradient-to-br dark:from-emerald-950/30 dark:via-gray-900 dark:to-gray-900">
+        <div>
             <div>
                 <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Validaciones</h3>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Pendientes de revisar, urgentes y rechazadas del periodo seleccionado.</p>
             </div>
+        </div>
 
-            <div
-                class="w-full rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-4 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-900 md:max-w-sm">
-                <div class="flex items-end justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
-                            Pendientes por validar
-                        </p>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                            {{ $dashboard['validaciones']['kpis']['urgentes'] }} urgentes del total actual
-                        </p>
+        <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
+            <div class="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-900">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
+                    Avance de Validacion
+                </p>
+
+                <div class="mt-4 flex flex-col items-center justify-center">
+                    <div class="relative flex h-52 w-52 items-center justify-center">
+                        <svg class="h-52 w-52 -rotate-90" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="42" fill="none" stroke="currentColor" stroke-width="12" class="text-emerald-100 dark:text-gray-700" />
+                            <circle
+                                cx="60"
+                                cy="60"
+                                r="42"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="12"
+                                stroke-linecap="round"
+                                class="text-emerald-600"
+                                stroke-dasharray="{{ $circleLength }}"
+                                stroke-dashoffset="{{ $circleLength - ($circleLength * ($validacionesPorcentaje / 100)) }}"
+                            />
+                        </svg>
+                        <div class="absolute text-center">
+                            <p class="text-4xl font-bold leading-none text-emerald-600 dark:text-emerald-400">
+                                {{ $validacionesPorcentaje }}%
+                            </p>
+                            <p class="mt-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Atendidas</p>
+                        </div>
                     </div>
-                    <p class="text-4xl font-bold leading-none text-emerald-600 dark:text-emerald-400">
-                        {{ $dashboard['validaciones']['kpis']['pendientes'] }}
+
+                    <p class="mt-4 text-center text-sm text-gray-600 dark:text-gray-300">
+                        {{ $validacionesAtendidas }} atendidas y {{ $validacionesPendientes }} pendientes
                     </p>
                 </div>
             </div>
-        </div>
 
-        <section class="space-y-4 mt-4">
+            <div class="space-y-4">
             <h3 class="text-base font-semibold text-stone-600 dark:text-white">Indicadores</h3>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <button
@@ -824,36 +873,57 @@
                     <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $dashboard['validaciones']['kpis']['rechazadas_atendidas'] }}</p>
                 </button>
             </div>
+            </div>
         </section>
 
     </section>
 
-    <section class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <section class="rounded-xl border border-cyan-300 bg-gradient-to-br from-cyan-200 via-cyan-100 to-white p-5 shadow-sm dark:border-cyan-800/50 dark:bg-gradient-to-br dark:from-cyan-950/30 dark:via-gray-900 dark:to-gray-900">
+        <div>
             <div>
                 <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Envios al cliente</h3>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Seguimiento de obligaciones listas para enviar y respuestas del cliente pendientes.</p>
             </div>
+        </div>
 
-            <div
-                class="w-full rounded-xl border border-cyan-200 bg-gradient-to-r from-cyan-50 to-white p-4 dark:border-cyan-900/50 dark:from-cyan-950/40 dark:to-gray-900 md:max-w-sm">
-                <div class="flex items-end justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">
-                            Faltantes de envio
-                        </p>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                            {{ $dashboard['envios']['kpis']['respuestas_pendientes'] }} respuestas por revisar
-                        </p>
+        <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
+            <div class="rounded-xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-5 dark:border-cyan-900/50 dark:from-cyan-950/40 dark:to-gray-900">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">
+                    Cumplimiento de Envios
+                </p>
+
+                <div class="mt-4 flex flex-col items-center justify-center">
+                    <div class="relative flex h-52 w-52 items-center justify-center">
+                        <svg class="h-52 w-52 -rotate-90" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="42" fill="none" stroke="currentColor" stroke-width="12" class="text-cyan-100 dark:text-gray-700" />
+                            <circle
+                                cx="60"
+                                cy="60"
+                                r="42"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="12"
+                                stroke-linecap="round"
+                                class="text-cyan-600"
+                                stroke-dasharray="{{ $circleLength }}"
+                                stroke-dashoffset="{{ $circleLength - ($circleLength * ($enviosPorcentaje / 100)) }}"
+                            />
+                        </svg>
+                        <div class="absolute text-center">
+                            <p class="text-4xl font-bold leading-none text-cyan-600 dark:text-cyan-400">
+                                {{ $enviosPorcentaje }}%
+                            </p>
+                            <p class="mt-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Enviadas</p>
+                        </div>
                     </div>
-                    <p class="text-4xl font-bold leading-none text-cyan-600 dark:text-cyan-400">
-                        {{ $dashboard['envios']['kpis']['faltantes_envio'] }}
+
+                    <p class="mt-4 text-center text-sm text-gray-600 dark:text-gray-300">
+                        {{ $enviosRealizados }} enviadas y {{ $enviosPendientes }} pendientes
                     </p>
                 </div>
             </div>
-        </div>
 
-        <section class="space-y-4 mt-4">
+            <div class="space-y-4">
             <h3 class="text-base font-semibold text-stone-600 dark:text-white">Indicadores</h3>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 <button
@@ -891,6 +961,7 @@
                     <p class="text-xs uppercase tracking-wide text-gray-500">Respuestas revisadas</p>
                     <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ $dashboard['envios']['kpis']['respuestas_revisadas'] }}</p>
                 </button>
+            </div>
             </div>
         </section>
     </section>
@@ -1003,7 +1074,7 @@
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ pendientes: 'Pendientes por validar', urgentes: 'Validaciones urgentes', rechazadas: 'Rechazadas para seguimiento', atendidas: 'Rechazadas atendidas' }[validacionesModal]"></h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ pendientes: 'Detalle de obligaciones listas para revisión.', urgentes: 'Detalle de pendientes con vencimiento inmediato.', rechazadas: 'Detalle de obligaciones rechazadas.', atendidas: 'Detalle de obligaciones rechazadas que ya fueron atendidas.' }[validacionesModal]"></p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ pendientes: 'Detalle de obligaciones listas para revisiÃ³n.', urgentes: 'Detalle de pendientes con vencimiento inmediato.', rechazadas: 'Detalle de obligaciones rechazadas.', atendidas: 'Detalle de obligaciones rechazadas que ya fueron atendidas.' }[validacionesModal]"></p>
                 </div>
 
                 <button
@@ -1065,57 +1136,77 @@
         </div>
     </div>
 
-    <section class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-                <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Solicitudes del cliente</h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Espacio reservado para el módulo de solicitudes hechas por el cliente.</p>
-            </div>
+    <section class="rounded-xl border border-violet-300 bg-gradient-to-br from-violet-200 via-violet-100 to-white p-5 shadow-sm dark:border-violet-800/50 dark:bg-gradient-to-br dark:from-violet-950/30 dark:via-gray-900 dark:to-gray-900">
+    <div>
+        <div>
+            <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Solicitudes del cliente</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Espacio reservado para el modulo de solicitudes hechas por el cliente.</p>
+        </div>
+    </div>
 
-            <div
-                class="w-full rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-white p-4 dark:border-violet-900/50 dark:from-violet-950/40 dark:to-gray-900 md:max-w-sm">
-                <div class="flex items-end justify-between gap-4">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">
-                            Solicitudes pendientes
+    <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
+        <div class="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-5 dark:border-violet-900/50 dark:from-violet-950/40 dark:to-gray-900">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">
+                Avance del Modulo
+            </p>
+
+            <div class="mt-4 flex flex-col items-center justify-center">
+                <div class="relative flex h-52 w-52 items-center justify-center">
+                    <svg class="h-52 w-52 -rotate-90" viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="42" fill="none" stroke="currentColor" stroke-width="12" class="text-violet-100 dark:text-gray-700" />
+                        <circle
+                            cx="60"
+                            cy="60"
+                            r="42"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="12"
+                            stroke-linecap="round"
+                            class="text-violet-600"
+                            stroke-dasharray="{{ $circleLength }}"
+                            stroke-dashoffset="{{ $circleLength - ($circleLength * ($solicitudesPorcentaje / 100)) }}"
+                        />
+                    </svg>
+                    <div class="absolute text-center">
+                        <p class="text-4xl font-bold leading-none text-violet-600 dark:text-violet-400">
+                            {{ $solicitudesPorcentaje }}%
                         </p>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                            Se activará cuando exista el módulo de solicitudes.
-                        </p>
+                        <p class="mt-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Pendiente</p>
                     </div>
-                    <p class="text-4xl font-bold leading-none text-violet-600 dark:text-violet-400">
-                        0
-                    </p>
                 </div>
+
+                <p class="mt-4 text-center text-sm text-gray-600 dark:text-gray-300">
+                    Se activara cuando exista el modulo de solicitudes.
+                </p>
             </div>
         </div>
 
-        <section class="space-y-4 mt-4">
-            <h3 class="text-base font-semibold text-stone-600 dark:text-white">Indicadores</h3>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 dark:border-slate-700 dark:from-slate-900 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Solicitudes hechas</p>
-                    <p class="mt-2 text-2xl font-semibold text-slate-600 dark:text-white">0</p>
-                </div>
-                <div class="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Atendidas</p>
-                    <p class="mt-2 text-2xl font-semibold text-emerald-600">0</p>
-                </div>
-                <div class="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Faltantes</p>
-                    <p class="mt-2 text-2xl font-semibold text-amber-600">0</p>
-                </div>
-                <div class="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Vencidas</p>
-                    <p class="mt-2 text-2xl font-semibold text-red-600">0</p>
-                </div>
+        <div class="space-y-4">
+        <h3 class="text-base font-semibold text-stone-600 dark:text-white">Indicadores</h3>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4 dark:border-slate-700 dark:from-slate-900 dark:to-gray-800">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Solicitudes hechas</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-600 dark:text-white">0</p>
             </div>
-        </section>
-
-        <section class="mt-4 rounded-xl border border-dashed border-gray-300 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300">Espacio reservado para el módulo</h3>
+            <div class="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-800">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Atendidas</p>
+                <p class="mt-2 text-2xl font-semibold text-emerald-600">0</p>
+            </div>
+            <div class="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-800">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Faltantes</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-600">0</p>
+            </div>
+            <div class="rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Vencidas</p>
+                <p class="mt-2 text-2xl font-semibold text-red-600">0</p>
+            </div>
+        </div>
+        </div>
+    </section>
+<section class="mt-4 rounded-xl border border-dashed border-gray-300 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300">Espacio reservado para el mÃ³dulo</h3>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Aquí podremos integrar la bandeja de solicitudes, filtros, estatus, tiempos de respuesta y seguimiento del cliente.
+                AquÃ­ podremos integrar la bandeja de solicitudes, filtros, estatus, tiempos de respuesta y seguimiento del cliente.
             </p>
         </section>
     </section>
@@ -1209,3 +1300,4 @@
         }
     </script>
 </div>
+

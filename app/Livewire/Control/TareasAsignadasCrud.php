@@ -37,6 +37,7 @@ class TareasAsignadasCrud extends Component
     public $fecha_limite;
     public $tiempo_estimado;
     public $carpeta_drive_id = null;
+    public bool $sin_carpeta = false;
     public $obligacion_id = null; // 👈 este puede ser "sin" o un ID de pivot
     public $tarea_id = null;
 
@@ -341,6 +342,7 @@ class TareasAsignadasCrud extends Component
         $this->fecha_limite = $tarea->fecha_limite;
         $this->tiempo_estimado = $tarea->tiempo_estimado;
         $this->carpeta_drive_id = $tarea->carpeta_drive_id;
+        $this->sin_carpeta = (bool) $tarea->sin_carpeta;
 
         $this->arbolCarpetas = ArbolCarpetas::obtenerArbol($this->cliente->id);
 
@@ -370,7 +372,8 @@ class TareasAsignadasCrud extends Component
                 'fecha_asignacion' => $fechaAsignacion,
                 'fecha_limite' => $this->fecha_limite,
                 'tiempo_estimado' => $this->tiempo_estimado,
-                'carpeta_drive_id' => $this->carpeta_drive_id,
+                'carpeta_drive_id' => $this->sin_carpeta ? null : $this->carpeta_drive_id,
+                'sin_carpeta' => $this->sin_carpeta,
             ]
         );
 
@@ -408,6 +411,7 @@ class TareasAsignadasCrud extends Component
             'fecha_limite',
             'tiempo_estimado',
             'carpeta_drive_id',
+            'sin_carpeta',
             'tareaId',
         ]);
     }
@@ -481,5 +485,12 @@ class TareasAsignadasCrud extends Component
     public function actualizarDesdeObligaciones()
     {
         $this->verificarTareasCompletadas();
+    }
+
+    public function updatedSinCarpeta($value)
+    {
+        if ($value) {
+            $this->carpeta_drive_id = null;
+        }
     }
 }

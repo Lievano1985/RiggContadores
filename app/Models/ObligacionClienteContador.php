@@ -21,7 +21,7 @@ class ObligacionClienteContador extends Model
     protected $casts = [
         'id' => 'integer',
         'fecha_finalizado' => 'date',
-
+        'sin_carpeta' => 'boolean',
     ];
     protected $table = 'obligacion_cliente_contador';
 
@@ -30,6 +30,7 @@ class ObligacionClienteContador extends Model
         'obligacion_id',
         'contador_id',
         'carpeta_drive_id',
+        'sin_carpeta',
         'fecha_asignacion',
         'fecha_vencimiento',
         'mes',

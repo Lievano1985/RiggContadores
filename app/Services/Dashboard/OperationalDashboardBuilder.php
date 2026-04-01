@@ -76,7 +76,12 @@ class OperationalDashboardBuilder
             ->withCount([
                 'obligacionesAsignadas as obligaciones_activas_count' => fn ($q) => $q->where('is_activa', true),
                 'obligacionesAsignadas as obligaciones_sin_contador_count' => fn ($q) => $q->where('is_activa', true)->whereNull('contador_id'),
-                'obligacionesAsignadas as obligaciones_sin_carpeta_count' => fn ($q) => $q->where('is_activa', true)->whereNull('carpeta_drive_id'),
+                'obligacionesAsignadas as obligaciones_sin_carpeta_count' => fn ($q) => $q
+                    ->where('is_activa', true)
+                    ->where(function ($sq) {
+                        $sq->whereNull('sin_carpeta')->orWhere('sin_carpeta', false);
+                    })
+                    ->whereNull('carpeta_drive_id'),
                 'tareasAsignadas as tareas_activas_count' => fn ($q) => $q->where(function ($w) {
                     $w->whereNull('estatus')->orWhere('estatus', '!=', 'cancelada');
                 }),
@@ -85,6 +90,8 @@ class OperationalDashboardBuilder
                 })->whereNull('contador_id'),
                 'tareasAsignadas as tareas_sin_carpeta_count' => fn ($q) => $q->where(function ($w) {
                     $w->whereNull('estatus')->orWhere('estatus', '!=', 'cancelada');
+                })->where(function ($sq) {
+                    $sq->whereNull('sin_carpeta')->orWhere('sin_carpeta', false);
                 })->whereNull('carpeta_drive_id'),
             ])
             ->orderBy('nombre')
@@ -101,27 +108,27 @@ class OperationalDashboardBuilder
                     && ($cliente->obligaciones_activas_count + $cliente->tareas_activas_count) > 0;
 
                 $detalleObligaciones = $cliente->obligacionesAsignadas
-                    ->filter(fn ($item) => empty($item->contador_id) || empty($item->carpeta_drive_id))
+                    ->filter(fn ($item) => empty($item->contador_id) || (!$item->sin_carpeta && empty($item->carpeta_drive_id)))
                     ->map(fn ($item) => [
                         'cliente_id' => $cliente->id,
                         'expediente_url' => route('clientes.expediente.show', $cliente->id),
                         'obligaciones_url' => route('clientes.expediente.show', ['cliente' => $cliente->id, 'tab' => 'obligaciones']) . '#obligaciones',
                         'nombre' => $item->obligacion->nombre ?? 'Sin obligacion',
                         'contador' => $item->contador ? $item->contador->name : null,
-                        'carpeta' => ! empty($item->carpeta_drive_id),
+                        'carpeta' => $item->sin_carpeta ? 'sin_carpeta' : ! empty($item->carpeta_drive_id),
                     ])
                     ->values()
                     ->all();
 
                 $detalleTareas = $cliente->tareasAsignadas
-                    ->filter(fn ($item) => empty($item->contador_id) || empty($item->carpeta_drive_id))
+                    ->filter(fn ($item) => empty($item->contador_id) || (!$item->sin_carpeta && empty($item->carpeta_drive_id)))
                     ->map(fn ($item) => [
                         'cliente_id' => $cliente->id,
                         'expediente_url' => route('clientes.expediente.show', $cliente->id),
                         'tareas_url' => route('clientes.expediente.show', ['cliente' => $cliente->id, 'tab' => 'tareas']) . '#tareas',
                         'nombre' => $item->tareaCatalogo->nombre ?? 'Sin tarea',
                         'contador' => $item->contador ? $item->contador->name : null,
-                        'carpeta' => ! empty($item->carpeta_drive_id),
+                        'carpeta' => $item->sin_carpeta ? 'sin_carpeta' : ! empty($item->carpeta_drive_id),
                     ])
                     ->values()
                     ->all();
@@ -205,7 +212,13 @@ class OperationalDashboardBuilder
 
         $obligacionesIncompletasLista = (clone $obligacionesBase)
             ->where(function ($q) {
-                $q->whereNull('contador_id')->orWhereNull('carpeta_drive_id');
+                $q->whereNull('contador_id')
+                    ->orWhere(function ($sq) {
+                        $sq->whereNull('carpeta_drive_id')
+                            ->where(function ($w) {
+                                $w->whereNull('sin_carpeta')->orWhere('sin_carpeta', false);
+                            });
+                    });
             })
             ->with(['cliente:id,nombre,razon_social', 'obligacion:id,nombre', 'contador:id,name'])
             ->orderBy('fecha_vencimiento')
@@ -214,7 +227,7 @@ class OperationalDashboardBuilder
                 'cliente' => $obligacion->cliente?->nombre ?: ($obligacion->cliente?->razon_social ?: 'Sin cliente'),
                 'nombre' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
                 'contador' => $obligacion->contador?->name ?: 'Falta',
-                'carpeta' => !empty($obligacion->carpeta_drive_id),
+                'carpeta' => $obligacion->sin_carpeta ? 'sin_carpeta' : ! empty($obligacion->carpeta_drive_id),
                 'fecha_vencimiento' => optional($obligacion->fecha_vencimiento)?->format('Y-m-d'),
             ])
             ->values()
@@ -222,7 +235,13 @@ class OperationalDashboardBuilder
 
         $tareasIncompletasLista = (clone $tareasBase)
             ->where(function ($q) {
-                $q->whereNull('contador_id')->orWhereNull('carpeta_drive_id');
+                $q->whereNull('contador_id')
+                    ->orWhere(function ($sq) {
+                        $sq->whereNull('carpeta_drive_id')
+                            ->where(function ($w) {
+                                $w->whereNull('sin_carpeta')->orWhere('sin_carpeta', false);
+                            });
+                    });
             })
             ->with(['cliente:id,nombre,razon_social', 'tareaCatalogo:id,nombre', 'contador:id,name'])
             ->orderBy('fecha_limite')
@@ -231,7 +250,7 @@ class OperationalDashboardBuilder
                 'cliente' => $tarea->cliente?->nombre ?: ($tarea->cliente?->razon_social ?: 'Sin cliente'),
                 'nombre' => $tarea->tareaCatalogo?->nombre ?: 'Sin tarea',
                 'contador' => $tarea->contador?->name ?: 'Falta',
-                'carpeta' => !empty($tarea->carpeta_drive_id),
+                'carpeta' => $tarea->sin_carpeta ? 'sin_carpeta' : ! empty($tarea->carpeta_drive_id),
                 'fecha_limite' => optional($tarea->fecha_limite)?->format('Y-m-d'),
             ])
             ->values()
@@ -574,10 +593,18 @@ class OperationalDashboardBuilder
                 'clientes_completos' => $clientesCompletos->count(),
                 'clientes_incompletos' => $clientesIncompletos->count(),
                 'obligaciones_incompletas' => (clone $obligacionesBase)->where(function ($q) {
-                    $q->whereNull('contador_id')->orWhereNull('carpeta_drive_id');
+                    $q->whereNull('contador_id')->orWhere(function ($sq) {
+                        $sq->whereNull('carpeta_drive_id')->where(function ($w) {
+                            $w->whereNull('sin_carpeta')->orWhere('sin_carpeta', false);
+                        });
+                    });
                 })->count(),
                 'tareas_incompletas' => (clone $tareasBase)->where(function ($q) {
-                    $q->whereNull('contador_id')->orWhereNull('carpeta_drive_id');
+                    $q->whereNull('contador_id')->orWhere(function ($sq) {
+                        $sq->whereNull('carpeta_drive_id')->where(function ($w) {
+                            $w->whereNull('sin_carpeta')->orWhere('sin_carpeta', false);
+                        });
+                    });
                 })->count(),
             ],
             'contratos_por_vencer' => $contratosPorVencer,

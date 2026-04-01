@@ -52,6 +52,7 @@ class ObligacionesAsignadas extends Component
     public $contador_id;
     public $fecha_vencimiento;
     public $carpeta_drive_id;
+    public bool $sin_carpeta = false;
 
     // Listas
     public $contadores = [];
@@ -246,6 +247,7 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
         $this->contador_id = $asig->contador_id;
         $this->fecha_vencimiento = $asig->fecha_vencimiento;
         $this->carpeta_drive_id = $asig->carpeta_drive_id;
+        $this->sin_carpeta = (bool) $asig->sin_carpeta;
 
         $this->modalVisible = true;
     }
@@ -266,7 +268,8 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
         $asig->update([
             'contador_id'=>$this->contador_id,
             'fecha_vencimiento'=>$this->fecha_vencimiento,
-            'carpeta_drive_id'=>$this->carpeta_drive_id
+            'carpeta_drive_id'=>$this->sin_carpeta ? null : $this->carpeta_drive_id,
+            'sin_carpeta'=>$this->sin_carpeta,
         ]);
 
         $this->resetFormulario();
@@ -280,6 +283,7 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
         $this->contador_id=null;
         $this->fecha_vencimiento=null;
         $this->carpeta_drive_id=null;
+        $this->sin_carpeta=false;
 
         $this->modoEdicion=false;
         $this->asignacionIdEditando=null;
@@ -335,5 +339,12 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
         }
 
         $this->resetPage();
+    }
+
+    public function updatedSinCarpeta($value): void
+    {
+        if ($value) {
+            $this->carpeta_drive_id = null;
+        }
     }
 }

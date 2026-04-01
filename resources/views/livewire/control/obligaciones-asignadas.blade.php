@@ -87,7 +87,7 @@
                         </td>
 
                         <td class="px-4 py-2">
-                            {{ $a->carpeta->nombre ?? '-' }}
+                            {{ $a->sin_carpeta ? 'Sin carpeta' : ($a->carpeta->nombre ?? '-') }}
                         </td>
 
                         <td class="px-4 py-2 whitespace-nowrap">
@@ -180,11 +180,18 @@
 
                     {{-- Carpeta Drive --}}
                     <div class="mt-6">
+                        <label class="mb-3 flex items-center gap-2 text-sm font-medium text-stone-600 dark:text-gray-300">
+                            <input type="checkbox" wire:model.live="sin_carpeta" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                            No requiere carpeta
+                        </label>
 
 
                         <label class="block text-sm font-semibold text-stone-600 mb-2">Carpeta en Drive</label>
                         <div x-data="{ abiertos: {}, seleccion: @entangle('carpeta_drive_id') }"
-                            class="p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-3">
+                            @class([
+                                'p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-3',
+                                'opacity-50 pointer-events-none' => $sin_carpeta,
+                            ])>
 
 
                             <ul class="space-y-1">

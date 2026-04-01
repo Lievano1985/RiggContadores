@@ -96,7 +96,7 @@
                                 : null;
                         @endphp
 
-                        {{ $carpeta?->nombre ?? 'Sin carpeta' }}
+                        {{ $tarea->sin_carpeta ? 'Sin carpeta' : ($carpeta?->nombre ?? 'Sin carpeta') }}
                     </td>
 
                     {{-- CONTADOR --}}
@@ -256,8 +256,15 @@
                     </div>
 
                     {{-- Arbol de carpetas --}}
+                    <label class="mb-3 flex items-center gap-2 text-sm font-medium text-stone-600 dark:text-gray-300">
+                        <input type="checkbox" wire:model.live="sin_carpeta" class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                        No requiere carpeta
+                    </label>
                     <div x-data="{ abiertos: {}, seleccion: @entangle('carpeta_drive_id') }"
-                        class="p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-3">
+                        @class([
+                            'p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-3',
+                            'opacity-50 pointer-events-none' => $sin_carpeta,
+                        ])>
                         <label class="block text-sm mb-1 text-stone-600 dark:text-gray-300">Carpeta en Drive</label>
                         <div class="overflow-y-auto max-h-80 rounded border border-gray-200 dark:border-gray-700 p-3">
                             <ul class="space-y-1">

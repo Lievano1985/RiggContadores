@@ -13,6 +13,7 @@ class TareaAsignada extends Model
     protected $table = 'tareas_asignadas';
     protected $casts = [
         'obligacion_cliente_contador_id' => 'integer',
+        'sin_carpeta' => 'boolean',
     ];
     protected $fillable = [
         'cliente_id',
@@ -20,6 +21,7 @@ class TareaAsignada extends Model
         'contador_id',
         'obligacion_cliente_contador_id',
         'carpeta_drive_id',
+        'sin_carpeta',
         'fecha_asignacion',
         'fecha_limite',
         'fecha_inicio',
