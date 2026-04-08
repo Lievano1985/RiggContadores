@@ -496,6 +496,9 @@ class OperationalDashboardBuilder
             ->all();
 
         $enviosBase = (clone $obligacionesBase)
+            ->whereHas('obligacion', function ($q) {
+                $q->where('requiere_envio_cliente', true);
+            })
             ->whereYear('fecha_vencimiento', $ejercicio)
             ->whereMonth('fecha_vencimiento', $mes)
             ->when($contadorId, fn ($q) => $q->where('contador_id', $contadorId))

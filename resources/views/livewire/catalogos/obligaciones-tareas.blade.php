@@ -29,6 +29,7 @@
                     <x-sortable-th field="nombre" label="Obligacion" :sort-field="$sortField" :sort-direction="$sortDirection" />
                     <x-sortable-th field="categoria" label="Categoria" :sort-field="$sortField" :sort-direction="$sortDirection" />
                     <x-sortable-th field="periodicidad" label="Periodicidad" :sort-field="$sortField" :sort-direction="$sortDirection" />
+                    <th class="px-4 py-2 text-center text-xs font-semibold">Enviable</th>
                     <x-sortable-th field="tareas" label="Tareas" :sort-field="$sortField" :sort-direction="$sortDirection" align="center" />
                     <x-sortable-th field="activa" label="Activa" :sort-field="$sortField" :sort-direction="$sortDirection" align="center" />
                     <th class="px-4 py-2 text-right text-xs font-semibold">Acciones</th>
@@ -52,7 +53,7 @@
                         {{-- Expansor --}}
                         <td class="px-2 py-2">
                             <button wire:click="toggleObligacion({{ $obligacion->id }})"
-                                class="p-1 hover:border-amber-500 border border-transparent rounded">
+                                class="rigg-expand-toggle p-1 hover:border-amber-500 border border-transparent rounded">
                                 @if ($obligacion->tareas_catalogo_count > 0)
                                     <span class="inline-block transition-transform">
                                         @if ($expandida)
@@ -96,6 +97,15 @@
                             <span class="px-2 py-1 text-xs bg-amber-100 dark:bg-amber-900/40 rounded">
                                 {{ ucfirst($obligacion->periodicidad) }}
                             </span>
+                        </td>
+
+                        <td class="px-4 py-2 text-center">
+                            <select
+                                wire:change="actualizarRequiereEnvioCliente({{ $obligacion->id }}, $event.target.value)"
+                                class="mx-auto px-2 py-1 border rounded text-xs dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                                <option value="1" @selected($obligacion->requiere_envio_cliente)>Si</option>
+                                <option value="0" @selected(!$obligacion->requiere_envio_cliente)>No</option>
+                            </select>
                         </td>
 
                         {{-- Conteo de tareas --}}
@@ -186,7 +196,7 @@
 
                 @empty
                     <tr>
-                        <td colspan="7" class="py-6 text-center text-gray-500"> No hay obligaciones registradas
+                        <td colspan="8" class="py-6 text-center text-gray-500"> No hay obligaciones registradas
                             todavia. </td>
                     </tr>
                 @endforelse
@@ -209,7 +219,7 @@
 
             {{-- Encabezado --}}
             <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-stone-700 dark:text-gray-100">
+                <h3 class="text-sm font-semibold text-stone-700 dark:text-white">
                     @switch($sidebarModo)
                         @case('crear_obligacion')
                             Nueva obligacion
@@ -259,16 +269,16 @@
 
                     {{-- NOMBRE --}}
                     <div>
-                        <label class="block text-sm mb-1">Nombre</label>
+                        <label class="block text-sm mb-1 text-stone-600 dark:text-white">Nombre</label>
                         <input type="text" wire:model.defer="formObligacion.nombre"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     </div>
 
                     {{-- x NUEVO: CATEGORIA (ENUM) --}}
                     <div>
-                        <label class="block text-sm mb-1">Categoria</label>
+                        <label class="block text-sm mb-1 text-stone-600 dark:text-white">Categoria</label>
                         <select wire:model.defer="formObligacion.categoria"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                             <option value="">Seleccione...</option>
                             @foreach ($categorias as $valor => $label)
                                 <option value="{{ $valor }}">{{ $label }}</option>
@@ -278,9 +288,9 @@
 
                     {{-- PERIODICIDAD --}}
                     <div>
-                        <label class="block text-sm mb-1">Periodicidad</label>
+                        <label class="block text-sm mb-1 text-stone-600 dark:text-white">Periodicidad</label>
                         <select wire:model.defer="formObligacion.periodicidad"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                             <option value="">Seleccione...</option>
                             @foreach ($periodicidades as $clave => $etiqueta)
                                 <option value="{{ $clave }}">{{ $etiqueta }}</option>
@@ -288,27 +298,35 @@
                         </select>
                     </div>
 
+                    <div>
+                        <label class="flex items-center gap-2 text-sm mb-1">
+                            <input type="checkbox" wire:model.defer="formObligacion.requiere_envio_cliente"
+                                class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                            Requiere envio al cliente
+                        </label>
+                    </div>
+
                     {{-- CAMPOS SOLO SI NO ES UNICA --}}
                     @unless ($esUnicaSidebar)
                         <div class="grid grid-cols-3 gap-3">
                             <div>
-                                <label class="block text-sm mb-1">Mes inicio</label>
+                                <label class="block text-sm mb-1 text-stone-600 dark:text-white">Mes inicio</label>
                                 <select wire:model.defer="formObligacion.mes_inicio"
-                                    class="w-full px-2 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                                    class="w-full px-2 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                                     @for ($m = 1; $m <= 12; $m++)
                                         <option value="{{ $m }}">{{ $m }}</option>
                                     @endfor
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm mb-1">Desfase</label>
+                                <label class="block text-sm mb-1 text-stone-600 dark:text-white">Desfase</label>
                                 <input type="number" wire:model.defer="formObligacion.desfase_meses"
-                                    class="w-full px-2 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                                    class="w-full px-2 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                             </div>
                             <div>
-                                <label class="block text-sm mb-1">Dia corte</label>
+                                <label class="block text-sm mb-1 text-stone-600 dark:text-white">Dia corte</label>
                                 <input type="number" wire:model.defer="formObligacion.dia_corte"
-                                    class="w-full px-2 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                                    class="w-full px-2 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                             </div>
                         </div>
                     @endunless
@@ -316,7 +334,7 @@
                     {{-- ACTIVA --}}
                     <div class="flex items-center space-x-2">
                         <input type="checkbox" wire:model.defer="formObligacion.activa">
-                        <span class="text-sm">Obligacion activa</span>
+                        <span class="text-sm text-stone-600 dark:text-white">Obligacion activa</span>
                     </div>
                 @endif
 
@@ -332,7 +350,7 @@
                         @endphp
                         @if ($obPadre)
                             <div>
-                                <label class="block text-xs text-gray-400 mb-1">Obligacion</label>
+                                <label class="block text-xs text-gray-400 dark:text-gray-500 mb-1">Obligacion</label>
                                 <div class="px-3 py-2 border rounded bg-gray-100 dark:bg-gray-800">
                                     {{ $obPadre->nombre }}
                                 </div>
@@ -342,16 +360,16 @@
 
                     {{-- Nombre --}}
                     <div>
-                        <label class="block text-sm mb-1">Nombre de la tarea</label>
+                        <label class="block text-sm mb-1 text-stone-600 dark:text-white">Nombre de la tarea</label>
                         <input type="text" wire:model.defer="formTarea.nombre"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     </div>
 
                     {{-- Descripcion --}}
                     <div>
-                        <label class="block text-sm mb-1">Descripcion</label>
+                        <label class="block text-sm mb-1 text-stone-600 dark:text-white">Descripcion</label>
                         <textarea rows="4" wire:model.defer="formTarea.descripcion"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"></textarea>
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none"></textarea>
                     </div>
                 @endif
             </div>

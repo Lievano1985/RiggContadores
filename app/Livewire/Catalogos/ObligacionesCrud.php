@@ -24,6 +24,7 @@ class ObligacionesCrud extends Component
     public $tipo;
     public $categoria; // 🔹 NUEVO
     public $periodicidad = 'mensual';
+    public $requiere_envio_cliente = false;
     public $mes_inicio = 1;
     public $desfase_meses = 1;
     public $dia_corte = 17;
@@ -47,6 +48,7 @@ class ObligacionesCrud extends Component
         'tipo'           => 'required|string|in:federal,estatal,local,patronal',
         'categoria'      => 'required|in:obligacion,proceso', // 🔹 NUEVO
         'periodicidad'   => 'required|in:mensual,bimestral,trimestral,cuatrimestral,semestral,anual,unica',
+        'requiere_envio_cliente' => 'boolean',
         'mes_inicio'     => 'required|integer|min:1|max:12',
         'desfase_meses'  => 'required|integer|min:0|max:12',
         'dia_corte'      => 'required|integer|min:1|max:31',
@@ -101,6 +103,7 @@ class ObligacionesCrud extends Component
             'tipo'          => $obligacion->tipo,
             'categoria'     => $obligacion->categoria, // 🔹 NUEVO
             'periodicidad'  => $obligacion->periodicidad,
+            'requiere_envio_cliente' => (bool) $obligacion->requiere_envio_cliente,
             'mes_inicio'    => $obligacion->mes_inicio,
             'desfase_meses' => $obligacion->desfase_meses,
             'dia_corte'     => $obligacion->dia_corte,
@@ -127,6 +130,7 @@ class ObligacionesCrud extends Component
             'tipo',
             'categoria', // 🔹 NUEVO
             'periodicidad',
+            'requiere_envio_cliente',
             'mes_inicio',
             'desfase_meses',
             'dia_corte',
@@ -173,6 +177,7 @@ class ObligacionesCrud extends Component
             'tipo',
             'categoria', // 🔹 NUEVO
             'periodicidad',
+            'requiere_envio_cliente',
             'mes_inicio',
             'desfase_meses',
             'dia_corte',
@@ -180,6 +185,7 @@ class ObligacionesCrud extends Component
         ]);
 
         $this->periodicidad = 'mensual';
+        $this->requiere_envio_cliente = false;
         $this->mesesPermitidos = Obligacion::mesInicioPermitido('mensual');
         $this->mes_inicio = 1;
         $this->desfase_meses = 1;
@@ -200,5 +206,20 @@ class ObligacionesCrud extends Component
             $this->sortField = $field;
             $this->sortDirection = 'asc';
         }
+    }
+
+    public function toggleRequiereEnvioCliente(int $id): void
+    {
+        $obligacion = Obligacion::findOrFail($id);
+        $obligacion->update([
+            'requiere_envio_cliente' => ! $obligacion->requiere_envio_cliente,
+        ]);
+    }
+
+    public function actualizarRequiereEnvioCliente(int $id, string $valor): void
+    {
+        Obligacion::findOrFail($id)->update([
+            'requiere_envio_cliente' => $valor === '1',
+        ]);
     }
 }

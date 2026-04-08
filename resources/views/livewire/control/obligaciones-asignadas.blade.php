@@ -9,7 +9,7 @@
     <div class="flex flex-wrap gap-4 items-center mb-4">
 
         <div>
-            <label class="block text-sm font-semibold">Ejercicio</label>
+            <label class="block text-sm font-semibold text-stone-600 dark:text-white">Ejercicio</label>
             <select wire:model.live="filtroEjercicio"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
     border-gray-300 dark:border-gray-600 focus:border-amber-600
@@ -22,12 +22,13 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium">Mes</label>
+            <label class="block text-sm font-medium text-stone-600 dark:text-white">Mes</label>
             <select wire:model.live="filtroMes"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
     border-gray-300 dark:border-gray-600 focus:border-amber-600
     focus:ring focus:ring-amber-500/40 focus:outline-none">
-                <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
+                <option value="">Selecciona...</option>
+                <option value="__all__">Todos</option>
 
                 @foreach ([
         1 => 'Enero',
@@ -44,6 +45,19 @@
         12 => 'Diciembre',
     ] as $num => $nombre)
                     <option value="{{ $num }}">{{ $nombre }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-stone-600 dark:text-white">Periodicidad</label>
+            <select wire:model.live="filtroPeriodicidad"
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+    border-gray-300 dark:border-gray-600 focus:border-amber-600
+    focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Todas</option>
+                @foreach ($periodicidadesDisponibles as $periodicidad)
+                    <option value="{{ $periodicidad }}">{{ ucfirst($periodicidad) }}</option>
                 @endforeach
             </select>
         </div>
@@ -115,7 +129,7 @@
 
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4">
+                        <td colspan="6" class="text-center py-4 text-gray-500 dark:text-gray-400">
                             No hay obligaciones
                         </td>
                     </tr>
@@ -140,7 +154,7 @@
 
                     {{-- Obligacion (solo lectura en edicion) --}}
                     <div class="mb-3">
-                        <label class="block text-sm font-medium mb-1">Obligacion</label>
+                        <label class="block text-sm font-medium mb-1 text-stone-600 dark:text-white">Obligacion</label>
                         <div
                             class="px-3 py-2 border rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                             {{ $obligacionSeleccionada->nombre ?? '-' }}
@@ -149,7 +163,7 @@
 
                     {{-- Contador --}}
                     <div class="mb-3">
-                        <label class="block text-sm font-medium mb-1">Contador Responsable</label>
+                        <label class="block text-sm font-medium mb-1 text-stone-600 dark:text-white">Contador Responsable</label>
                         <select wire:model="contador_id"
                             class="w-full px-3 py-2 border rounded-md
                                dark:bg-gray-700 dark:text-white
@@ -186,7 +200,7 @@
                         </label>
 
 
-                        <label class="block text-sm font-semibold text-stone-600 mb-2">Carpeta en Drive</label>
+                        <label class="block text-sm font-semibold text-stone-600 dark:text-white mb-2">Carpeta en Drive</label>
                         <div x-data="{ abiertos: {}, seleccion: @entangle('carpeta_drive_id') }"
                             @class([
                                 'p-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-3',
@@ -230,8 +244,8 @@
         <div class="fixed inset-0 bg-black/50 flex items-center justify-center">
             <div class="bg-white dark:bg-gray-900 p-6 rounded w-96">
 
-                <label class="block text-sm mb-1">Motivo baja</label>
-                <textarea wire:model.defer="motivoBaja" class="w-full border rounded p-2"></textarea>
+                <label class="block text-sm mb-1 text-stone-600 dark:text-white">Motivo baja</label>
+                <textarea wire:model.defer="motivoBaja" class="w-full border rounded p-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none"></textarea>
 
                 <div class="mt-4 flex justify-end gap-2">
                     <button wire:click="$set('confirmarBaja',false)"

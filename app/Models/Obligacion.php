@@ -22,6 +22,7 @@ class Obligacion extends Model
         'tipo',
         'categoria',
         'periodicidad',
+        'requiere_envio_cliente',
         'mes_inicio',
         'desfase_meses',
         'dia_corte',
@@ -30,6 +31,7 @@ class Obligacion extends Model
 
     protected $casts = [
         'activa' => 'boolean',
+        'requiere_envio_cliente' => 'boolean',
     ];
 
     protected $attributes = [

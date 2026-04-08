@@ -22,6 +22,7 @@ class NotificacionCliente extends Model
         'cliente_id',
         'user_id',
         'asunto',
+        'cc',
         'mensaje',
         'periodo_mes',
         'periodo_ejercicio',

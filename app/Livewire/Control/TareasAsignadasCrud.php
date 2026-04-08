@@ -28,6 +28,7 @@ class TareasAsignadasCrud extends Component
     public $modoEdicion = false;
     public $filtroEjercicio;
     public $filtroMes;
+    public string $filtroPeriodicidad = '';
     public $tareaId;
     public $tarea_catalogo_id;
     public $contador_id;
@@ -46,6 +47,7 @@ class TareasAsignadasCrud extends Component
     public $arbolCarpetas = [];
     public $fechaLimiteMaxima = null;
     public $aniosDisponibles = [];
+    public array $periodicidadesDisponibles = [];
     public $buscarTarea = '';
     public bool $modoAutomatico = true;
 
@@ -73,7 +75,7 @@ class TareasAsignadasCrud extends Component
       if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
         abort(403);
     }
-      $this->modoAutomatico = true;
+      $this->modoAutomatico = false;
 
         $this->cliente = $cliente;
 
@@ -95,8 +97,10 @@ class TareasAsignadasCrud extends Component
         } */
 
         // ✅ inicializa filtros (mismo patrón)
-        $this->filtroEjercicio = null;
-        $this->filtroMes = null;
+        $periodoInicial = now()->subMonthNoOverflow();
+        $this->filtroEjercicio = (string) $periodoInicial->year;
+        $this->filtroMes = (string) $periodoInicial->month;
+        $this->cargarPeriodicidadesDisponibles();
 
         // Carga inicial
         $this->cargarTareasDisponibles();
@@ -166,8 +170,23 @@ class TareasAsignadasCrud extends Component
         /* ===========================
          | MANUAL
          =========================== */ else {
-            $query->where('ejercicio', $this->filtroEjercicio)
-                ->where('mes', $this->filtroMes);
+            if (!empty($this->filtroEjercicio)) {
+                $query->where('ejercicio', $this->filtroEjercicio);
+            }
+
+            if (!empty($this->filtroMes) && $this->filtroMes !== '__all__') {
+                $query->where('mes', $this->filtroMes);
+            }
+        }
+
+        if ($this->filtroPeriodicidad !== '') {
+            $query->where(function ($q) {
+                $q->whereHas('obligacionClienteContador.obligacion', function ($sub) {
+                    $sub->where('periodicidad', $this->filtroPeriodicidad);
+                })->orWhereHas('tareaCatalogo.obligacion', function ($sub) {
+                    $sub->where('periodicidad', $this->filtroPeriodicidad);
+                });
+            });
         }
 
         if ($this->sortField === 'tarea') {
@@ -202,20 +221,49 @@ class TareasAsignadasCrud extends Component
         return $query->paginate($this->perPageValue($query, 10));
     }
 
+    private function cargarPeriodicidadesDisponibles(): void
+    {
+        $this->periodicidadesDisponibles = Obligacion::query()
+            ->whereIn('id', function ($q) {
+                $q->select('obligacion_id')
+                    ->from('obligacion_cliente_contador')
+                    ->where('cliente_id', $this->cliente->id)
+                    ->whereNotNull('obligacion_id')
+                    ->distinct();
+            })
+            ->whereNotNull('periodicidad')
+            ->distinct()
+            ->orderBy('periodicidad')
+            ->pluck('periodicidad')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
 
 
 
 
     public function updatedFiltroEjercicio()
     {
-        $this->modoAutomatico = false;
+        $this->sincronizarModoAutomatico();
         $this->resetPage();
     }
 
     public function updatedFiltroMes()
     {
-        $this->modoAutomatico = false;
+        $this->sincronizarModoAutomatico();
         $this->resetPage();
+    }
+
+    public function updatedFiltroPeriodicidad()
+    {
+        $this->resetPage();
+    }
+
+    private function sincronizarModoAutomatico(): void
+    {
+        $this->modoAutomatico = empty($this->filtroEjercicio) && empty($this->filtroMes);
     }
 
     public function updatedBuscarTarea()

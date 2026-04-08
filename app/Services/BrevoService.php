@@ -67,9 +67,20 @@ class BrevoService
         string $nombre,
         string $mensaje,
         string $periodo,
-        array $attachments = []
+        array $attachments = [],
+        array $cc = []
      ) {
-    
+        $params = [
+            'nombre'  => $nombre,
+            'mensaje' => $mensaje,
+            'periodo' => $periodo,
+            'empresa' => config('app.name'),
+        ];
+
+        if (!empty($attachments)) {
+            $params['archivos'] = 'Adjuntamos los archivos correspondiente.';
+        }
+
         $data = [
             'to' => [
                 [
@@ -78,14 +89,16 @@ class BrevoService
                 ],
             ],
             'templateId' => 7,
-            'params' => [
-                'nombre'  => $nombre,
-                'mensaje' => $mensaje,
-                'periodo' => $periodo,
-                'empresa' => config('app.name'),
-            ],
+            'params' => $params,
         ];
-    
+
+        if (!empty($cc)) {
+            $data['cc'] = collect($cc)
+                ->map(fn ($correo) => ['email' => $correo])
+                ->values()
+                ->all();
+        }
+
         if (!empty($attachments)) {
     
             $attachmentObjects = [];

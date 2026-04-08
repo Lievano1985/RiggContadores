@@ -2,7 +2,7 @@
 
     <!-- Título y Botón Crear Cliente -->
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-stone-600">Clientes</h2>
+        <h2 class="text-xl font-bold text-stone-600 dark:text-white">Clientes</h2>
 
         <button wire:click="abrirModalCrear" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
             + Crear Cliente
@@ -147,7 +147,7 @@
         <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
             <div
                 class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white p-6 rounded-lg w-full max-w-2xl shadow-lg overflow-y-auto max-h-[90vh]">
-                <h3 class="text-lg font-semibold mb-4 text-stone-600">
+                <h3 class="text-lg font-semibold mb-4 text-stone-600 dark:text-white">
                     {{ $clienteId ? 'Editar Cliente' : 'Crear Cliente' }}
                 </h3>
 
@@ -176,13 +176,13 @@
                         <div>
                             <label class="block text-sm mb-1">Razón social</label>
                             <input type="text" wire:model.defer="razon_social"
-                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline"
+                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none"
                                 oninput="this.value = this.value.toUpperCase()" required>
                         </div>
                         <div>
                             <label class="block text-sm mb-1">Nombre comercial</label>
                             <input type="text" wire:model.defer="nombre"
-                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline"
+                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none"
                                 oninput="this.value = this.value.toUpperCase()" required>
                         </div>
 
@@ -191,7 +191,7 @@
                         <div>
                             <label class="block text-sm mb-1">RFC</label>
                             <input type="text" wire:model.defer="rfc"
-                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline focus:outline"
+                                class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none"
                                 oninput="this.value = this.value.toUpperCase()" required>
                             @error('rfc')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
@@ -201,7 +201,7 @@
                             <label class="block text-sm mb-1">CURP</label>
                             <input type="text" wire:model.defer="curp" @disabled($tipo_persona === 'moral')
                                 class="uppercase w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white 
-                                      focus:outline-amber-600 focus:outline disabled:bg-gray-200 disabled:dark:bg-gray-600 disabled:cursor-not-allowed"
+                                      focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none disabled:bg-gray-200 disabled:dark:bg-gray-600 disabled:cursor-not-allowed"
                                 oninput="this.value = this.value.toUpperCase()"
                                 @if ($tipo_persona === 'fisica') required @endif>
                             @error('curp')
@@ -212,14 +212,14 @@
                         <div>
                             <label class="block text-sm mb-1">Correo</label>
                             <input type="email" wire:model.defer="correo"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline"
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none"
                                 required>
                         </div>
 
                         <div>
                             <label class="block text-sm mb-1">Teléfono</label>
                             <input type="text" wire:model.defer="telefono"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         </div>
 
                         {{--   <div>

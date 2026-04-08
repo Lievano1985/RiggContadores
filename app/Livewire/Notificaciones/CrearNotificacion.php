@@ -17,8 +17,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\NotificacionCliente;
 use App\Models\ObligacionClienteContador;
 use App\Models\ArchivoAdjunto;
+use App\Models\TareaAsignada;
 use App\Services\BrevoService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 use ZipArchive;
@@ -31,12 +33,14 @@ class CrearNotificacion extends Component
     public $periodo_ejercicio;
 
     public $asunto = '';
+    public $cc = '';
     public $mensaje = '';
 
     public $obligacionesDisponibles = [];
     public $obligacionesSeleccionadas = [];
 
-    public $archivosSeleccionados = [];
+    public $archivosDisponibles = [];
+    public $archivoIdsSeleccionados = [];
     public $buscarObligacion = '';
     public $obligacionesFiltradas = [];
 
@@ -91,7 +95,8 @@ class CrearNotificacion extends Component
         $this->periodo_mes = '';
         $this->cargarObligaciones();
         $this->obligacionesSeleccionadas = [];
-        $this->archivosSeleccionados = [];
+        $this->archivosDisponibles = [];
+        $this->archivoIdsSeleccionados = [];
     }
 
 
@@ -112,6 +117,9 @@ class CrearNotificacion extends Component
             ->whereIn('estatus', ['finalizado', 'enviada_cliente'])
             ->where('ejercicio', (int) $this->periodo_ejercicio)
             ->where('mes', (int) $this->periodo_mes)
+            ->whereHas('obligacion', function ($q) {
+                $q->where('requiere_envio_cliente', true);
+            })
             ->with('obligacion');
 
         $this->obligacionesDisponibles = $query->get();
@@ -143,6 +151,13 @@ class CrearNotificacion extends Component
         $this->updatedObligacionesSeleccionadas();
     }
 
+    public function quitarArchivo($id): void
+    {
+        $this->archivoIdsSeleccionados = array_values(
+            array_diff($this->archivoIdsSeleccionados, [(string) $id, (int) $id])
+        );
+    }
+
 
 
     // ============================
@@ -153,7 +168,8 @@ class CrearNotificacion extends Component
     {
         $this->cargarObligaciones();
         $this->obligacionesSeleccionadas = [];
-        $this->archivosSeleccionados = [];
+        $this->archivosDisponibles = [];
+        $this->archivoIdsSeleccionados = [];
     }
 
 
@@ -164,18 +180,7 @@ class CrearNotificacion extends Component
 
     public function updatedObligacionesSeleccionadas()
     {
-        $this->archivosSeleccionados = [];
-
-        foreach ($this->obligacionesSeleccionadas as $obligacionId) {
-            $archivos = ArchivoAdjunto::where('archivoable_type', ObligacionClienteContador::class)
-                ->where('archivoable_id', $obligacionId)
-                ->get();
-
-
-            foreach ($archivos as $archivo) {
-                $this->archivosSeleccionados[] = $archivo;
-            }
-        }
+        $this->cargarArchivosDisponibles();
     }
 
     // ============================
@@ -187,15 +192,32 @@ class CrearNotificacion extends Component
 
         $this->validate([
             'asunto' => 'required',
+            'cc' => 'nullable|string',
             'mensaje' => 'required',
             'obligacionesSeleccionadas' => 'required|array|min:1',
+            'archivoIdsSeleccionados' => 'nullable|array',
         ]);
+
+        $correosCc = $this->parsearCorreosCc();
+
+        if (!empty($correosCc)) {
+            $validator = Validator::make(
+                ['cc' => $correosCc],
+                ['cc.*' => 'email']
+            );
+
+            if ($validator->fails()) {
+                $this->addError('cc', 'Uno o más correos en CC no tienen un formato válido.');
+                return;
+            }
+        }
 
         // 1️⃣ Crear registro en BD (temporal)
         $notificacion = NotificacionCliente::create([
             'cliente_id' => $this->cliente->id,
             'user_id' => Auth::id(),
             'asunto' => $this->asunto,
+            'cc' => !empty($correosCc) ? implode(', ', $correosCc) : null,
             'mensaje' => $this->mensaje,
             'periodo_mes' => $this->periodo_mes,
             'periodo_ejercicio' => $this->periodo_ejercicio,
@@ -207,14 +229,14 @@ class CrearNotificacion extends Component
 
         // 3️⃣ Guardar relaciones archivos
         $notificacion->archivos()
-            ->sync(collect($this->archivosSeleccionados)->pluck('id'));
+            ->sync($this->archivoIdsSeleccionados);
 
         // 4️⃣ Preparar adjuntos para Brevo
         $attachments = [];
 
         $archivos = ArchivoAdjunto::whereIn(
             'id',
-            collect($this->archivosSeleccionados)->pluck('id')
+            $this->archivoIdsSeleccionados
         )->get();
 
         $archivosValidos = $archivos->filter(function (ArchivoAdjunto $archivo) {
@@ -245,7 +267,8 @@ class CrearNotificacion extends Component
             $this->cliente->nombre,
             $this->mensaje,
             $this->periodo_mes . '/' . $this->periodo_ejercicio,
-            $attachments
+            $attachments,
+            $correosCc
         );
 
 
@@ -269,9 +292,11 @@ class CrearNotificacion extends Component
 
         // 8️⃣ Limpiar formulario
         $this->asunto = '';
+        $this->cc = '';
         $this->mensaje = '';
         $this->obligacionesSeleccionadas = [];
-        $this->archivosSeleccionados = [];
+        $this->archivosDisponibles = [];
+        $this->archivoIdsSeleccionados = [];
 
         $this->dispatch(
             'notify',
@@ -287,6 +312,92 @@ class CrearNotificacion extends Component
     {
 
         return view('livewire.notificaciones.crear-notificacion');
+    }
+
+    private function parsearCorreosCc(): array
+    {
+        if (!is_string($this->cc) || trim($this->cc) === '') {
+            return [];
+        }
+
+        return collect(preg_split('/[;,]+/', $this->cc) ?: [])
+            ->map(fn ($correo) => trim($correo))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function cargarArchivosDisponibles(): void
+    {
+        if (empty($this->obligacionesSeleccionadas)) {
+            $this->archivosDisponibles = [];
+            $this->archivoIdsSeleccionados = [];
+            return;
+        }
+
+        $obligaciones = ObligacionClienteContador::query()
+            ->whereIn('id', $this->obligacionesSeleccionadas)
+            ->with(['obligacion:id,nombre'])
+            ->get()
+            ->keyBy('id');
+
+        $archivosObligacion = ArchivoAdjunto::query()
+            ->where('archivoable_type', ObligacionClienteContador::class)
+            ->whereIn('archivoable_id', $this->obligacionesSeleccionadas)
+            ->get()
+            ->map(function (ArchivoAdjunto $archivo) use ($obligaciones) {
+                $obligacion = $obligaciones->get((int) $archivo->archivoable_id);
+
+                return [
+                    'id' => $archivo->id,
+                    'nombre' => $archivo->nombre ?? basename($archivo->archivo ?: ''),
+                    'origen_tipo' => 'obligacion',
+                    'origen_id' => (int) $archivo->archivoable_id,
+                    'origen_nombre' => $obligacion?->obligacion?->nombre ?? 'Obligacion',
+                    'detalle' => 'Archivo de obligacion',
+                ];
+            });
+
+        $tareas = TareaAsignada::query()
+            ->whereIn('obligacion_cliente_contador_id', $this->obligacionesSeleccionadas)
+            ->with(['tareaCatalogo:id,nombre', 'obligacionClienteContador.obligacion:id,nombre'])
+            ->get();
+
+        $tareasPorId = $tareas->keyBy('id');
+
+        $archivosTarea = ArchivoAdjunto::query()
+            ->where('archivoable_type', TareaAsignada::class)
+            ->whereIn('archivoable_id', $tareasPorId->keys()->all())
+            ->get()
+            ->map(function (ArchivoAdjunto $archivo) use ($tareasPorId) {
+                $tarea = $tareasPorId->get((int) $archivo->archivoable_id);
+
+                return [
+                    'id' => $archivo->id,
+                    'nombre' => $archivo->nombre ?? basename($archivo->archivo ?: ''),
+                    'origen_tipo' => 'tarea',
+                    'origen_id' => (int) $archivo->archivoable_id,
+                    'origen_nombre' => $tarea?->tareaCatalogo?->nombre ?? 'Tarea',
+                    'detalle' => 'Tarea de ' . ($tarea?->obligacionClienteContador?->obligacion?->nombre ?? 'obligacion'),
+                ];
+            });
+
+        $this->archivosDisponibles = $archivosObligacion
+            ->concat($archivosTarea)
+            ->unique('id')
+            ->sortBy([
+                ['origen_tipo', 'asc'],
+                ['origen_nombre', 'asc'],
+                ['nombre', 'asc'],
+            ])
+            ->values()
+            ->all();
+
+        $this->archivoIdsSeleccionados = collect($this->archivosDisponibles)
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id)
+            ->all();
     }
 
     private function construirAdjuntoBrevo(ArchivoAdjunto $archivo): ?array

@@ -12,10 +12,10 @@
     $circleLength = 2 * pi() * 42;
 @endphp
 
-<div x-data="{ clienteDetalle: null, contadorDetalle: null, operacionModal: null, seguimientoModal: null, validacionesModal: null, enviosModal: null }" class="space-y-10">
+<div x-data="{ clienteDetalle: null, contadorDetalle: null, operacionModal: null, seguimientoModal: null, validacionesModal: null, enviosModal: null }" class="dashboard-operativo space-y-10">
 
 
-    <section class="rounded-xl border border-amber-300 bg-gradient-to-br from-amber-200 via-amber-100 to-white p-5 dark:border-amber-800/50 dark:bg-gradient-to-br dark:from-amber-950/30 dark:via-gray-900 dark:to-gray-900">
+    <section class="rigg-dashboard-block rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-stone-600 dark:text-white">
@@ -30,23 +30,23 @@
     </section>
 
         {{-- ############# operacion del despacho ############ --}}
-    <section class="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
+    <section class="rigg-dashboard-block rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
         <div>
             <div>
-                <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Operacion del Despacho</h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Clientes, Contratos y Asiganaciones</p>
+                <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Operación del Despacho</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Clientes, contratos y asignaciones del despacho.</p>
             </div>
         </div>
         <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
-            <div class="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-900">
-                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300">
+            <div class="rigg-dashboard-card rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                <p class="rigg-ui-accent-text text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300">
                     Cobertura de Clientes
                 </p>
 
                 <div class="mt-4 flex flex-col items-center justify-center">
                     <div class="relative flex h-52 w-52 items-center justify-center">
                         <svg class="h-52 w-52 -rotate-90" viewBox="0 0 120 120">
-                            <circle cx="60" cy="60" r="42" fill="none" stroke="currentColor" stroke-width="12" class="text-amber-100 dark:text-gray-700" />
+                            <circle cx="60" cy="60" r="42" fill="none" stroke="currentColor" stroke-width="12" class="rigg-ui-accent-soft text-amber-100 dark:text-gray-700" />
                             <circle
                                 cx="60"
                                 cy="60"
@@ -55,13 +55,13 @@
                                 stroke="currentColor"
                                 stroke-width="12"
                                 stroke-linecap="round"
-                                class="text-amber-600"
+                                class="rigg-ui-accent-stroke text-amber-600"
                                 stroke-dasharray="{{ $circleLength }}"
                                 stroke-dashoffset="{{ $circleLength - ($circleLength * ($dashboard['header']['porcentaje_cobertura'] / 100)) }}"
                             />
                         </svg>
                         <div class="absolute text-center">
-                            <p class="text-4xl font-bold leading-none text-amber-600 dark:text-amber-400">
+                            <p class="rigg-ui-accent-text text-4xl font-bold leading-none text-amber-600 dark:text-amber-400">
                                 {{ $dashboard['header']['porcentaje_cobertura'] }}%
                             </p>
                             <p class="mt-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Cobertura</p>
@@ -77,11 +77,11 @@
 
             <div class="space-y-4">
             <h3 class="text-base font-semibold text-stone-600 dark:text-white">Indicadores</h3>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <button
                     type="button"
                     @click="operacionModal = 'clientes_activos'"
-                    class="cursor-pointer rounded-xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-stone-700 dark:from-stone-900 dark:to-gray-800">
+                    class="rigg-ui-hover-border cursor-pointer rounded-xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-stone-700 dark:from-stone-900 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Clientes activos</p>
                     <p class="mt-2 text-2xl font-semibold text-stone-600 dark:text-white">
                         {{ $dashboard['kpis']['clientes_activos'] }}</p>
@@ -89,7 +89,7 @@
                 <button
                     type="button"
                     @click="operacionModal = 'clientes_inactivos'"
-                    class="cursor-pointer rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-gray-700 dark:from-gray-900 dark:to-gray-800">
+                    class="rigg-ui-hover-border cursor-pointer rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-gray-700 dark:from-gray-900 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Clientes inactivos</p>
                     <p class="mt-2 text-2xl font-semibold text-gray-600 dark:text-white">
                         {{ $dashboard['kpis']['clientes_inactivos'] }}</p>
@@ -97,7 +97,7 @@
                 <button
                     type="button"
                     @click="operacionModal = 'contratos_vigentes'"
-                    class="cursor-pointer rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-800">
+                    class="rigg-ui-hover-border cursor-pointer rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Contratos vigentes</p>
                     <p class="mt-2 text-2xl font-semibold text-emerald-600">
                         {{ $dashboard['kpis']['contratos_vigentes'] }}
@@ -106,16 +106,16 @@
                 <button
                     type="button"
                     @click="operacionModal = 'contratos'"
-                    class="cursor-pointer rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 transition hover:border-amber-600 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-800">
+                    class="rigg-ui-accent-card rigg-ui-hover-border cursor-pointer rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 transition hover:border-amber-600 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Por vencer</p>
-                    <p class="mt-2 text-2xl font-semibold text-amber-600">
+                    <p class="rigg-ui-accent-text mt-2 text-2xl font-semibold text-amber-600">
                         {{ $dashboard['kpis']['contratos_por_vencer'] }}
                     </p>
                 </button>
                 <button
                     type="button"
                     @click="operacionModal = 'contratos_vencidos'"
-                    class="cursor-pointer rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
+                    class="rigg-ui-hover-border cursor-pointer rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Contratos vencidos</p>
                     <p class="mt-2 text-2xl font-semibold text-red-600">{{ $dashboard['kpis']['contratos_vencidos'] }}
                     </p>
@@ -123,32 +123,15 @@
                 <button
                     type="button"
                     @click="operacionModal = 'sin_contrato'"
-                    class="cursor-pointer rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-rose-900/50 dark:from-rose-950/40 dark:to-gray-800">
+                    class="rigg-ui-hover-border cursor-pointer rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-rose-900/50 dark:from-rose-950/40 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Sin contrato</p>
                     <p class="mt-2 text-2xl font-semibold text-rose-600">{{ $dashboard['kpis']['sin_contrato'] }}
                     </p>
                 </button>
                 <button
                     type="button"
-                    @click="operacionModal = 'clientes_completos'"
-                    class="cursor-pointer rounded-xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-teal-900/50 dark:from-teal-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Clientes completos</p>
-                    <p class="mt-2 text-2xl font-semibold text-teal-600">{{ $dashboard['kpis']['clientes_completos'] }}
-                    </p>
-                </button>
-                <button
-                    type="button"
-                    @click="operacionModal = 'incompletos'"
-                    class="cursor-pointer rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-4 transition hover:border-amber-600 dark:border-rose-900/50 dark:from-rose-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Clientes con faltantes</p>
-                    <p class="mt-2 text-2xl font-semibold text-rose-600">
-                        {{ $dashboard['kpis']['clientes_incompletos'] }}
-                    </p>
-                </button>
-                <button
-                    type="button"
                     @click="operacionModal = 'obligaciones_incompletas'"
-                    class="cursor-pointer rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
+                    class="rigg-ui-hover-border cursor-pointer rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Obligaciones incompletas</p>
                     <p class="mt-2 text-2xl font-semibold text-red-600">
                         {{ $dashboard['kpis']['obligaciones_incompletas'] }}</p>
@@ -156,7 +139,7 @@
                 <button
                     type="button"
                     @click="operacionModal = 'tareas_incompletas'"
-                    class="cursor-pointer rounded-xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-fuchsia-900/50 dark:from-fuchsia-950/40 dark:to-gray-800">
+                    class="rigg-ui-hover-border cursor-pointer rounded-xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-fuchsia-900/50 dark:from-fuchsia-950/40 dark:to-gray-800">
                     <p class="text-xs uppercase tracking-wide text-gray-500">Tareas incompletas</p>
                     <p class="mt-2 text-2xl font-semibold text-fuchsia-600">
                         {{ $dashboard['kpis']['tareas_incompletas'] }}
@@ -169,16 +152,16 @@
     </section>
 
     {{-- ############# seguimietno por contador############ --}}
-    <section class="rounded-xl border border-indigo-300 bg-gradient-to-br from-indigo-200 via-indigo-100 to-white p-5 shadow-sm dark:border-indigo-800/50 dark:bg-gradient-to-br dark:from-indigo-950/30 dark:via-gray-900 dark:to-gray-900">
+    <section class="rigg-dashboard-block rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div>
             <div>
                 <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Seguimiento de Actividades</h3>
-                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Vista global o individual de las obligaciones. vencimiento real.</p>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Vista global o individual de las obligaciones con base en su vencimiento real.</p>
             </div>
         </div>
 
         <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
-            <div class="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 dark:border-indigo-900/50 dark:from-indigo-950/40 dark:to-gray-900">
+            <div class="rigg-dashboard-card rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-700 dark:text-indigo-300">
                     Cumplimiento Global
                 </p>
@@ -218,14 +201,14 @@
             <div class="space-y-4">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
             <select wire:model.live="filtroEjercicio"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="rigg-ui-focus px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 @for ($year = now()->year + 1; $year >= now()->year - 3; $year--)
                     <option value="{{ $year }}">{{ $year }}</option>
                 @endfor
             </select>
 
             <select wire:model.live="filtroMes"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="rigg-ui-focus px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 @foreach ([
                     '01' => 'Enero',
                     '02' => 'Febrero',
@@ -245,7 +228,7 @@
             </select>
 
             <select wire:model.live="filtroContador"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="rigg-ui-focus px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Todos los contadores</option>
                 @foreach ($dashboard['filtros']['contadores'] as $contador)
                     <option value="{{ $contador['id'] }}">{{ $contador['nombre'] }}</option>
@@ -307,7 +290,7 @@
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-[1.6fr_1fr] mt-4">
-        <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+        <div class="rigg-dashboard-card rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
             <h3 class="mb-3 text-base font-semibold text-stone-600 dark:text-white">Carga por contador</h3>
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
@@ -346,8 +329,8 @@
         </div>
 
         <div class="space-y-6">
-            <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-                <h3 class="mb-3 text-base font-semibold text-stone-600 dark:text-white">Grafica de carga por responsable</h3>
+            <div class="rigg-dashboard-card rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+                <h3 class="mb-3 text-base font-semibold text-stone-600 dark:text-white">Gráfica de carga por responsable</h3>
                 <div
                     x-data="seguimientoLineChart({
                         categories: @js(collect($dashboard['seguimiento_contadores']['carga_por_contador'])->pluck('nombre')->values()),
@@ -382,12 +365,12 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
-            class="w-full max-w-4xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+            class="rigg-dashboard-modal w-full max-w-4xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
         >
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ atrasadas: 'Obligaciones atrasadas', faltantes: 'Faltantes del mes', urgentes: 'Obligaciones urgentes' }[seguimientoModal]"></h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ atrasadas: 'Detalle de obligaciones vencidas de meses anteriores que siguen abiertas.', faltantes: 'Detalle de obligaciones del mes que siguen pendientes.', urgentes: 'Detalle de obligaciones prÃ³ximas o vencidas dentro del periodo.' }[seguimientoModal]"></p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ atrasadas: 'Detalle de obligaciones vencidas de meses anteriores que siguen abiertas.', faltantes: 'Detalle de obligaciones del mes que siguen pendientes.', urgentes: 'Detalle de obligaciones próximas o vencidas dentro del periodo.' }[seguimientoModal]"></p>
                 </div>
 
                 <button
@@ -461,7 +444,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
-            class="w-full max-w-5xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+            class="rigg-dashboard-modal w-full max-w-5xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
         >
             <div class="flex items-start justify-between gap-4">
                 <div>
@@ -548,7 +531,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
-            class="w-full max-w-6xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+            class="rigg-dashboard-modal w-full max-w-6xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
         >
             <div class="flex items-start justify-between gap-4">
                 <div>
@@ -565,16 +548,16 @@
                         tareas_incompletas: 'Tareas incompletas'
                     }[operacionModal]"></h3>
                     <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{
-                        contratos: 'Detalle de contratos prÃ³ximos a vencer o vencidos.',
+                        contratos: 'Detalle de contratos próximos a vencer o vencidos.',
                         incompletos: 'Detalle de clientes con obligaciones o tareas incompletas.',
                         clientes_activos: 'Listado de clientes activos.',
                         clientes_inactivos: 'Listado de clientes inactivos.',
                         contratos_vigentes: 'Clientes con contrato vigente.',
                         contratos_vencidos: 'Clientes con contrato vencido.',
                         sin_contrato: 'Clientes activos sin contrato registrado.',
-                        clientes_completos: 'Clientes completos para operaciÃ³n.',
-                        obligaciones_incompletas: 'Obligaciones que aÃºn requieren contador o carpeta.',
-                        tareas_incompletas: 'Tareas que aÃºn requieren contador o carpeta.'
+                        clientes_completos: 'Clientes completos para operación.',
+                        obligaciones_incompletas: 'Obligaciones que aún requieren contador o carpeta.',
+                        tareas_incompletas: 'Tareas que aún requieren contador o carpeta.'
                     }[operacionModal]"></p>
                 </div>
 
@@ -606,9 +589,9 @@
                         ])>
                             Vigencia: {{ $cliente['vigencia'] ?? '-' }} |
                             @if ($cliente['vencido'])
-                                Vencido hace {{ abs((int) ($cliente['dias'] ?? 0)) }} dias
+                                Vencido hace {{ abs((int) ($cliente['dias'] ?? 0)) }} días
                             @else
-                                {{ $cliente['dias'] ?? 0 }} dias
+                                {{ $cliente['dias'] ?? 0 }} días
                             @endif
                         </p>
                     </div>
@@ -796,7 +779,7 @@
         </div>
     </div>
 
-    <section class="rounded-xl border border-emerald-300 bg-gradient-to-br from-emerald-200 via-emerald-100 to-white p-5 shadow-sm dark:border-emerald-800/50 dark:bg-gradient-to-br dark:from-emerald-950/30 dark:via-gray-900 dark:to-gray-900">
+    <section class="rigg-dashboard-block rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div>
             <div>
                 <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Validaciones</h3>
@@ -805,9 +788,9 @@
         </div>
 
         <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
-            <div class="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-900">
+            <div class="rigg-dashboard-card rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">
-                    Avance de Validacion
+                    Avance de Validación
                 </p>
 
                 <div class="mt-4 flex flex-col items-center justify-center">
@@ -878,18 +861,18 @@
 
     </section>
 
-    <section class="rounded-xl border border-cyan-300 bg-gradient-to-br from-cyan-200 via-cyan-100 to-white p-5 shadow-sm dark:border-cyan-800/50 dark:bg-gradient-to-br dark:from-cyan-950/30 dark:via-gray-900 dark:to-gray-900">
+    <section class="rigg-dashboard-block rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div>
             <div>
-                <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Envios al cliente</h3>
+                <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Envíos al Cliente</h3>
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Seguimiento de obligaciones listas para enviar y respuestas del cliente pendientes.</p>
             </div>
         </div>
 
         <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
-            <div class="rounded-xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-5 dark:border-cyan-900/50 dark:from-cyan-950/40 dark:to-gray-900">
+            <div class="rigg-dashboard-card rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">
-                    Cumplimiento de Envios
+                    Cumplimiento de Envíos
                 </p>
 
                 <div class="mt-4 flex flex-col items-center justify-center">
@@ -944,7 +927,7 @@
                     type="button"
                     @click="enviosModal = 'faltantes'"
                     class="cursor-pointer rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Faltantes de envio</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Faltantes de envío</p>
                     <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $dashboard['envios']['kpis']['faltantes_envio'] }}</p>
                 </button>
                 <button
@@ -980,12 +963,12 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
-            class="w-full max-w-4xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+            class="rigg-dashboard-modal w-full max-w-4xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
         >
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ listos: 'Obligaciones listas para enviar', enviadas: 'Obligaciones enviadas', faltantes: 'Faltantes de envio', respuestas_pendientes: 'Respuestas pendientes', respuestas_revisadas: 'Respuestas revisadas' }[enviosModal]"></h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ listos: 'Detalle de obligaciones ya finalizadas y listas para envio.', enviadas: 'Detalle de obligaciones ya enviadas al cliente.', faltantes: 'Detalle de obligaciones pendientes de envio.', respuestas_pendientes: 'Detalle de respuestas del cliente pendientes de revision.', respuestas_revisadas: 'Detalle de respuestas del cliente ya revisadas.' }[enviosModal]"></p>
+                    <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ listos: 'Obligaciones listas para enviar', enviadas: 'Obligaciones enviadas', faltantes: 'Faltantes de envío', respuestas_pendientes: 'Respuestas pendientes', respuestas_revisadas: 'Respuestas revisadas' }[enviosModal]"></h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ listos: 'Detalle de obligaciones ya finalizadas y listas para envío.', enviadas: 'Detalle de obligaciones ya enviadas al cliente.', faltantes: 'Detalle de obligaciones pendientes de envío.', respuestas_pendientes: 'Detalle de respuestas del cliente pendientes de revisión.', respuestas_revisadas: 'Detalle de respuestas del cliente ya revisadas.' }[enviosModal]"></p>
                 </div>
 
                 <button
@@ -1007,7 +990,7 @@
                         </p>
                     </div>
                 @empty
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Sin obligaciones pendientes de envio.</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Sin obligaciones pendientes de envío.</p>
                 @endforelse
             </div>
 
@@ -1069,12 +1052,12 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100"
             x-transition:leave-end="opacity-0 scale-95"
-            class="w-full max-w-4xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+            class="rigg-dashboard-modal w-full max-w-4xl rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
         >
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ pendientes: 'Pendientes por validar', urgentes: 'Validaciones urgentes', rechazadas: 'Rechazadas para seguimiento', atendidas: 'Rechazadas atendidas' }[validacionesModal]"></h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ pendientes: 'Detalle de obligaciones listas para revisiÃ³n.', urgentes: 'Detalle de pendientes con vencimiento inmediato.', rechazadas: 'Detalle de obligaciones rechazadas.', atendidas: 'Detalle de obligaciones rechazadas que ya fueron atendidas.' }[validacionesModal]"></p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ pendientes: 'Detalle de obligaciones listas para revisión.', urgentes: 'Detalle de pendientes con vencimiento inmediato.', rechazadas: 'Detalle de obligaciones rechazadas.', atendidas: 'Detalle de obligaciones rechazadas que ya fueron atendidas.' }[validacionesModal]"></p>
                 </div>
 
                 <button
@@ -1136,18 +1119,18 @@
         </div>
     </div>
 
-    <section class="rounded-xl border border-violet-300 bg-gradient-to-br from-violet-200 via-violet-100 to-white p-5 shadow-sm dark:border-violet-800/50 dark:bg-gradient-to-br dark:from-violet-950/30 dark:via-gray-900 dark:to-gray-900">
+    <section class="rigg-dashboard-block rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
     <div>
         <div>
-            <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Solicitudes del cliente</h3>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Espacio reservado para el modulo de solicitudes hechas por el cliente.</p>
+            <h3 class="text-xl font-semibold text-stone-600 dark:text-white">Solicitudes del Cliente</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Espacio reservado para el módulo de solicitudes hechas por el cliente.</p>
         </div>
     </div>
 
     <section class="mt-4 grid grid-cols-1 gap-6 xl:grid-cols-[0.8fr_1.8fr]">
-        <div class="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-5 dark:border-violet-900/50 dark:from-violet-950/40 dark:to-gray-900">
+        <div class="rigg-dashboard-card rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
             <p class="text-xs font-semibold uppercase tracking-[0.2em] text-violet-700 dark:text-violet-300">
-                Avance del Modulo
+                Avance del Módulo
             </p>
 
             <div class="mt-4 flex flex-col items-center justify-center">
@@ -1176,7 +1159,7 @@
                 </div>
 
                 <p class="mt-4 text-center text-sm text-gray-600 dark:text-gray-300">
-                    Se activara cuando exista el modulo de solicitudes.
+                    Se activará cuando exista el módulo de solicitudes.
                 </p>
             </div>
         </div>
@@ -1204,9 +1187,9 @@
         </div>
     </section>
 <section class="mt-4 rounded-xl border border-dashed border-gray-300 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
-            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300">Espacio reservado para el mÃ³dulo</h3>
+            <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-300">Espacio reservado para el módulo</h3>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                AquÃ­ podremos integrar la bandeja de solicitudes, filtros, estatus, tiempos de respuesta y seguimiento del cliente.
+                Aquí podremos integrar la bandeja de solicitudes, filtros, estatus, tiempos de respuesta y seguimiento del cliente.
             </p>
         </section>
     </section>
@@ -1229,9 +1212,11 @@
                         this.chart.destroy();
                     }
 
-                    const isDark = document.documentElement.classList.contains('dark');
-                    const labelColor = isDark ? '#9ca3af' : '#6b7280';
-                    const gridColor = isDark ? '#374151' : '#e5e7eb';
+                    const currentTheme = document.documentElement.dataset.theme || 'dark';
+                    const isDark = currentTheme === 'dark';
+                    const isRigg = currentTheme === 'rigg';
+                    const labelColor = isDark ? '#9ca3af' : (isRigg ? '#4b5d74' : '#6b7280');
+                    const gridColor = isDark ? '#374151' : (isRigg ? '#bfd0e1' : '#e5e7eb');
 
                     this.chart = new ApexCharts(this.$refs.chart, {
                         series: [
@@ -1295,6 +1280,18 @@
                     });
 
                     this.chart.render();
+
+                    if (!this._themeListenerBound) {
+                        this._themeListenerBound = true;
+                        window.addEventListener('app-theme-changed', () => {
+                            if (this.chart) {
+                                this.chart.destroy();
+                                this.chart = null;
+                            }
+
+                            this.init();
+                        });
+                    }
                 },
             };
         }

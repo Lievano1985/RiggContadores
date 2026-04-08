@@ -2,7 +2,7 @@
 
     <!-- Título y Botón Crear Cliente -->
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-stone-600">Notificaciones</h2>
+        <h2 class="text-xl font-bold text-stone-600 dark:text-white">Notificaciones</h2>
 
 
     </div>

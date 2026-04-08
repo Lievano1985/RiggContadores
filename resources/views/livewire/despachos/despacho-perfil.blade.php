@@ -1,5 +1,5 @@
 <div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white p-6 max-w-3xl mx-auto">
-    <h2 class="text-xl font-bold mb-4 text-stone-600">Perfil del Despacho</h2>
+    <h2 class="text-xl font-bold mb-4 text-stone-600 dark:text-white">Perfil del Despacho</h2>
     <hr class="my-6 border-gray-300 dark:border-gray-600" />
 
 
@@ -7,13 +7,13 @@
 
     <form wire:submit.prevent="actualizar" class="space-y-6">
         <div>
-            <h3 class="text-md font-semibold mb-2 text-stone-600">Datos del Despacho</h3>
+            <h3 class="text-md font-semibold mb-2 text-stone-600 dark:text-white">Datos del Despacho</h3>
 
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm mb-1">Nombre</label>
                     <input type="text" wire:model.defer="nombre"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @error('nombre')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -22,7 +22,7 @@
                 <div>
                     <label class="block text-sm mb-1">RFC</label>
                     <input type="text" wire:model.defer="rfc"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @error('rfc')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -31,7 +31,7 @@
                 <div>
                     <label class="block text-sm mb-1">Correo de Contacto</label>
                     <input type="email" wire:model.defer="correo_contacto"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @error('correo_contacto')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -40,7 +40,7 @@
                 <div>
                     <label class="block text-sm mb-1">Teléfono</label>
                     <input type="text" wire:model.defer="telefono_contacto"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @error('telefono_contacto')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -72,7 +72,7 @@
                     <div>
                         <label class="block text-sm mb-1">ID Carpeta Drive</label>
                         <input type="text" wire:model.defer="drive_folder_id"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         @error('drive_folder_id')
                             <span class="text-red-500 text-sm">{{ $message }}</span>
                         @enderror
@@ -84,13 +84,13 @@
         <hr class="my-6 border-gray-300 dark:border-gray-600" />
 
         <div>
-            <h3 class="text-md font-semibold mb-2 text-stone-600">Datos del Administrador</h3>
+            <h3 class="text-md font-semibold mb-2 text-stone-600 dark:text-white">Datos del Administrador</h3>
 
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm mb-1">Nombre</label>
                     <input type="text" wire:model.defer="admin_name"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @error('admin_name')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -99,7 +99,7 @@
                 <div>
                     <label class="block text-sm mb-1">Correo</label>
                     <input type="email" wire:model.defer="admin_email"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @error('admin_email')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -109,7 +109,7 @@
                     <label class="block text-sm mb-1">Nueva Contraseña <span
                             class="text-sm text-gray-500">(opcional)</span></label>
                     <input type="password" wire:model.defer="admin_password"
-                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @error('admin_password')
                         <span class="text-red-500 text-sm">{{ $message }}</span>
                     @enderror
@@ -124,7 +124,7 @@
         </div>
     </form>
     <div class="mt-6 border-t pt-4">
-        <h3 class="text-md font-semibold text-stone-600 mb-2">
+        <h3 class="text-md font-semibold text-stone-600 dark:text-white mb-2">
             Acciones del despacho
         </h3>
     

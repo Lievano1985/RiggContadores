@@ -35,6 +35,8 @@ class ObligacionesAsignadas extends Component
     public $aniosDisponibles = [];
     public $filtroEjercicio;
     public $filtroMes;
+    public string $filtroPeriodicidad = '';
+    public array $periodicidadesDisponibles = [];
 
     // UI Baja lógica
     public $motivoBaja = '';
@@ -78,10 +80,13 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
 }        $this->cliente   = $cliente;
         $this->clienteId = $cliente->id;
 
-        $this->filtroEjercicio = null;
-        $this->filtroMes = null;
+        $periodoInicial = now()->subMonthNoOverflow();
+        $this->filtroEjercicio = (string) $periodoInicial->year;
+        $this->filtroMes = (string) $periodoInicial->month;
+        $this->modoAutomatico = false;
 
         $this->cargarAniosDisponibles();
+        $this->cargarPeriodicidadesDisponibles();
 
         $this->contadores = User::role(['contador','Supervisor'])->orderBy('name')->get();
         $this->cargarArbolCarpetas();
@@ -114,6 +119,25 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
             !in_array($this->filtroEjercicio,$this->aniosDisponibles)) {
             $this->filtroEjercicio = $this->aniosDisponibles[0];
         } */
+    }
+
+    private function cargarPeriodicidadesDisponibles(): void
+    {
+        $this->periodicidadesDisponibles = Obligacion::query()
+            ->whereIn('id', function ($q) {
+                $q->select('obligacion_id')
+                    ->from('obligacion_cliente_contador')
+                    ->where('cliente_id', $this->clienteId)
+                    ->where('is_activa', true)
+                    ->distinct();
+            })
+            ->whereNotNull('periodicidad')
+            ->distinct()
+            ->orderBy('periodicidad')
+            ->pluck('periodicidad')
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /* =====================================================
@@ -150,8 +174,19 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
         } else {
 
             // MODO MANUAL REAL
-            $query->where('ejercicio',$this->filtroEjercicio)
-                  ->where('mes',$this->filtroMes);
+            if (!empty($this->filtroEjercicio)) {
+                $query->where('ejercicio', $this->filtroEjercicio);
+            }
+
+            if (!empty($this->filtroMes) && $this->filtroMes !== '__all__') {
+                $query->where('mes', $this->filtroMes);
+            }
+        }
+
+        if ($this->filtroPeriodicidad !== '') {
+            $query->whereHas('obligacion', function ($q) {
+                $q->where('periodicidad', $this->filtroPeriodicidad);
+            });
         }
 
         return $query;
@@ -162,14 +197,24 @@ if (!auth()->user()->hasAnyRole(['admin_despacho','supervisor'])) {
      ===================================================== */
     public function updatedFiltroEjercicio()
     {
-        $this->modoAutomatico = false;
+        $this->sincronizarModoAutomatico();
         $this->resetPage();
     }
 
     public function updatedFiltroMes()
     {
-        $this->modoAutomatico = false;
+        $this->sincronizarModoAutomatico();
         $this->resetPage();
+    }
+
+    public function updatedFiltroPeriodicidad()
+    {
+        $this->resetPage();
+    }
+
+    private function sincronizarModoAutomatico(): void
+    {
+        $this->modoAutomatico = empty($this->filtroEjercicio) && empty($this->filtroMes);
     }
 
     /* =====================================================

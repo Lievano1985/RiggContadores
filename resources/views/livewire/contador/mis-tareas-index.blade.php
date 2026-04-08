@@ -1,7 +1,7 @@
 <div>
 
     <div class="p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-4">
-        <h2 class="text-xl font-bold text-stone-600">Mis tareas asignadas</h2>
+        <h2 class="text-xl font-bold text-stone-600 dark:text-white">Mis tareas asignadas</h2>
 
         {{-- =========================
             FILTROS
@@ -12,7 +12,7 @@
 
                 {{-- Filtro ejercicio (solo anios con datos) --}}
                 <select wire:model.live="ejercicio"
-                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                     <option value="">Ejercicio (todos)</option>
                     @foreach ($ejerciciosDisponibles as $anio)
@@ -22,7 +22,7 @@
 
                 {{-- Filtro mes (solo meses con datos para el anio seleccionado) --}}
                 <select wire:model.live="mes"
-                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                     <option value="">Mes (todos)</option>
                     @foreach ($mesesManual as $num => $txt)
@@ -34,7 +34,7 @@
 
                 {{-- Estatus --}}
                 <select wire:model.live="estatus"
-                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     <option value="">Estatus (todos)</option>
                     <option value="asignada">Asignada</option>
                     <option value="en_progreso">En progreso</option>
@@ -47,7 +47,7 @@
                 </select>
                 {{-- Filtro Cliente --}}
                 <select wire:model.live="cliente_id"
-                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
 
                     <option value="">Cliente (todos)</option>
 
@@ -60,7 +60,7 @@
 
                 {{-- Buscar --}}
                 <input type="text" placeholder="Buscar (tarea / obligacion)" wire:model.live="buscar"
-                    class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
             </div>
         </div>
 
@@ -196,7 +196,7 @@
                 <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl">
 
                     <div class="mb-4">
-                        <h4 class="text-lg font-bold text-stone-600">
+                        <h4 class="text-lg font-bold text-stone-600 dark:text-white">
                             {{ $modalCliente }}
                         </h4>
 
@@ -212,7 +212,7 @@
                     {{-- Comentario si esta en estatus rechazado --}}
                     @if ($tareaSeleccionada->estatus === 'rechazada')
                         <div class="mb-4">
-                            <label class="block text-sm mb-1 text-stone-600">Comentario del rechazo</label>
+                            <label class="block text-sm mb-1 text-stone-600 dark:text-white">Comentario del rechazo</label>
                             <div class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded text-gray-800 dark:text-white">
                                 {{ $tareaSeleccionada->comentario ?? '-' }}
                             </div>
@@ -226,9 +226,9 @@
 
                         {{-- COMENTARIO --}}
                         <div class="mt-4">
-                            <label class="block text-sm mb-1 text-stone-600">Comentario</label>
+                            <label class="block text-sm mb-1 text-stone-600 dark:text-white">Comentario</label>
                             <textarea wire:model.defer="comentario" rows="3" placeholder="Describe el resultado o notas adicionales..."
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         </textarea>
                         </div>
                     @endif

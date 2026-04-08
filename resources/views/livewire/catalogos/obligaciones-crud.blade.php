@@ -33,6 +33,7 @@ Autor: Luis Lievano - JL3 Digital
                     <x-sortable-th field="periodicidad" label="Periodicidad" :sort-field="$sortField" :sort-direction="$sortDirection" />
                     <th class="px-4 py-2 text-left text-xs font-semibold">Mes límite</th>
                     <th class="px-4 py-2 text-left text-xs font-semibold">Día límite</th>
+                    <th class="px-4 py-2 text-center text-xs font-semibold">Enviable</th>
                     <th class="px-4 py-2 text-center text-xs font-semibold">Activa</th>
                     <th class="px-4 py-2 text-left text-xs font-semibold">Acciones</th>
                 </tr>
@@ -53,6 +54,14 @@ Autor: Luis Lievano - JL3 Digital
                         <td class="px-4 py-2">{{ $obligacion->desfase_meses ?? '-' }}</td>
                         <td class="px-4 py-2">Dia {{ $obligacion->dia_corte ?? '-' }}</td>
                         <td class="px-4 py-2 text-center">
+                            <select
+                                wire:change="actualizarRequiereEnvioCliente({{ $obligacion->id }}, $event.target.value)"
+                                class="mx-auto px-2 py-1 border rounded text-xs dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                                <option value="1" @selected($obligacion->requiere_envio_cliente)>Si</option>
+                                <option value="0" @selected(!$obligacion->requiere_envio_cliente)>No</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-2 text-center">
                             <span
                                 class="px-2 py-1 text-xs rounded {{ $obligacion->activa ? 'bg-green-600 text-white' : 'bg-gray-400 text-black' }}">
                                 {{ $obligacion->activa ? 'Si' : 'No' }}
@@ -69,7 +78,7 @@ Autor: Luis Lievano - JL3 Digital
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-4 py-4 text-center text-gray-500 dark:text-gray-300">
+                        <td colspan="9" class="px-4 py-4 text-center text-gray-500 dark:text-gray-300">
                             No se encontraron registros.
                         </td>
                     </tr>
@@ -96,14 +105,14 @@ Autor: Luis Lievano - JL3 Digital
                         <div>
                             <label class="block text-sm mb-1">Nombre</label>
                             <input type="text" wire:model.defer="nombre"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         </div>
 
                         {{-- CATEGORIA --}}
                         <div>
                             <label class="block text-sm mb-1">Categoria</label>
                             <select wire:model.defer="categoria"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                                 <option value="">Seleccione...</option>
                                 @foreach ($categorias as $valor => $label)
                                     <option value="{{ $valor }}">{{ $label }}</option>
@@ -114,7 +123,7 @@ Autor: Luis Lievano - JL3 Digital
                         <div>
                             <label class="block text-sm mb-1">Periodicidad</label>
                             <select wire:model.live="periodicidad"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                                 <option value="mensual">Mensual</option>
                                 <option value="bimestral">Bimestral</option>
                                 <option value="trimestral">Trimestral</option>
@@ -128,13 +137,21 @@ Autor: Luis Lievano - JL3 Digital
                         <div>
                             <label class="block text-sm mb-1">Tipo</label>
                             <select wire:model.defer="tipo"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                                 <option value="">Seleccione...</option>
                                 <option value="federal">Federal</option>
                                 <option value="estatal">Estatal</option>
                                 <option value="local">Local</option>
                                 <option value="patronal">Patronal</option>
                             </select>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="flex items-center gap-2 text-sm mb-1">
+                                <input type="checkbox" wire:model.defer="requiere_envio_cliente"
+                                    class="rounded border-gray-300 text-amber-600 focus:ring-amber-500">
+                                Requiere envio al cliente
+                            </label>
                         </div>
 
                     </div>

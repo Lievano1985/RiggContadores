@@ -37,7 +37,7 @@
          x-init="focusables = Array.from($el.querySelectorAll('[role=tab]'))"
     >
         <div class="flex items-center justify-between">
-            <h2 class="text-xl font-bold text-stone-600">Asignaciones</h2>
+            <h2 class="text-xl font-bold text-stone-600 dark:text-white">Asignaciones</h2>
         </div>
 
         {{-- **MISMO ESTILO** que el expediente: space-x-4 + border-b + pb-2 --}}
@@ -98,3 +98,4 @@
         </section>
     </div>
 </x-layouts.app>
+

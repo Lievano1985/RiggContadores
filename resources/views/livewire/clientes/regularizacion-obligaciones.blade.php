@@ -10,7 +10,7 @@
             <div>
                 <label class="block text-stone-600 dark:text-gray-200 mb-1">Año</label>
                 <select wire:model.live="anio"
-                    class="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    class="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @foreach ($this->aniosDisponibles as $a)
                         <option value="{{ $a }}">{{ $a }}</option>
                     @endforeach
@@ -24,7 +24,7 @@
             <div>
                 <label class="block text-stone-600 dark:text-gray-200 mb-1">Mes</label>
                 <select wire:model.live="mes"
-                    class="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                    class="w-full border rounded px-3 py-2 dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     @foreach (range(1, 12) as $m)
                     <option value="{{ $m }}">
                         {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}
@@ -48,7 +48,7 @@
                     {{-- COLUMNA IZQUIERDA: BUSCADOR + TODAS --}}
                     <div>
                         <input type="text" placeholder="Escribe para filtrar..." wire:model.live="buscarObligacion"
-                            class="w-full px-3 py-2 mb-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                            class="w-full px-3 py-2 mb-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
 
                         <div class="border rounded bg-white dark:bg-gray-800 shadow-inner p-2 max-h-60 overflow-y-auto">
                             @forelse ($this->obligacionesFiltradas as $ob)

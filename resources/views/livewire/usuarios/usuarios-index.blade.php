@@ -1,6 +1,6 @@
 <div class="p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
     <div class="flex justify-between mb-4">
-        <h2 class="text-xl font-bold text-stone-600">Gestión de Usuarios</h2>
+        <h2 class="text-xl font-bold text-stone-600 dark:text-white">Gestión de Usuarios</h2>
         <button wire:click="crear" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">
             + Crear Usuario
         </button>
@@ -45,26 +45,26 @@
     @if($modalFormVisible)
         <div class="fixed inset-0 flex items-center justify-center bg-stone-600/50 z-50">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-2xl overflow-y-auto max-h-[90vh]">
-                <h3 class="text-lg font-bold mb-4 text-stone-600">
+                <h3 class="text-lg font-bold mb-4 text-stone-600 dark:text-white">
                     {{ $modoEdicion ? 'Editar Usuario' : 'Nuevo Usuario' }}
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block mb-1">Nombre</label>
-                        <input type="text" wire:model.defer="name" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        <input type="text" wire:model.defer="name" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         @error('name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
                         <label class="block mb-1">Correo</label>
-                        <input type="email" wire:model.defer="email" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        <input type="email" wire:model.defer="email" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         @error('email') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
                         <label class="block mb-1">Rol</label>
-                        <select wire:model.defer="rol" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        <select wire:model.defer="rol" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                             <option value="">Seleccione</option>
                             @foreach($roles as $rolItem)
                                 <option value="{{ $rolItem }}">{{ $rolItem }}</option>
@@ -75,14 +75,14 @@
 
                     <div>
                         <label class="block mb-1">Contraseña {{ $modoEdicion ? '(opcional)' : '' }}</label>
-                        <input type="password" wire:model.defer="password" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                        <input type="password" wire:model.defer="password" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         @error('password') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
                     @if(auth()->user()->hasRole('super_admin'))
                         <div>
                             <label class="block mb-1">Despacho</label>
-                            <select wire:model.defer="despacho_id" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                            <select wire:model.defer="despacho_id" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                                 <option value="">Seleccione</option>
                                 @foreach($despachos as $despacho)
                                     <option value="{{ $despacho->id }}">{{ $despacho->nombre }}</option>

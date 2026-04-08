@@ -41,6 +41,7 @@ class ListaClientes extends Component
     public function render()
     {
         $clientes = Cliente::with('despacho')
+            ->whereHas('obligacionesAsignadas')
             ->when($this->buscar, function ($q) {
                 $q->where(function ($sub) {
                     $sub->where('nombre', 'like', '%' . $this->buscar . '%')

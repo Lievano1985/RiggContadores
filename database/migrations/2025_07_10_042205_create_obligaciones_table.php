@@ -14,6 +14,7 @@ class CreateObligacionesTable extends Migration
             $table->string('tipo'); // federal, estatal, local, patronal
             $table->enum('categoria',['proceso','obligacion'])->default('obligacion'); 
             $table->string('periodicidad'); // mensual, bimestral, trimestral, anual, etc.
+            $table->boolean('requiere_envio_cliente')->default(false);
 
             // Nuevos campos de control de calendario
             $table->unsignedTinyInteger('mes_inicio')->nullable()->comment('Mes en que inicia el ciclo');

@@ -8,7 +8,7 @@
 @php
     $palette = 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500 text-white';
 
-    $base = "group relative inline-flex h-8 w-8 items-center justify-center rounded-md transition
+    $base = "rigg-action-button group relative inline-flex h-8 w-8 items-center justify-center rounded-md transition
              focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-gray-900 {$palette}";
 @endphp
 

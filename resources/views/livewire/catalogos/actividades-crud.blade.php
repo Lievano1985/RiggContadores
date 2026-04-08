@@ -67,14 +67,14 @@
                     <div>
                         <label class="block text-sm font-medium mb-1">Nombre</label>
                         <input type="text" wire:model.defer="nombre"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         @error('nombre') <div class="text-red-500 text-xs mt-1">{{ $message }}</div> @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium mb-1">Clave</label>
                         <input type="text" wire:model.defer="clave"
-                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600">
+                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                         @error('clave') <div class="text-red-500 text-xs mt-1">{{ 'Error en la clave ingresada'}}</div> @enderror
                     </div>
 
@@ -94,4 +94,3 @@
     @endif
 
 </div>
-

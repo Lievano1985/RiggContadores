@@ -1,5 +1,5 @@
 <div class="mb-4">
-    <h3 class="text-md font-semibold text-stone-600 mb-2">{{ $titulo }}</h3>
+    <h3 class="text-md font-semibold text-stone-600 dark:text-white mb-2">{{ $titulo }}</h3>
 
     @if (!empty($items) && count($items) > 0)
 

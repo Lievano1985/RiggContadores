@@ -1,12 +1,12 @@
 <div class="p-6 bg-white dark:bg-gray-900 rounded-lg shadow">
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-stone-600">Tareas Asignadas</h2>
+        <h2 class="text-xl font-bold text-stone-600 dark:text-white">Tareas Asignadas</h2>
        
     </div>
     <div class="flex flex-wrap gap-4 items-center mb-4">
         <div>
 
-            <label class="block text-sm font-semibold">Ejercicio</label>
+            <label class="block text-sm font-semibold text-stone-600 dark:text-white">Ejercicio</label>
             <select wire:model.live="filtroEjercicio"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
                    border-gray-300 dark:border-gray-600 focus:border-amber-600
@@ -19,12 +19,13 @@
             </select>
         </div>
         <div>
-            <label class="block text-sm font-semibold">Mes</label>
+            <label class="block text-sm font-semibold text-stone-600 dark:text-white">Mes</label>
             <select wire:model.live="filtroMes"
                 class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
             border-gray-300 dark:border-gray-600 focus:border-amber-600
             focus:ring focus:ring-amber-500/40 focus:outline-none">
-                <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
+                <option value="">Selecciona...</option>
+                <option value="__all__">Todos</option>
                 @foreach (range(1, 12) as $m)
                     <option value="{{ $m }}">
                         {{ ucfirst(\Carbon\Carbon::create()->month($m)->locale('es')->monthName) }}
@@ -33,7 +34,19 @@
             </select>
         </div>
         <div>
-            <label class="block text-sm font-semibold">Buscar tarea/Obligacion</label>
+            <label class="block text-sm font-semibold text-stone-600 dark:text-white">Periodicidad</label>
+            <select wire:model.live="filtroPeriodicidad"
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white
+            border-gray-300 dark:border-gray-600 focus:border-amber-600
+            focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Todas</option>
+                @foreach ($periodicidadesDisponibles as $periodicidad)
+                    <option value="{{ $periodicidad }}">{{ ucfirst($periodicidad) }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-semibold text-stone-600 dark:text-white">Buscar tarea/Obligacion</label>
             <input type="text" wire:model.live="buscarTarea" placeholder="Nombre de la tarea"
                 class="px-3 py-1.5 border rounded-sm
                                dark:bg-gray-700 dark:text-white 
@@ -96,7 +109,7 @@
                                 : null;
                         @endphp
 
-                        {{ $tarea->sin_carpeta ? 'Sin carpeta' : ($carpeta?->nombre ?? 'Sin carpeta') }}
+                        {{ $tarea->sin_carpeta ? 'Sin carpeta' : ($carpeta?->nombre ?? '-') }}
                     </td>
 
                     {{-- CONTADOR --}}
@@ -206,7 +219,7 @@
                                     @endforeach
                                 </select>
                             @else
-                                <p class="text-sm text-gray-500 italic">Selecciona una obligacion para ver sus tareas.
+                                <p class="text-sm text-gray-500 dark:text-gray-400 italic">Selecciona una obligacion para ver sus tareas.
                                 </p>
                             @endif
                             @error('tarea_catalogo_id')
@@ -220,7 +233,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                         <div>
-                            <label class="block text-sm mb-1">Contador Responsable</label>
+                            <label class="block text-sm mb-1 text-stone-600 dark:text-white">Contador Responsable</label>
                             <select wire:model.defer="contador_id"
                                 class="w-full px-3 py-2 border rounded-md 
                                        dark:bg-gray-700 dark:text-white 
@@ -239,7 +252,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm mb-1">Tiempo estimado (minutos)</label>
+                            <label class="block text-sm mb-1 text-stone-600 dark:text-white">Tiempo estimado (minutos)</label>
                             <input type="number" wire:model.defer="tiempo_estimado" min="1" max="1440"
                                 placeholder="Ej. 60"
                                 class="w-full px-3 py-2 border rounded-md 

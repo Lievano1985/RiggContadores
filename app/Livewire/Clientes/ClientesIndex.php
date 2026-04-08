@@ -107,11 +107,6 @@ class ClientesIndex extends Component
                 'obligacionesAsignadas as obligaciones_pendientes' => function ($q) {
 
                     $q->where('is_activa', true)
-                        ->whereIn('id', function ($sub) {
-                            $sub->selectRaw('MAX(id)')
-                                ->from('obligacion_cliente_contador')
-                                ->groupBy('obligacion_id');
-                        })
                         ->where(function ($q2) {
                             $q2->whereNull('contador_id')
                                 ->orWhere('contador_id', 0);
@@ -144,13 +139,6 @@ class ClientesIndex extends Component
 
         $clientes = $clientes->paginate($this->perPageValue($clientes, 10));
 
-        foreach ($clientes as $c) {
-
-            $c->asignaciones_completas =
-                $c->total_obligaciones > 0 &&
-                $c->obligaciones_pendientes == 0 &&
-                $c->tareas_pendientes == 0;
-        }
         foreach ($clientes as $c) {
 
             $c->asignaciones_completas =

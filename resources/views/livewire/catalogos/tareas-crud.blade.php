@@ -1,7 +1,7 @@
 <div class="p-6 bg-white dark:bg-gray-900 rounded-lg shadow space-y-4">
 
     <div class="flex justify-between items-center">
-        <h2 class="text-xl font-bold text-stone-600">Catalogo de tareas</h2>
+        <h2 class="text-xl font-bold text-stone-600 dark:text-white">Catalogo de tareas</h2>
         <button wire:click="crear" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded">
             + Nueva tarea
         </button>
@@ -74,7 +74,7 @@
         <div class="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
             <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
 
-                <h3 class="text-lg font-bold text-stone-600">
+                <h3 class="text-lg font-bold text-stone-600 dark:text-white">
                     {{ $isEditing ? 'Editar tarea' : 'Nueva tarea' }}
                 </h3>
 

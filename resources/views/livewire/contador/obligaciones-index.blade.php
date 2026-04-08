@@ -1,6 +1,6 @@
 <div class="p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-4">
 
-    <h2 class="text-xl font-bold text-stone-600">Mis obligaciones asignadas</h2>
+    <h2 class="text-xl font-bold text-stone-600 dark:text-white">Mis obligaciones asignadas</h2>
 
     {{-- =========================
         FILTROS
@@ -9,7 +9,7 @@
         <div class="flex flex-wrap items-center gap-2">
 
             <select wire:model.live="ejercicioSeleccionado"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                 <option value="">Ejercicio (todos)</option>
                 @foreach ($ejerciciosDisponibles as $ej)
@@ -18,7 +18,7 @@
             </select>
 
             <select wire:model.live="mesSeleccionado"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                 <option value="">Mes (todos)</option>
                 @foreach ($mesesDisponibles as $num => $texto)
@@ -29,7 +29,7 @@
 
             {{-- Estatus --}}
             <select wire:model.live="estatus"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Estatus (todos)</option>
                 <option value="asignada">Asignada</option>
                 <option value="en_progreso">En progreso</option>
@@ -42,7 +42,7 @@
             </select>
             {{-- Filtro Cliente --}}
             <select wire:model.live="cliente_id"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
 
                 <option value="">Cliente (todos)</option>
 
@@ -55,7 +55,7 @@
 
             {{-- Buscar --}}
             <input type="text" placeholder="Buscar (obligacion)" wire:model.live="buscar"
-                class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:outline-amber-600 focus:outline">
+                class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
         </div>
     </div>
 
@@ -191,7 +191,7 @@
                             <input type="text" wire:model.defer="numero_operacion"
                                 class="w-full px-3 py-2 border rounded
                                    dark:bg-gray-700 dark:text-white
-                                   focus:outline-amber-600 focus:outline" />
+                                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none" />
 
                             @error('numero_operacion')
                                 <span class="text-red-600 text-sm">{{ $message }}</span>
@@ -207,7 +207,7 @@
                             <input type="date" wire:model.defer="fecha_finalizado"
                                 class="w-full px-3 py-2 border rounded
                                    dark:bg-gray-700 dark:text-white
-                                   focus:outline-amber-600 focus:outline" />
+                                   focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none" />
 
                             @error('fecha_finalizado')
                                 <span class="text-red-600 text-sm">{{ $message }}</span>
@@ -227,7 +227,7 @@
                         <textarea wire:model.defer="comentario" @if ($soloLectura) readonly @endif
                             class="w-full px-3 py-2 border rounded
                                dark:bg-gray-700 dark:text-white
-                               focus:outline-amber-600 focus:outline">
+                               focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     </textarea>
                     </div>
                 </div>

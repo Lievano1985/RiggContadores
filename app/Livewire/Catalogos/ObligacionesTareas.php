@@ -43,6 +43,7 @@ class ObligacionesTareas extends Component
         'nombre'        => '',
         'categoria'     => '',
         'periodicidad'  => '',
+        'requiere_envio_cliente' => false,
         'mes_inicio'    => 1,
         'desfase_meses' => null,
         'dia_corte'     => null,
@@ -106,6 +107,7 @@ class ObligacionesTareas extends Component
             'nombre'        => '',
             'categoria'     => '',
             'periodicidad'  => '',
+            'requiere_envio_cliente' => false,
             'mes_inicio'    => 1,
             'desfase_meses' => null,
             'dia_corte'     => null,
@@ -148,6 +150,7 @@ class ObligacionesTareas extends Component
             'nombre'        => $ob->nombre,
             'categoria'     => $ob->categoria,
             'periodicidad'  => $ob->periodicidad,
+            'requiere_envio_cliente' => (bool) $ob->requiere_envio_cliente,
             'mes_inicio'    => (int) ($ob->mes_inicio ?? 1),
             'desfase_meses' => $ob->desfase_meses,
             'dia_corte'     => $ob->dia_corte,
@@ -189,6 +192,7 @@ class ObligacionesTareas extends Component
             'formObligacion.nombre'       => ['required', 'string', 'min:3', 'max:255'],
             'formObligacion.categoria'    => ['required', 'string', 'min:3', 'max:100'],
             'formObligacion.periodicidad' => ['required', Rule::in(array_keys($this->periodicidades))],
+            'formObligacion.requiere_envio_cliente' => ['boolean'],
             'formObligacion.mes_inicio'   => ['nullable', 'integer', 'min:1', 'max:12'],
             'formObligacion.desfase_meses'=> ['nullable', 'integer', 'min:0', 'max:12'],
             'formObligacion.dia_corte'    => ['nullable', 'integer', 'min:1', 'max:31'],
@@ -268,6 +272,21 @@ class ObligacionesTareas extends Component
     
         // Refrescar paginación si es necesario
         $this->resetPage();
+    }
+
+    public function toggleRequiereEnvioCliente(int $id): void
+    {
+        $obligacion = Obligacion::findOrFail($id);
+        $obligacion->update([
+            'requiere_envio_cliente' => ! $obligacion->requiere_envio_cliente,
+        ]);
+    }
+
+    public function actualizarRequiereEnvioCliente(int $id, string $valor): void
+    {
+        Obligacion::findOrFail($id)->update([
+            'requiere_envio_cliente' => $valor === '1',
+        ]);
     }
     
     public function render()

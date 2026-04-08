@@ -3,7 +3,7 @@
 
         {{-- Archivos existentes --}}
         <div>
-            <h4 class="font-semibold text-sm text-stone-600 mb-2">
+            <h4 class="font-semibold text-sm text-stone-600 dark:text-white mb-2">
                 Archivos adjuntos
             </h4>
 
@@ -39,7 +39,7 @@
 
         {{-- Nuevos archivos --}}
         <div>
-            <h4 class="font-semibold text-sm text-stone-600 mb-2">
+            <h4 class="font-semibold text-sm text-stone-600 dark:text-white mb-2">
                 Agregar archivos
             </h4>
 

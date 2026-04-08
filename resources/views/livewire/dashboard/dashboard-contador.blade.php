@@ -8,24 +8,24 @@
                 </p>
             </div>
 
-            <div class="w-full rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-900 md:max-w-sm">
+            <div class="rigg-ui-accent-card w-full rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-white p-4 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-900 md:max-w-sm">
                 <div class="flex items-end justify-between gap-4">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300">
+                        <p class="rigg-ui-accent-text text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300">
                             Obligaciones cerradas del mes
                         </p>
                         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                             {{ $kpis['obligaciones_terminadas_mes'] ?? 0 }} de {{ $kpis['obligaciones_asignadas_mes'] ?? 0 }}
                         </p>
                     </div>
-                    <p class="text-4xl font-bold leading-none text-amber-600 dark:text-amber-400">
+                    <p class="rigg-ui-accent-text text-4xl font-bold leading-none text-amber-600 dark:text-amber-400">
                         {{ $porcentajeObligacionesCerradas }}%
                     </p>
                 </div>
 
-                <div class="mt-3 h-3 w-full overflow-hidden rounded-full bg-amber-100 dark:bg-gray-800">
+                <div class="rigg-ui-accent-soft mt-3 h-3 w-full overflow-hidden rounded-full bg-amber-100 dark:bg-gray-800">
                     <div
-                        class="h-full rounded-full bg-amber-600 transition-all duration-500"
+                        class="rigg-ui-accent-fill h-full rounded-full bg-amber-600 transition-all duration-500"
                         style="width: {{ $porcentajeObligacionesCerradas }}%;"
                     ></div>
                 </div>
@@ -36,21 +36,21 @@
     <section class="space-y-4">
         <h3 class="text-base font-semibold text-stone-600 dark:text-white">Obligaciones</h3>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'obligaciones', 'ov' => 'asignadas_mes']) }}" class="block rounded-xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-4 transition hover:border-amber-600 dark:border-stone-700 dark:from-stone-900 dark:to-gray-800">
+            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'obligaciones', 'ov' => 'asignadas_mes']) }}" class="rigg-ui-hover-border block rounded-xl border border-stone-200 bg-gradient-to-br from-stone-50 to-white p-4 transition hover:border-amber-600 dark:border-stone-700 dark:from-stone-900 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">1. Asignadas del mes</p>
                 <p class="mt-2 text-2xl font-semibold text-stone-600 dark:text-white">{{ $kpis['obligaciones_asignadas_mes'] ?? 0 }}</p>
             </a>
-            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'obligaciones', 'ov' => 'atrasadas']) }}" class="block rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 transition hover:border-amber-600 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
+            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'obligaciones', 'ov' => 'atrasadas']) }}" class="rigg-ui-hover-border block rounded-xl border border-red-200 bg-gradient-to-br from-red-50 to-white p-4 transition hover:border-amber-600 dark:border-red-900/50 dark:from-red-950/40 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">2. Atrasadas</p>
                 <p class="mt-2 text-2xl font-semibold text-red-600">{{ $kpis['obligaciones_atrasadas'] ?? 0 }}</p>
             </a>
-            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'obligaciones', 'ov' => 'terminadas_mes']) }}" class="block rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 transition hover:border-amber-600 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-800">
+            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'obligaciones', 'ov' => 'terminadas_mes']) }}" class="rigg-ui-hover-border block rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-4 transition hover:border-amber-600 dark:border-emerald-900/50 dark:from-emerald-950/40 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">3. Terminadas en el mes</p>
                 <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ $kpis['obligaciones_terminadas_mes'] ?? 0 }}</p>
             </a>
-            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'obligaciones', 'ov' => 'faltantes_mes']) }}" class="block rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 transition hover:border-amber-600 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-800">
+            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'obligaciones', 'ov' => 'faltantes_mes']) }}" class="rigg-ui-accent-card rigg-ui-hover-border block rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 transition hover:border-amber-600 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">4. Faltantes en el mes</p>
-                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $kpis['obligaciones_faltantes_mes'] ?? 0 }}</p>
+                <p class="rigg-ui-accent-text mt-2 text-2xl font-semibold text-amber-600">{{ $kpis['obligaciones_faltantes_mes'] ?? 0 }}</p>
             </a>
         </div>
     </section>
@@ -58,21 +58,21 @@
     <section class="space-y-4">
         <h3 class="text-base font-semibold text-stone-600 dark:text-white">Tareas</h3>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'tareas', 'tv' => 'asignadas_mes']) }}" class="block rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-4 transition hover:border-amber-600 dark:border-sky-900/50 dark:from-sky-950/40 dark:to-gray-800">
+            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'tareas', 'tv' => 'asignadas_mes']) }}" class="rigg-ui-hover-border block rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-4 transition hover:border-amber-600 dark:border-sky-900/50 dark:from-sky-950/40 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">1. Asignadas del mes</p>
                 <p class="mt-2 text-2xl font-semibold text-stone-600 dark:text-white">{{ $kpis['tareas_asignadas_mes'] ?? 0 }}</p>
             </a>
-            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'tareas', 'tv' => 'atrasadas']) }}" class="block rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-4 transition hover:border-amber-600 dark:border-rose-900/50 dark:from-rose-950/40 dark:to-gray-800">
+            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'tareas', 'tv' => 'atrasadas']) }}" class="rigg-ui-hover-border block rounded-xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-4 transition hover:border-amber-600 dark:border-rose-900/50 dark:from-rose-950/40 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">2. Atrasadas</p>
                 <p class="mt-2 text-2xl font-semibold text-red-600">{{ $kpis['tareas_atrasadas'] ?? 0 }}</p>
             </a>
-            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'tareas', 'tv' => 'terminadas_mes']) }}" class="block rounded-xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-4 transition hover:border-amber-600 dark:border-teal-900/50 dark:from-teal-950/40 dark:to-gray-800">
+            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'tareas', 'tv' => 'terminadas_mes']) }}" class="rigg-ui-hover-border block rounded-xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-4 transition hover:border-amber-600 dark:border-teal-900/50 dark:from-teal-950/40 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">3. Terminadas en el mes</p>
                 <p class="mt-2 text-2xl font-semibold text-emerald-600">{{ $kpis['tareas_terminadas_mes'] ?? 0 }}</p>
             </a>
-            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'tareas', 'tv' => 'faltantes_mes']) }}" class="block rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4 transition hover:border-amber-600 dark:border-orange-900/50 dark:from-orange-950/40 dark:to-gray-800">
+            <a href="{{ route('contadores.asignaciones.index', ['tab' => 'tareas', 'tv' => 'faltantes_mes']) }}" class="rigg-ui-accent-card rigg-ui-hover-border block rounded-xl border border-orange-200 bg-gradient-to-br from-orange-50 to-white p-4 transition hover:border-amber-600 dark:border-orange-900/50 dark:from-orange-950/40 dark:to-gray-800">
                 <p class="text-xs uppercase tracking-wide text-gray-500">4. Faltantes en el mes</p>
-                <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $kpis['tareas_faltantes_mes'] ?? 0 }}</p>
+                <p class="rigg-ui-accent-text mt-2 text-2xl font-semibold text-amber-600">{{ $kpis['tareas_faltantes_mes'] ?? 0 }}</p>
             </a>
         </div>
     </section>
@@ -82,7 +82,7 @@
             <h3 class="mb-3 text-base font-semibold text-stone-600 dark:text-white">Mis tareas urgentes</h3>
             <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
                 @forelse($tareasUrgentes as $tarea)
-                    <div class="min-h-[4.5rem] rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
+                    <div class="min-h-[4.5rem] rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700 bg-white/80 dark:bg-gray-900/40">
                         <p class="font-medium text-gray-800 dark:text-gray-100">{{ $tarea['nombre'] }}</p>
                         <p class="text-gray-500 dark:text-gray-400">
                             {{ $tarea['cliente'] }} | Limite: {{ $tarea['fecha_limite'] }}
@@ -98,7 +98,7 @@
             <h3 class="mb-3 text-base font-semibold text-stone-600 dark:text-white">Mis obligaciones urgentes</h3>
             <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
                 @forelse($obligacionesUrgentes as $obligacion)
-                    <div class="min-h-[4.5rem] rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
+                    <div class="min-h-[4.5rem] rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700 bg-white/80 dark:bg-gray-900/40">
                         <p class="font-medium text-gray-800 dark:text-gray-100">{{ $obligacion['nombre'] }}</p>
                         <p class="text-gray-500 dark:text-gray-400">
                             {{ $obligacion['cliente'] }} | Vence: {{ $obligacion['fecha_vencimiento'] }}

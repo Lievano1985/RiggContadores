@@ -20,6 +20,7 @@ return new class extends Migration {
                 ->cascadeOnDelete();
 
             $table->string('asunto');
+            $table->text('cc')->nullable();
             $table->longText('mensaje');
 
             $table->integer('periodo_mes');

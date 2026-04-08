@@ -7,7 +7,7 @@
 
     <div class="px-4 py-6 max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-semibold text-amber-900">
+            <h2 class="text-xl font-bold text-stone-600 dark:text-white">
               NOTIFICACIONES DE 
                 @empty($cliente->nombre)
                     {{ $cliente->razon_social }}
@@ -15,8 +15,8 @@
                     {{ $cliente->nombre }}
                 @endempty
             </h2>
-            <a href="{{ route('notificaciones.clientes.index') }}" class="text-sm text-amber-600 hover:underline">
-                ← Volver a clientes
+            <a href="{{ route('notificaciones.clientes.index') }}" class="text-sm text-stone-500 dark:text-gray-300 hover:text-stone-700 dark:hover:text-white hover:underline">
+                Volver a clientes
             </a>
         </div>
 
@@ -87,3 +87,5 @@
 
 
 </x-layouts.app>
+
+
