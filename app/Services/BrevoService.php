@@ -65,6 +65,7 @@ class BrevoService
     public function enviarNotificacionClientePlantilla(
         string $email,
         string $nombre,
+        string $asunto,
         string $mensaje,
         string $periodo,
         array $attachments = [],
@@ -72,6 +73,7 @@ class BrevoService
      ) {
         $params = [
             'nombre'  => $nombre,
+            'asunto'  => $asunto,
             'mensaje' => $mensaje,
             'periodo' => $periodo,
             'empresa' => config('app.name'),

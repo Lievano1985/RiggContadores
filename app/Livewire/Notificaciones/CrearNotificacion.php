@@ -265,6 +265,7 @@ class CrearNotificacion extends Component
         $response = $brevo->enviarNotificacionClientePlantilla(
             $this->cliente->correo,
             $this->cliente->nombre,
+            $this->asunto,
             $this->mensaje,
             $this->periodo_mes . '/' . $this->periodo_ejercicio,
             $attachments,
