@@ -19,15 +19,21 @@ class SolicitudTiposCrud extends Component
     public string $prioridad_default = '';
     public string $aplica_para = 'ambos';
     public string $documentos_sugeridos_texto = '';
-    public string $configuracion_formulario_texto = '';
     public bool $activo = true;
     public bool $modalFormVisible = false;
     public bool $isEdit = false;
     public bool $confirmingDelete = false;
+    public bool $sidebarFormularioVisible = false;
+    public bool $modalPreviewVisible = false;
     public ?int $tipoAEliminar = null;
+    public ?int $tipoFormularioId = null;
+    public string $tipoFormularioNombre = '';
     public string $search = '';
     public string $sortField = 'nombre';
     public string $sortDirection = 'asc';
+    public array $formularioCampos = [];
+    public array $campoForm = [];
+    public ?int $campoEditandoIndex = null;
 
     protected function rules(): array
     {
@@ -43,7 +49,6 @@ class SolicitudTiposCrud extends Component
             'descripcion_sugerida' => ['nullable', 'string'],
             'prioridad_default' => ['nullable', Rule::in(['baja', 'media', 'alta', 'urgente'])],
             'aplica_para' => ['required', Rule::in(['cliente', 'despacho', 'ambos'])],
-            'configuracion_formulario_texto' => ['nullable', 'string'],
             'documentos_sugeridos_texto' => ['nullable', 'string'],
             'activo' => ['boolean'],
         ];
@@ -89,9 +94,6 @@ class SolicitudTiposCrud extends Component
         $this->prioridad_default = $tipo->prioridad_default ?? '';
         $this->aplica_para = $tipo->aplica_para;
         $this->documentos_sugeridos_texto = implode(PHP_EOL, $tipo->documentos_sugeridos ?? []);
-        $this->configuracion_formulario_texto = $tipo->configuracion_formulario
-            ? json_encode($tipo->configuracion_formulario, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-            : '';
         $this->activo = (bool) $tipo->activo;
         $this->isEdit = true;
         $this->modalFormVisible = true;
@@ -100,16 +102,6 @@ class SolicitudTiposCrud extends Component
     public function save(): void
     {
         $this->validate();
-
-        $configuracion = null;
-        if (trim($this->configuracion_formulario_texto) !== '') {
-            $configuracion = json_decode($this->configuracion_formulario_texto, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->addError('configuracion_formulario_texto', 'El JSON del formulario no es valido.');
-                return;
-            }
-        }
 
         $documentos = collect(preg_split('/\r\n|\r|\n/', $this->documentos_sugeridos_texto))
             ->map(fn ($item) => trim((string) $item))
@@ -124,7 +116,6 @@ class SolicitudTiposCrud extends Component
             'prioridad_default' => $this->prioridad_default ?: null,
             'aplica_para' => $this->aplica_para,
             'documentos_sugeridos' => $documentos ?: null,
-            'configuracion_formulario' => $configuracion,
             'activo' => $this->activo,
         ];
 
@@ -169,6 +160,185 @@ class SolicitudTiposCrud extends Component
         $this->dispatch('notify', message: 'Tipo de solicitud eliminado correctamente.');
     }
 
+    public function abrirFormulario(int $id): void
+    {
+        $tipo = SolicitudTipo::findOrFail($id);
+
+        $this->tipoFormularioId = $tipo->id;
+        $this->tipoFormularioNombre = $tipo->nombre;
+        $this->formularioCampos = $tipo->configuracion_formulario['secciones'][0]['campos'] ?? [];
+        $this->sidebarFormularioVisible = true;
+        $this->resetCampoForm();
+    }
+
+    public function cerrarFormulario(): void
+    {
+        $this->sidebarFormularioVisible = false;
+        $this->modalPreviewVisible = false;
+        $this->tipoFormularioId = null;
+        $this->tipoFormularioNombre = '';
+        $this->formularioCampos = [];
+        $this->resetCampoForm();
+    }
+
+    public function abrirPreview(): void
+    {
+        $this->modalPreviewVisible = true;
+    }
+
+    public function cerrarPreview(): void
+    {
+        $this->modalPreviewVisible = false;
+    }
+
+    public function nuevoCampo(): void
+    {
+        $this->resetCampoForm();
+    }
+
+    public function editarCampo(int $index): void
+    {
+        $campo = $this->formularioCampos[$index] ?? null;
+        if (!$campo) {
+            return;
+        }
+
+        $this->campoEditandoIndex = $index;
+        $this->campoForm = [
+            'label' => (string) ($campo['label'] ?? ''),
+            'key' => (string) ($campo['key'] ?? ''),
+            'type' => (string) ($campo['type'] ?? 'text'),
+            'required' => (bool) ($campo['required'] ?? false),
+            'placeholder' => (string) ($campo['placeholder'] ?? ''),
+            'help' => (string) ($campo['help'] ?? ''),
+            'options_text' => isset($campo['options']) ? implode(PHP_EOL, (array) $campo['options']) : '',
+            'accept' => (string) ($campo['accept'] ?? ''),
+        ];
+        $this->resetValidation();
+        $this->resetErrorBag();
+    }
+
+    public function guardarCampo(): void
+    {
+        $this->validate([
+            'campoForm.label' => ['required', 'string', 'max:255'],
+            'campoForm.key' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9_]+$/'],
+            'campoForm.type' => ['required', Rule::in(['text', 'textarea', 'number', 'date', 'select', 'checkbox', 'file'])],
+            'campoForm.required' => ['boolean'],
+            'campoForm.placeholder' => ['nullable', 'string', 'max:255'],
+            'campoForm.help' => ['nullable', 'string', 'max:500'],
+            'campoForm.options_text' => ['nullable', 'string'],
+            'campoForm.accept' => ['nullable', 'string', 'max:255'],
+        ], [
+            'campoForm.key.regex' => 'La clave solo puede contener letras minusculas, numeros y guion bajo.',
+        ]);
+
+        $duplicado = collect($this->formularioCampos)
+            ->except($this->campoEditandoIndex !== null ? [$this->campoEditandoIndex] : [])
+            ->contains(fn ($campo) => ($campo['key'] ?? null) === $this->campoForm['key']);
+
+        if ($duplicado) {
+            $this->addError('campoForm.key', 'La clave ya existe dentro de este formulario.');
+            return;
+        }
+
+        $campo = [
+            'key' => trim($this->campoForm['key']),
+            'label' => trim($this->campoForm['label']),
+            'type' => $this->campoForm['type'],
+            'required' => (bool) $this->campoForm['required'],
+        ];
+
+        if (trim((string) $this->campoForm['placeholder']) !== '') {
+            $campo['placeholder'] = trim($this->campoForm['placeholder']);
+        }
+
+        if (trim((string) $this->campoForm['help']) !== '') {
+            $campo['help'] = trim($this->campoForm['help']);
+        }
+
+        if ($this->campoForm['type'] === 'select') {
+            $options = collect(preg_split('/\r\n|\r|\n/', (string) $this->campoForm['options_text']))
+                ->map(fn ($item) => trim((string) $item))
+                ->filter()
+                ->values()
+                ->all();
+
+            if (empty($options)) {
+                $this->addError('campoForm.options_text', 'El campo select debe tener opciones.');
+                return;
+            }
+
+            $campo['options'] = $options;
+        }
+
+        if ($this->campoForm['type'] === 'file' && trim((string) $this->campoForm['accept']) !== '') {
+            $campo['accept'] = trim($this->campoForm['accept']);
+        }
+
+        if ($this->campoEditandoIndex !== null) {
+            $this->formularioCampos[$this->campoEditandoIndex] = $campo;
+        } else {
+            $this->formularioCampos[] = $campo;
+        }
+
+        $this->resetCampoForm();
+    }
+
+    public function eliminarCampo(int $index): void
+    {
+        unset($this->formularioCampos[$index]);
+        $this->formularioCampos = array_values($this->formularioCampos);
+
+        if ($this->campoEditandoIndex === $index) {
+            $this->resetCampoForm();
+        }
+    }
+
+    public function subirCampo(int $index): void
+    {
+        if ($index <= 0 || !isset($this->formularioCampos[$index])) {
+            return;
+        }
+
+        [$this->formularioCampos[$index - 1], $this->formularioCampos[$index]] = [$this->formularioCampos[$index], $this->formularioCampos[$index - 1]];
+        $this->formularioCampos = array_values($this->formularioCampos);
+    }
+
+    public function bajarCampo(int $index): void
+    {
+        if (!isset($this->formularioCampos[$index], $this->formularioCampos[$index + 1])) {
+            return;
+        }
+
+        [$this->formularioCampos[$index + 1], $this->formularioCampos[$index]] = [$this->formularioCampos[$index], $this->formularioCampos[$index + 1]];
+        $this->formularioCampos = array_values($this->formularioCampos);
+    }
+
+    public function guardarFormulario(): void
+    {
+        if (!$this->tipoFormularioId) {
+            return;
+        }
+
+        $configuracion = [
+            'version' => 1,
+            'secciones' => [
+                [
+                    'titulo' => 'Datos del formulario',
+                    'campos' => array_values($this->formularioCampos),
+                ],
+            ],
+        ];
+
+        SolicitudTipo::findOrFail($this->tipoFormularioId)->update([
+            'configuracion_formulario' => $configuracion,
+        ]);
+
+        $this->dispatch('notify', message: 'Formulario guardado correctamente.');
+        $this->cerrarFormulario();
+    }
+
     public function sortBy(string $field): void
     {
         if (!in_array($field, ['nombre', 'aplica_para', 'activo', 'created_at'], true)) {
@@ -200,12 +370,28 @@ class SolicitudTiposCrud extends Component
             'prioridad_default',
             'aplica_para',
             'documentos_sugeridos_texto',
-            'configuracion_formulario_texto',
             'activo',
         ]);
 
         $this->aplica_para = 'ambos';
         $this->activo = true;
+        $this->resetValidation();
+        $this->resetErrorBag();
+    }
+
+    private function resetCampoForm(): void
+    {
+        $this->campoEditandoIndex = null;
+        $this->campoForm = [
+            'label' => '',
+            'key' => '',
+            'type' => 'text',
+            'required' => false,
+            'placeholder' => '',
+            'help' => '',
+            'options_text' => '',
+            'accept' => '',
+        ];
         $this->resetValidation();
         $this->resetErrorBag();
     }
