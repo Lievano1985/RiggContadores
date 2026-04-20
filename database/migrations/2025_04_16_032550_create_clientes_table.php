@@ -33,10 +33,6 @@ class CreateClientesTable extends Migration
             $table->string('representante_legal')->nullable();
             $table->string('rfc_representante')->nullable();
             $table->string('correo_representante')->nullable();
-            $table->foreignId('responsable_solicitudes_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
             $table->timestamps();
         });
     }
