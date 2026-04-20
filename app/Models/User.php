@@ -68,9 +68,24 @@ class User extends Authenticatable
     return $this->belongsTo(Despacho::class);
 }
 
-public function cliente()
+    public function cliente()
 {
     return $this->belongsTo(Cliente::class);
+}
+
+public function solicitudesAsignadas()
+{
+    return $this->hasMany(Solicitud::class, 'responsable_user_id');
+}
+
+public function solicitudesCreadas()
+{
+    return $this->hasMany(Solicitud::class, 'creado_por_user_id');
+}
+
+public function solicitudesCerradas()
+{
+    return $this->hasMany(Solicitud::class, 'cerrado_por_user_id');
 }
 
 

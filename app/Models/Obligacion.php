@@ -46,6 +46,11 @@ class Obligacion extends Model
     {
         return $this->hasMany(ObligacionClienteContador::class);
     }
+
+    public function solicitudes(): HasMany
+    {
+        return $this->hasMany(Solicitud::class);
+    }
     // En App\Models\Obligacion
     public function clientes()
     {

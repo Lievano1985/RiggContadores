@@ -706,13 +706,27 @@ html[data-theme='rigg'] textarea:focus,
 html[data-theme='rigg'] input:focus[data-flux-control],
 html[data-theme='rigg'] select:focus[data-flux-control],
 html[data-theme='rigg'] textarea:focus[data-flux-control] {
-  color: #ffffff !important;
-  caret-color: #ffffff;
+  color: #334155 !important;
+  caret-color: #334155;
+}
+
+html[data-theme='rigg'] input[type='file'],
+html[data-theme='rigg'] input[type='file']:focus {
+  color: #334155 !important;
+}
+
+html[data-theme='rigg'] input[type='file']::file-selector-button {
+  margin-right: 0.75rem;
+  border: 1px solid #c7d2df;
+  border-radius: 0.5rem;
+  background: #eef4fa;
+  color: #334155;
+  padding: 0.5rem 0.875rem;
 }
 
 html[data-theme='rigg'] input:focus::placeholder,
 html[data-theme='rigg'] textarea:focus::placeholder {
-  color: rgba(255, 255, 255, 0.72) !important;
+  color: rgba(51, 65, 85, 0.62) !important;
 }
 
 html[data-theme='rigg'] .rigg-pagination-nav .bg-white {

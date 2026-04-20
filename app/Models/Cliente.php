@@ -31,6 +31,7 @@ class Cliente extends Model
         'representante_legal',
         'rfc_representante',
         'correo_representante',
+        'responsable_solicitudes_id',
     ];
 
     protected $casts = [
@@ -66,6 +67,11 @@ class Cliente extends Model
         return $this->hasOne(User::class);
     }
 
+    public function responsableSolicitudes(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsable_solicitudes_id');
+    }
+
     public function regimenes(): BelongsToMany
     {
         return $this->belongsToMany(Regimen::class)->withTimestamps();
@@ -95,6 +101,11 @@ class Cliente extends Model
     public function tareasAsignadas()
     {
         return $this->hasMany(TareaAsignada::class);
+    }
+
+    public function solicitudes()
+    {
+        return $this->hasMany(Solicitud::class);
     }
 
 

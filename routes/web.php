@@ -19,8 +19,10 @@ use App\Livewire\Catalogos\RegimenesCrud;
 use App\Livewire\Catalogos\ObligacionesCrud;
 use App\Livewire\Catalogos\ActividadesCrud;
 use App\Livewire\Catalogos\ObligacionesTareas;
+use App\Livewire\Catalogos\SolicitudTiposCrud;
 use App\Livewire\Catalogos\TareasCrud;
 use App\Livewire\Notificaciones\ListaClientes;
+use App\Livewire\Solicitudes\Index as SolicitudesIndex;
 use App\Livewire\Usuarios\UsuariosIndex;
 
 /* ===============================
@@ -78,6 +80,9 @@ Route::middleware(['auth', 'role:admin_despacho|super_admin|supervisor'])->group
     Route::get('/catalogos/obligaciones-tareas', ObligacionesTareas::class)
         ->name('catalogos.obligaciones-tareas');
 
+    Route::get('/catalogos/solicitud-tipos', SolicitudTiposCrud::class)
+        ->name('catalogos.solicitud-tipos');
+
 
     /* ===== Control Interno ===== */
     Route::get('/control/obligaciones-asignadas', ObligacionesAsignadas::class)
@@ -101,6 +106,9 @@ Route::middleware(['auth', 'role:admin_despacho|super_admin|supervisor'])->group
 
     Route::get('/notificaciones/{cliente}', [ClienteNotificacionController::class, 'show'])
         ->name('clientes.notificaciones.show');
+
+    Route::get('/solicitudes', SolicitudesIndex::class)
+        ->name('solicitudes.index');
 });
 
 

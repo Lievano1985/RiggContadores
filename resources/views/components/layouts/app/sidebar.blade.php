@@ -114,7 +114,7 @@
                     <flux:navlist variant="outline">
                         <flux:navlist.group :heading="__('Mi despacho')" class="grid">
                             <flux:navlist.group expandable
-                                :expanded="request()->routeIs('despacho.perfil', 'catalogos.regimenes-crud', 'catalogos.tareas-crud', 'catalogos.obligaciones-crud', 'catalogos.actividades-crud')"
+                                :expanded="request()->routeIs('despacho.perfil', 'catalogos.regimenes-crud', 'catalogos.tareas-crud', 'catalogos.obligaciones-crud', 'catalogos.actividades-crud', 'catalogos.solicitud-tipos')"
                                 heading="Configuraciones" class="w-full dark:bg-gray-700 dark:text-white">
 
                                 <flux:navlist.item icon="globe-americas" :href="route('catalogos.regimenes-crud')"
@@ -133,6 +133,12 @@
                                     :current="request()->routeIs('catalogos.obligaciones-tareas')" wire:navigate
                                     class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
                                     {{ __('Obligaciones/Tareas') }}
+                                </flux:navlist.item>
+
+                                <flux:navlist.item icon="clipboard-document" :href="route('catalogos.solicitud-tipos')"
+                                    :current="request()->routeIs('catalogos.solicitud-tipos')" wire:navigate
+                                    class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                    {{ __('Tipos de Solicitud') }}
                                 </flux:navlist.item>
 
                                 @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
@@ -178,6 +184,12 @@
                                         {{ __('Usuarios') }}
                                     </flux:navlist.item>
                                 @endif
+
+                                <flux:navlist.item icon="document-text" :href="route('solicitudes.index')"
+                                    :current="request()->routeIs('solicitudes.index')" wire:navigate
+                                    class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                    {{ __('Solicitudes') }}
+                                </flux:navlist.item>
                             @endhasanyrole
                         </flux:navlist.group>
                     </flux:navlist>

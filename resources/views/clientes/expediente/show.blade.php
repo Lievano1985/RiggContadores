@@ -78,6 +78,14 @@
                     Contraseñas
                 </button>
 
+                <button id="tab-solicitudes" role="tab" :aria-selected="tab === 'solicitudes'"
+                    :tabindex="tab === 'solicitudes' ? 0 : -1" @click="tab = 'solicitudes'"
+                    @keydown.arrow-right.prevent="move(1)" @keydown.arrow-left.prevent="move(-1)"
+                    :class="tab === 'solicitudes' ? 'font-bold border-b-2 border-amber-800' : ''"
+                    class="pb-1 focus:outline-none ">
+                    Solicitudes
+                </button>
+
                 @hasanyrole('admin_despacho|supervisor')
                 <button id="tab-regularizaciones" role="tab" :aria-selected="tab === 'regularizaciones'"
                         :tabindex="tab === 'regularizaciones' ? 0 : -1" @click="tab = 'regularizaciones'"
@@ -134,6 +142,11 @@
             <section x-show="tab === 'contrasenas'" x-cloak x-transition.opacity role="tabpanel"
                 aria-labelledby="tab-contrasenas">
                 @livewire('clientes.cliente-contrasena', ['cliente' => $cliente], key('contrasenas-' . $cliente->id))
+            </section>
+
+            <section x-show="tab === 'solicitudes'" x-cloak x-transition.opacity role="tabpanel"
+                aria-labelledby="tab-solicitudes">
+                @livewire('clientes.solicitudes', ['cliente' => $cliente], key('solicitudes-' . $cliente->id))
             </section>
 
             <section x-show="tab === 'datos'" x-cloak x-transition.opacity role="tabpanel" aria-labelledby="tab-datos">
