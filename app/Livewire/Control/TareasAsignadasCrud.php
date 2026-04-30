@@ -145,7 +145,6 @@ class TareasAsignadasCrud extends Component
             });
         
         }
-        
 
         /* ===========================
          | AUTOMÁTICO
@@ -239,10 +238,6 @@ class TareasAsignadasCrud extends Component
             ->values()
             ->all();
     }
-
-
-
-
 
     public function updatedFiltroEjercicio()
     {

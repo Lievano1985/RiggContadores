@@ -78,6 +78,7 @@ class ArchivosAdjuntosCrud extends Component
         $archivo->delete();
         $this->resetFormulario();
 
+        $this->dispatch('adjuntos-actualizados');
         $this->dispatch('notify', message: 'Archivo eliminado');
     }
 
@@ -204,6 +205,7 @@ class ArchivosAdjuntosCrud extends Component
         }
 
         $this->resetFormulario();
+        $this->dispatch('adjuntos-actualizados');
     }
 
     public function render()

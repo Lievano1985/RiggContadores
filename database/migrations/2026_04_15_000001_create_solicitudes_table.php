@@ -17,6 +17,10 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('obligaciones')
                 ->nullOnDelete();
+            $table->foreignId('obligacion_cliente_contador_id')
+                ->nullable()
+                ->constrained('obligacion_cliente_contador')
+                ->nullOnDelete();
             $table->enum('modo_solicitud', ['general', 'definida'])
                 ->default('general');
             $table->foreignId('tipo_solicitud_id')
@@ -28,7 +32,7 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
             $table->json('datos_formulario')->nullable();
             $table->json('plantilla_snapshot')->nullable();
-            $table->enum('estado', ['abierta', 'en_proceso', 'pendiente_cliente', 'cerrada'])
+            $table->enum('estado', ['abierta', 'en_proceso', 'pendiente_cliente', 'cerrada', 'cancelada'])
                 ->default('abierta');
             $table->string('prioridad')->nullable();
             $table->foreignId('responsable_user_id')
@@ -49,6 +53,7 @@ return new class extends Migration
             $table->index(['cliente_id', 'estado']);
             $table->index(['responsable_user_id', 'estado']);
             $table->index(['obligacion_id']);
+            $table->index(['obligacion_cliente_contador_id']);
             $table->index(['origen']);
             $table->index(['modo_solicitud']);
             $table->index(['tipo_solicitud_id']);

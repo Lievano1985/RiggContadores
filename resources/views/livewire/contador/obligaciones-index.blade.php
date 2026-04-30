@@ -5,11 +5,11 @@
     {{-- =========================
         FILTROS
     ========================== --}}
-    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div class="flex flex-wrap items-center gap-2">
+    <div class="space-y-3">
+        <div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-5">
 
             <select wire:model.live="ejercicioSeleccionado"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                 <option value="">Ejercicio (todos)</option>
                 @foreach ($ejerciciosDisponibles as $ej)
@@ -18,7 +18,7 @@
             </select>
 
             <select wire:model.live="mesSeleccionado"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Selecciona...</option> {{-- OPCION INICIAL --}}
                 <option value="">Mes (todos)</option>
                 @foreach ($mesesDisponibles as $num => $texto)
@@ -29,7 +29,7 @@
 
             {{-- Estatus --}}
             <select wire:model.live="estatus"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Estatus (todos)</option>
                 <option value="asignada">Asignada</option>
                 <option value="en_progreso">En progreso</option>
@@ -42,7 +42,7 @@
             </select>
             {{-- Filtro Cliente --}}
             <select wire:model.live="cliente_id"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
 
                 <option value="">Cliente (todos)</option>
 
@@ -50,12 +50,16 @@
                     <option value="{{ $c['id'] }}">
                         {{ $c['nombre'] }}
                     </option>
+                    @endforeach
+                </select>
+
+            <select wire:model.live="filtroObligacion"
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Obligacion (todas)</option>
+                @foreach ($this->obligacionesDisponiblesFiltro as $obligacion)
+                    <option value="{{ $obligacion['id'] }}">{{ $obligacion['nombre'] }}</option>
                 @endforeach
             </select>
-
-            {{-- Buscar --}}
-            <input type="text" placeholder="Buscar (obligacion)" wire:model.live="buscar"
-                class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
         </div>
     </div>
 

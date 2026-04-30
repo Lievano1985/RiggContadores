@@ -58,9 +58,22 @@
                     @endforeach
                 </select>
 
-                {{-- Buscar --}}
-                <input type="text" placeholder="Buscar (tarea / obligacion)" wire:model.live="buscar"
-                    class=" px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <select wire:model.live="filtroTareaCatalogo"
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                    <option value="">Tarea (todas)</option>
+                    @foreach ($this->tareasDisponiblesFiltro as $tarea)
+                        <option value="{{ $tarea['id'] }}">{{ $tarea['nombre'] }}</option>
+                    @endforeach
+                </select>
+
+                <select wire:model.live="filtroObligacion"
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                    <option value="">Obligacion (todas)</option>
+                    <option value="sin">Sin obligacion</option>
+                    @foreach ($this->obligacionesDisponiblesFiltro as $obligacion)
+                        <option value="{{ $obligacion['id'] }}">{{ $obligacion['nombre'] }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
 

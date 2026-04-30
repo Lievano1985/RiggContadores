@@ -45,6 +45,10 @@ class MisTareasIndex extends Component
     public string $vistaRapida = '';
     public ?string $cliente_id = null; // 👈 NUEVO
     public array $clientesDisponibles = [];
+    public ?int $filtroTareaCatalogo = null;
+    public string $filtroObligacion = '';
+    public array $tareasDisponiblesFiltro = [];
+    public array $obligacionesDisponiblesFiltro = [];
 
     /**
      * IMPORTANTE:
@@ -118,6 +122,7 @@ class MisTareasIndex extends Component
     {
         $this->cargarEjerciciosDisponibles();
         $this->cargarClientesDisponibles(); // 👈
+        $this->cargarFiltrosDisponibles();
 
     }
 
@@ -134,6 +139,40 @@ class MisTareasIndex extends Component
             ->map(fn ($c) => [
                 'id' => $c->id,
                 'nombre' => $c->nombre ?? $c->razon_social
+            ])
+            ->toArray();
+    }
+    private function cargarFiltrosDisponibles(): void
+    {
+        $this->tareasDisponiblesFiltro = TareaAsignada::query()
+            ->where('contador_id', Auth::id())
+            ->whereNotNull('tarea_catalogo_id')
+            ->with('tareaCatalogo:id,nombre')
+            ->get()
+            ->pluck('tareaCatalogo')
+            ->filter()
+            ->unique('id')
+            ->sortBy('nombre')
+            ->values()
+            ->map(fn ($tarea) => [
+                'id' => $tarea->id,
+                'nombre' => $tarea->nombre
+            ])
+            ->toArray();
+
+        $this->obligacionesDisponiblesFiltro = TareaAsignada::query()
+            ->where('contador_id', Auth::id())
+            ->whereNotNull('obligacion_cliente_contador_id')
+            ->with('obligacionClienteContador.obligacion:id,nombre')
+            ->get()
+            ->map(fn ($tarea) => $tarea->obligacionClienteContador?->obligacion)
+            ->filter()
+            ->unique('id')
+            ->sortBy('nombre')
+            ->values()
+            ->map(fn ($obligacion) => [
+                'id' => $obligacion->id,
+                'nombre' => $obligacion->nombre
             ])
             ->toArray();
     }
@@ -162,6 +201,18 @@ public function updatingClienteId()
     }
 
     public function updatedMes()
+    {
+        $this->desactivarVistaRapida();
+        $this->resetPage();
+    }
+
+    public function updatedFiltroTareaCatalogo()
+    {
+        $this->desactivarVistaRapida();
+        $this->resetPage();
+    }
+
+    public function updatedFiltroObligacion()
     {
         $this->desactivarVistaRapida();
         $this->resetPage();
@@ -225,6 +276,18 @@ public function updatingClienteId()
             ->when(
                 $this->cliente_id,
                 fn ($q) => $q->where('cliente_id', $this->cliente_id)
+            )
+            ->when(
+                $this->filtroTareaCatalogo,
+                fn ($q) => $q->where('tarea_catalogo_id', $this->filtroTareaCatalogo)
+            )
+            ->when(
+                $this->filtroObligacion === 'sin',
+                fn ($q) => $q->whereNull('obligacion_cliente_contador_id')
+            )
+            ->when(
+                $this->filtroObligacion !== '' && $this->filtroObligacion !== 'sin',
+                fn ($q) => $q->whereHas('obligacionClienteContador', fn ($w) => $w->where('obligacion_id', $this->filtroObligacion))
             )
             ->when(
                 $this->ejercicio,

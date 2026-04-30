@@ -88,5 +88,25 @@ public function solicitudesCerradas()
     return $this->hasMany(Solicitud::class, 'cerrado_por_user_id');
 }
 
+public function requerimientosCreados()
+{
+    return $this->hasMany(SolicitudRequerimiento::class, 'creado_por_user_id');
+}
+
+public function requerimientosAsignados()
+{
+    return $this->hasMany(SolicitudRequerimiento::class, 'destinatario_user_id');
+}
+
+public function requerimientosRespondidos()
+{
+    return $this->hasMany(SolicitudRequerimiento::class, 'respondido_por_user_id');
+}
+
+public function requerimientosValidados()
+{
+    return $this->hasMany(SolicitudRequerimiento::class, 'validado_por_user_id');
+}
+
 
 }

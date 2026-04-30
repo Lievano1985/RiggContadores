@@ -76,7 +76,7 @@
                             <td class="px-4 py-2 capitalize">{{ $solicitud->origen }}</td>
                             <td class="px-4 py-2">{{ str_replace('_', ' ', $solicitud->estado) }}</td>
                             <td class="px-4 py-2">{{ $solicitud->responsable?->name ?? '-' }}</td>
-                            <td class="px-4 py-2">{{ $solicitud->obligacion?->nombre ?? '-' }}</td>
+                            <td class="px-4 py-2">{{ $solicitud->obligacion_etiqueta }}</td>
                             <td class="px-4 py-2">{{ $solicitud->creadoPor?->name ?? '-' }}</td>
                             <td class="px-4 py-2 whitespace-nowrap">{{ $solicitud->created_at?->format('d/m/Y H:i') ?? '-' }}</td>
                         </tr>

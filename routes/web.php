@@ -23,6 +23,7 @@ use App\Livewire\Catalogos\SolicitudTiposCrud;
 use App\Livewire\Catalogos\TareasCrud;
 use App\Livewire\Notificaciones\ListaClientes;
 use App\Livewire\Solicitudes\Index as SolicitudesIndex;
+use App\Livewire\Solicitudes\MisRequerimientos as MisRequerimientosIndex;
 use App\Livewire\Usuarios\UsuariosIndex;
 
 /* ===============================
@@ -109,6 +110,9 @@ Route::middleware(['auth', 'role:admin_despacho|super_admin|supervisor'])->group
 
     Route::get('/solicitudes', SolicitudesIndex::class)
         ->name('solicitudes.index');
+
+    Route::get('/solicitudes/nueva', SolicitudesIndex::class)
+        ->name('solicitudes.create');
 });
 
 
@@ -123,6 +127,9 @@ Route::middleware(['auth', 'role:admin_despacho|contador|supervisor'])->group(fu
 
     Route::get('/contador/mistareas', MisTareasIndex::class)
         ->name('contador.mistareas');
+
+    Route::get('/solicitudes/asignadas', SolicitudesIndex::class)
+        ->name('solicitudes.asignadas');
 
     Route::get('/contador/asignaciones', [ContadorAsignacionesController::class, 'index'])
         ->name('contadores.asignaciones.index');
@@ -151,6 +158,9 @@ Route::middleware(['auth', 'role:cliente|admin_despacho'])->group(function () {
 |  RUTAS GENERALES AUTENTICADAS
 ==========================================================*/
 Route::middleware(['auth'])->group(function () {
+
+    Route::get('/mis-requerimientos', MisRequerimientosIndex::class)
+        ->name('mis-requerimientos');
 
     Route::view('/dashboard', 'dashboard')
         ->middleware('verified')

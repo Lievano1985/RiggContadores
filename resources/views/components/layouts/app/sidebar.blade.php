@@ -106,6 +106,12 @@
                                 class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
                                 {{ __('Mis Obligaciones') }}
                             </flux:navlist.item>
+
+                            <flux:navlist.item icon="clipboard-document-list" :href="route('mis-requerimientos')"
+                                :current="request()->routeIs('mis-requerimientos')" wire:navigate
+                                class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                {{ __('Mis Requerimientos') }}
+                            </flux:navlist.item>
                         </flux:navlist.group>
                     </flux:navlist>
                 @endif
@@ -162,6 +168,12 @@
                                 {{ __('Mis Asignaciones') }}
                             </flux:navlist.item>
 
+                            <flux:navlist.item icon="clipboard-document-list" :href="route('mis-requerimientos')"
+                                :current="request()->routeIs('mis-requerimientos')" wire:navigate
+                                class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                {{ __('Mis Requerimientos') }}
+                            </flux:navlist.item>
+
                             @hasanyrole('supervisor|admin_despacho')
                                 <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
                                     :current="request()->routeIs('control.validaciones.index')" wire:navigate
@@ -175,6 +187,13 @@
                                         class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
                                         {{ __('Notificaciones') }}
                                     </flux:navlist.item>
+
+                                    <flux:navlist.item icon="document-text" :href="route('solicitudes.index')"
+                                        :current="request()->routeIs('solicitudes.index', 'solicitudes.create', 'solicitudes.asignadas')" wire:navigate
+                                        class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                        {{ __('Solicitudes') }}
+                                    </flux:navlist.item>
+
                                 @endhasanyrole
 
                                 @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
@@ -185,11 +204,6 @@
                                     </flux:navlist.item>
                                 @endif
 
-                                <flux:navlist.item icon="document-text" :href="route('solicitudes.index')"
-                                    :current="request()->routeIs('solicitudes.index')" wire:navigate
-                                    class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
-                                    {{ __('Solicitudes') }}
-                                </flux:navlist.item>
                             @endhasanyrole
                         </flux:navlist.group>
                     </flux:navlist>
@@ -255,8 +269,3 @@
 </body>
 
 </html>
-
-
-
-
-

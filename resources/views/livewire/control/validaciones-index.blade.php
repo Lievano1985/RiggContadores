@@ -13,12 +13,12 @@
         </h2>
     </div>
     {{-- Header + filtros --}}
-    <div class="flex flex-wrap gap-2 justify-between items-center mb-4">
+    <div class="space-y-3 mb-4">
 
-        <div class="flex flex-wrap gap-2 items-center">
+        <div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
             {{-- Ejercicio --}}
             <select wire:model.live="filtroEjercicio"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Ejercicio</option>
                 @foreach ($ejerciciosDisponibles ?? [] as $anio)
                     <option value="{{ $anio }}">{{ $anio }}</option>
@@ -26,7 +26,7 @@
             </select>
             {{-- Mes --}}
             <select wire:model.live="filtroMes"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                 <option value="">Mes</option>
                 @foreach ([
         1 => 'Enero',
@@ -47,13 +47,13 @@
             </select>
 
         </div>
-        <div class="flex flex-wrap gap-2 items-center">
+        <div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
 
 
 
 
             {{-- Estatus --}}
-            <select wire:model.live="filtroEstatus" class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+            <select wire:model.live="filtroEstatus" class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
 
                 <option value="auto">Mes actual + vencidas</option>
                 <option value="todos">Todos</option>
@@ -65,6 +65,14 @@
                 <option value="rechazada">Rechazada</option>
                 <option value="reabierta">Reabierta</option>
 
+            </select>
+
+            <select wire:model.live="filtroContador"
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Todos los contadores</option>
+                @foreach ($this->contadoresDisponibles as $contador)
+                    <option value="{{ $contador['id'] }}">{{ $contador['nombre'] }}</option>
+                @endforeach
             </select>
 
             {{-- Buscar --}}
@@ -91,7 +99,7 @@
                     });
                 }
             }"
-            class="relative w-64"
+            class="relative w-full"
         >
         
             <input type="text"
@@ -126,8 +134,13 @@
                 </div>
             </div>
         </div>
-            <input type="text" wire:model.live="buscarObligacion" placeholder="Filtrar obligacion..."
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+            <select wire:model.live="filtroObligacion"
+                class="w-full min-w-0 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Todas las obligaciones</option>
+                @foreach ($this->obligacionesDisponibles as $obligacion)
+                    <option value="{{ $obligacion['id'] }}">{{ $obligacion['nombre'] }}</option>
+                @endforeach
+            </select>
         </div>
     </div>
 
@@ -432,4 +445,3 @@
     </div>
 
 </div>
-

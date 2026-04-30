@@ -2,27 +2,27 @@
 
 /**
  * Componente Livewire: ValidacionesIndex
- * Autor: Luis Liévano - JL3 Digital
- * Descripción técnica:
- * - Bandeja de revisión interna (NO envía al cliente).
- * - Muestra obligaciones por período (ejercicio/mes) y vencidas no cerradas.
+ * Autor: Luis Lievano - JL3 Digital
+ * Descripcion tecnica:
+ * - Bandeja de revision interna (NO envia al cliente).
+ * - Muestra obligaciones por periodo (ejercicio/mes) y vencidas no cerradas.
  * - Permite expandir para ver tareas.
  * - Sidebar para revisar tareas:
  *    - Tarea: realizada -> revisada
- *    - Rechazar tarea: -> rechazada y regresa obligación a en_progreso
- * - Finalizar obligación SOLO si:
- *    - obligación estatus = realizada
+ *    - Rechazar tarea: -> rechazada y regresa obligacion a en_progreso
+ * - Finalizar obligacion SOLO si:
+ *    - obligacion estatus = realizada
  *    - y (no tiene tareas) o (todas las tareas estatus = revisada)
  */
 
 namespace App\Livewire\Control;
 
+use App\Livewire\Shared\HasPerPage;
 use App\Models\Cliente;
-use App\Models\ObligacionClienteContador;
 use App\Models\Obligacion;
+use App\Models\ObligacionClienteContador;
 use App\Models\TareaAsignada;
 use App\Models\User;
-use App\Livewire\Shared\HasPerPage;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -30,6 +30,7 @@ use Livewire\WithPagination;
 class ValidacionesIndex extends Component
 {
     use WithPagination, HasPerPage;
+
     public string $sortField = 'fecha_vencimiento';
     public string $sortDirection = 'asc';
 
@@ -40,15 +41,18 @@ class ValidacionesIndex extends Component
     public string $buscarCliente = '';
     public array $clientesDisponibles = [];
     public string $search = '';
-    public string $buscarObligacion = '';
-    public ?int $filtroEjercicio = null; // Año
-    public ?int $filtroMes = null;       // 1-12
+    public ?int $filtroObligacion = null;
+    public ?int $filtroContador = null;
+    public ?int $filtroEjercicio = null;
+    public ?int $filtroMes = null;
 
     /** Si es true, en modo "carga inicial" incluimos vencidas no cerradas */
     public bool $incluirVencidas = true;
 
     /** Opciones de ejercicio */
     public array $ejerciciosDisponibles = [];
+    public array $contadoresDisponibles = [];
+    public array $obligacionesDisponibles = [];
 
     /** Expandir filas */
     public array $expandida = [];
@@ -63,7 +67,8 @@ class ValidacionesIndex extends Component
 
     public array $comentarioRechazoTarea = [];
     public array $mostrarRechazoTarea = [];
-    /**filtro estatus */
+
+    /** filtro estatus */
     public string $filtroEstatus = 'auto';
 
     /* ===========================
@@ -81,37 +86,96 @@ class ValidacionesIndex extends Component
 
     public function mount(): void
     {
-        // Combos vacíos (Selecciona...)
         $this->filtroEjercicio = null;
         $this->filtroMes = null;
         $this->cargarClientes();
-        // Modo automático activo
+        $this->cargarContadores();
+        $this->cargarObligacionesDisponibles();
         $this->filtroEstatus = 'auto';
         $this->incluirVencidas = true;
-
-        // Cargar ejercicios desde campo EJERCICIO
         $this->cargarEjerciciosDisponibles();
     }
+
     public function cargarClientes(): void
     {
-        $this->clientesDisponibles = \App\Models\Cliente::query()
+        $this->clientesDisponibles = Cliente::query()
             ->orderBy('nombre')
             ->get()
-            ->map(fn($c) => [
-                'id' => $c->id,
-                'nombre' => $c->nombre ?? $c->razon_social
+            ->map(fn ($cliente) => [
+                'id' => $cliente->id,
+                'nombre' => $cliente->nombre ?? $cliente->razon_social,
             ])
             ->toArray();
     }
+
+    public function cargarContadores(): void
+    {
+        $user = auth()->user();
+
+        $query = User::query()
+            ->whereHas('roles', fn ($q) => $q->whereIn('name', ['contador', 'supervisor']))
+            ->orderBy('name');
+
+        if ($user?->despacho_id) {
+            $query->where('despacho_id', $user->despacho_id);
+        }
+
+        if ($user?->hasRole('supervisor')) {
+            $query->whereKey($user->id);
+            $this->filtroContador = $user->id;
+        }
+
+        $this->contadoresDisponibles = $query
+            ->get()
+            ->map(fn (User $contador) => [
+                'id' => $contador->id,
+                'nombre' => $contador->name,
+            ])
+            ->toArray();
+    }
+
+    public function cargarObligacionesDisponibles(): void
+    {
+        $user = auth()->user();
+
+        $query = ObligacionClienteContador::query()
+            ->select('obligacion_cliente_contador.obligacion_id', 'obligaciones.nombre')
+            ->join('obligaciones', 'obligaciones.id', '=', 'obligacion_cliente_contador.obligacion_id')
+            ->whereNotNull('obligacion_cliente_contador.obligacion_id')
+            ->where('obligacion_cliente_contador.is_activa', true);
+
+        if ($user?->despacho_id) {
+            $query->whereHas('cliente', function ($q) use ($user) {
+                $q->where('despacho_id', $user->despacho_id);
+            });
+        }
+
+        if ($user?->hasRole('supervisor')) {
+            $query->where('obligacion_cliente_contador.contador_id', $user->id);
+        }
+
+        $this->obligacionesDisponibles = $query
+            ->distinct()
+            ->orderBy('obligaciones.nombre')
+            ->get()
+            ->map(fn ($obligacion) => [
+                'id' => (int) $obligacion->obligacion_id,
+                'nombre' => $obligacion->nombre,
+            ])
+            ->values()
+            ->toArray();
+    }
+
     public function cargarEjerciciosDisponibles(): void
     {
         $this->ejerciciosDisponibles = ObligacionClienteContador::query()
+            ->where('is_activa', true)
             ->whereNotNull('ejercicio')
             ->select('ejercicio')
             ->distinct()
             ->orderByDesc('ejercicio')
             ->pluck('ejercicio')
-            ->map(fn($v) => (int) $v)
+            ->map(fn ($valor) => (int) $valor)
             ->values()
             ->toArray();
 
@@ -123,18 +187,23 @@ class ValidacionesIndex extends Component
     /* ===========================
      | Hooks filtros
      * =========================== */
-    public function updatedClienteSeleccionado()
+    public function updatedClienteSeleccionado(): void
     {
         $this->incluirVencidas = false;
         $this->resetPage();
     }
 
-    public function updatedBuscarObligacion()
-{
-    $this->resetPage();
-}
+    public function updatedFiltroObligacion(): void
+    {
+        $this->resetPage();
+    }
 
-    public function updatedFiltroEstatus()
+    public function updatedFiltroContador(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFiltroEstatus(): void
     {
         if ($this->filtroEstatus === 'auto') {
             $this->aplicarModoInicial();
@@ -144,7 +213,6 @@ class ValidacionesIndex extends Component
         }
     }
 
-
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -152,24 +220,19 @@ class ValidacionesIndex extends Component
 
     public function updatedFiltroEjercicio(): void
     {
-        // Al tocar filtros manuales salimos de modo automático
         $this->incluirVencidas = false;
-
         $this->resetPage();
     }
 
-
     public function updatedFiltroMes(): void
     {
-        // Al tocar filtros manuales salimos de modo automático
         $this->incluirVencidas = false;
-
         $this->resetPage();
     }
 
     public function sortBy(string $field): void
     {
-        if (!in_array($field, ['cliente', 'obligacion', 'contador', 'estatus', 'periodo', 'fecha_vencimiento'], true)) {
+        if (! in_array($field, ['cliente', 'obligacion', 'contador', 'estatus', 'periodo', 'fecha_vencimiento'], true)) {
             return;
         }
 
@@ -198,7 +261,7 @@ class ValidacionesIndex extends Component
      * =========================== */
     public function toggleExpandida(int $id): void
     {
-        $this->expandida[$id] = !($this->expandida[$id] ?? false);
+        $this->expandida[$id] = ! ($this->expandida[$id] ?? false);
     }
 
     public function abrirSidebar(int $id): void
@@ -206,30 +269,24 @@ class ValidacionesIndex extends Component
         $this->obligacionIdSeleccionada = $id;
         $this->sidebarVisible = true;
 
-        // Reset UI
         $this->mostrarRechazoObligacion = false;
         $this->comentarioRechazoObligacion = '';
         $this->comentarioRechazoTarea = [];
         $this->mostrarRechazoTarea = [];
 
-        // Cargar registro con tareas
-        $registro = ObligacionClienteContador::with('tareasAsignadas')
-            ->find($id);
+        $registro = ObligacionClienteContador::with('tareasAsignadas')->find($id);
 
-        if ($registro) {
+        if (! $registro) {
+            return;
+        }
 
-            // Comentario de obligación
-            $this->comentarioRechazoObligacion = $registro->comentario ?? '';
+        $this->comentarioRechazoObligacion = $registro->comentario ?? '';
 
-            // Comentarios de tareas
-            foreach ($registro->tareasAsignadas as $tarea) {
+        foreach ($registro->tareasAsignadas as $tarea) {
+            $this->comentarioRechazoTarea[$tarea->id] = $tarea->comentario ?? '';
 
-                $this->comentarioRechazoTarea[$tarea->id] = $tarea->comentario ?? '';
-
-                // Si está rechazada, mostrar área de rechazo
-                if ($tarea->estatus === 'rechazada') {
-                    $this->mostrarRechazoTarea[$tarea->id] = true;
-                }
+            if ($tarea->estatus === 'rechazada') {
+                $this->mostrarRechazoTarea[$tarea->id] = true;
             }
         }
     }
@@ -243,33 +300,29 @@ class ValidacionesIndex extends Component
     /* ===========================
      | Acciones Admin
      * =========================== */
-
-    /**
-     * Admin marca tarea como revisada (solo si está realizada).
-     */
     public function marcarTareaRevisada(int $tareaId): void
     {
         $tarea = TareaAsignada::find($tareaId);
-        if (!$tarea) return;
+
+        if (! $tarea) {
+            return;
+        }
 
         if ($tarea->estatus !== 'realizada') {
             $this->dispatch('notify', message: 'Solo se pueden revisar tareas en estatus "realizada".');
+
             return;
         }
 
         $tarea->estatus = 'revisada';
         $tarea->save();
 
-        // Cierra área de rechazo si estaba abierta
         $this->mostrarRechazoTarea[$tareaId] = false;
         unset($this->comentarioRechazoTarea[$tareaId]);
 
         $this->dispatch('notify', message: 'Tarea marcada como revisada.');
     }
 
-    /**
-     * Admin rechaza una tarea y devuelve obligación a en_progreso.
-     */
     public function rechazarTarea(int $tareaId): void
     {
         if (empty($this->comentarioRechazoTarea[$tareaId])) {
@@ -279,37 +332,37 @@ class ValidacionesIndex extends Component
         }
 
         $tarea = TareaAsignada::find($tareaId);
-        if (!$tarea) return;
+
+        if (! $tarea) {
+            return;
+        }
 
         $tarea->estatus = 'rechazada';
         $tarea->comentario = $this->comentarioRechazoTarea[$tareaId];
         $tarea->save();
 
-        // Regresar obligación a en_progreso
         $obligacion = $tarea->obligacionClienteContador ?? null;
         if ($obligacion) {
             $obligacion->estatus = 'en_progreso';
             $obligacion->save();
         }
 
-        $this->dispatch('notify', message: 'Tarea rechazada. Obligación devuelta al contador.');
+        $this->dispatch('notify', message: 'Tarea rechazada. Obligacion devuelta al contador.');
 
         $this->cerrarSidebar();
     }
 
-    /**
-     * Rechazar obligación completa.
-     * (opcional, lo dejamos activo; si no lo quieres, me dices y lo quitamos)
-     */
     public function rechazarObligacion(): void
     {
         $registro = $this->obligacionIdSeleccionada
             ? ObligacionClienteContador::find($this->obligacionIdSeleccionada)
             : null;
 
-        if (!$registro) return;
+        if (! $registro) {
+            return;
+        }
 
-        if (!$this->comentarioRechazoObligacion) {
+        if (! $this->comentarioRechazoObligacion) {
             $this->dispatch('notify', message: 'Escribe el motivo del rechazo.');
 
             return;
@@ -320,25 +373,24 @@ class ValidacionesIndex extends Component
         $registro->save();
 
         $this->cerrarSidebar();
-        $this->dispatch('notify', message: 'Obligación rechazada y devuelta al contador.');
+        $this->dispatch('notify', message: 'Obligacion rechazada y devuelta al contador.');
     }
 
-    /**
-     * Finaliza obligación SOLO si:
-     * - estatus obligación = realizada
-     * - y (no tiene tareas) o (todas tareas = revisada)
-     */
     public function finalizarObligacion(): void
     {
-        if (!$this->obligacionIdSeleccionada) return;
+        if (! $this->obligacionIdSeleccionada) {
+            return;
+        }
 
         $registro = ObligacionClienteContador::with(['tareasAsignadas'])
             ->find($this->obligacionIdSeleccionada);
 
-        if (!$registro) return;
+        if (! $registro) {
+            return;
+        }
 
         if ($registro->estatus !== 'realizada') {
-            $this->dispatch('notify', message: 'Solo se puede finalizar una obligación en estatus "realizada".');
+            $this->dispatch('notify', message: 'Solo se puede finalizar una obligacion en estatus "realizada".');
 
             return;
         }
@@ -348,7 +400,6 @@ class ValidacionesIndex extends Component
         if ($tareas->count() > 0) {
             $pendientes = $tareas->where('estatus', '!=', 'revisada')->count();
             if ($pendientes > 0) {
-
                 $this->dispatch('notify', message: 'No puedes finalizar: faltan tareas por revisar (estatus distinto a "revisada").');
 
                 return;
@@ -359,7 +410,7 @@ class ValidacionesIndex extends Component
         $registro->save();
 
         $this->cerrarSidebar();
-        $this->dispatch('notify', message: 'Obligación finalizada correctamente.');
+        $this->dispatch('notify', message: 'Obligacion finalizada correctamente.');
     }
 
     /* ===========================
@@ -368,6 +419,7 @@ class ValidacionesIndex extends Component
     public function render()
     {
         $query = ObligacionClienteContador::select('obligacion_cliente_contador.*')
+            ->where('obligacion_cliente_contador.is_activa', true)
             ->with([
                 'cliente',
                 'contador',
@@ -377,90 +429,59 @@ class ValidacionesIndex extends Component
                 'tareasAsignadas.tareaCatalogo',
                 'tareasAsignadas.contador',
             ]);
-    
-        // =========================================
-        // FILTRO POR ROL (Spatie)
-        // =========================================
+
         $user = auth()->user();
         if ($user && $user->hasRole('supervisor')) {
             $query->where('contador_id', $user->id);
         }
-    
-        // =========================================
-        // FILTRO CLIENTE (combo)
-        // =========================================
+
+        if ($this->filtroContador) {
+            $query->where('contador_id', $this->filtroContador);
+        }
+
         if ($this->clienteSeleccionado) {
             $query->where('cliente_id', $this->clienteSeleccionado);
         }
-    
-        // =========================================
-        // FILTRO OBLIGACIÓN (input texto)
-        // =========================================
-        if ($this->buscarObligacion !== '') {
 
-            $buscar = trim($this->buscarObligacion);
-        
-            $query->whereHas('obligacion', function ($q) use ($buscar) {
-                $q->where('nombre', 'like', '%' . $buscar . '%');
-            });
+        if ($this->filtroObligacion) {
+            $query->where('obligacion_id', $this->filtroObligacion);
         }
-    
-        // =========================================
-        // FILTRO ESTATUS MANUAL
-        // =========================================
+
         if ($this->filtroEstatus !== 'auto' && $this->filtroEstatus !== 'todos') {
             $query->where('estatus', $this->filtroEstatus);
         }
-    
-        // =========================================
-        // FILTRO AUTOMÁTICO
-        // =========================================
+
         if ($this->filtroEstatus === 'auto') {
-    
-            // 🔹 Solo en modo auto excluimos estados post-envío
             $query->whereNotIn('estatus', $this->estatusExcluidosCliente);
-    
+
             $query->where(function ($q) {
-    
-                // Mes actual
                 $q->where(function ($qq) {
                     $qq->whereYear('fecha_vencimiento', now()->year)
-                       ->whereMonth('fecha_vencimiento', now()->month);
-                })
-    
-                // Vencidas no finalizadas
-                ->orWhere(function ($qq) {
+                        ->whereMonth('fecha_vencimiento', now()->month);
+                })->orWhere(function ($qq) {
                     $qq->whereDate('fecha_vencimiento', '<', now())
-                       ->where('estatus', '!=', 'finalizado');
+                        ->where('estatus', '!=', 'finalizado');
                 });
             });
-    
         } else {
-    
-            // =========================================
-            // FILTRO MANUAL (ejercicio / mes)
-            // =========================================
             if ($this->filtroEjercicio) {
                 $query->where('ejercicio', $this->filtroEjercicio);
             }
-    
+
             if ($this->filtroMes) {
                 $query->where('mes', $this->filtroMes);
             }
         }
-    
-        // =========================================
-        // BUSCADOR GENERAL CLIENTE
-        // =========================================
-        if (!empty($this->search)) {
+
+        if (! empty($this->search)) {
             $query->whereHas('cliente', function ($q) {
                 $q->where('nombre', 'like', '%' . $this->search . '%')
-                  ->orWhere('razon_social', 'like', '%' . $this->search . '%')
-                  ->orWhere('nombre_comercial', 'like', '%' . $this->search . '%')
-                  ->orWhere('rfc', 'like', '%' . $this->search . '%');
+                    ->orWhere('razon_social', 'like', '%' . $this->search . '%')
+                    ->orWhere('nombre_comercial', 'like', '%' . $this->search . '%')
+                    ->orWhere('rfc', 'like', '%' . $this->search . '%');
             });
         }
-    
+
         if ($this->sortField === 'cliente') {
             $query->orderBy(
                 Cliente::select('nombre')
@@ -493,9 +514,10 @@ class ValidacionesIndex extends Component
         }
 
         $obligaciones = $query->paginate($this->perPageValue($query, 10));
-    
+
         $obligacionSeleccionada = $this->obligacionIdSeleccionada
             ? ObligacionClienteContador::with([
+                'cliente',
                 'contador',
                 'obligacion',
                 'archivos',
@@ -504,7 +526,7 @@ class ValidacionesIndex extends Component
                 'tareasAsignadas.contador',
             ])->find($this->obligacionIdSeleccionada)
             : null;
-    
+
         return view('livewire.control.validaciones-index', [
             'obligaciones' => $obligaciones,
             'obligacionSeleccionada' => $obligacionSeleccionada,

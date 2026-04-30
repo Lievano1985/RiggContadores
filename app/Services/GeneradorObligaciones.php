@@ -187,6 +187,21 @@ class GeneradorObligaciones
             ->get();
 
         foreach ($tareas as $t) {
+            $tareaAnterior = TareaAsignada::query()
+                ->where('cliente_id', $occ->cliente_id)
+                ->where('tarea_catalogo_id', $t->id)
+                ->where(function ($query) use ($occ) {
+                    $query->where('ejercicio', '<', $occ->ejercicio)
+                        ->orWhere(function ($subQuery) use ($occ) {
+                            $subQuery->where('ejercicio', $occ->ejercicio)
+                                ->where('mes', '<', $occ->mes);
+                        });
+                })
+                ->orderByDesc('ejercicio')
+                ->orderByDesc('mes')
+                ->orderByDesc('id')
+                ->first();
+
             TareaAsignada::updateOrCreate(
                 [
                     'cliente_id'                     => $occ->cliente_id,
@@ -197,8 +212,8 @@ class GeneradorObligaciones
                 ],
                 [
                     'contador_id'      => $occ->contador_id,
-                    'carpeta_drive_id' => $occ->sin_carpeta ? null : $occ->carpeta_drive_id,
-                    'sin_carpeta'      => (bool) $occ->sin_carpeta,
+                    'carpeta_drive_id' => $tareaAnterior?->sin_carpeta ? null : $tareaAnterior?->carpeta_drive_id,
+                    'sin_carpeta'      => (bool) ($tareaAnterior?->sin_carpeta ?? false),
                     'fecha_asignacion' => now(),
                     'fecha_limite'     => $fechaVenc?->toDateString(),
                     'estatus'          => 'asignada',

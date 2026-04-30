@@ -49,6 +49,8 @@ public ?string $modalObligacion = null;
     public string $vistaRapida = '';
     public ?string $cliente_id = null;
     public array $clientesDisponibles = [];
+    public ?int $filtroObligacion = null;
+    public array $obligacionesDisponiblesFiltro = [];
 
     public array $ejerciciosDisponibles = [];
 
@@ -120,6 +122,7 @@ public ?string $modalObligacion = null;
     {
         $this->cargarEjerciciosDisponibles();
         $this->cargarClientesDisponibles(); // 👈 NUEVO
+        $this->cargarObligacionesDisponiblesFiltro();
     }
     
     private function cargarClientesDisponibles(): void
@@ -135,6 +138,26 @@ public ?string $modalObligacion = null;
             ->map(fn ($c) => [
                 'id' => $c->id,
                 'nombre' => $c->nombre ?? $c->razon_social,
+            ])
+            ->toArray();
+    }
+    
+    private function cargarObligacionesDisponiblesFiltro(): void
+    {
+        $this->obligacionesDisponiblesFiltro = ObligacionClienteContador::query()
+            ->where('contador_id', Auth::id())
+            ->where('is_activa', true)
+            ->whereNotNull('obligacion_id')
+            ->with('obligacion:id,nombre')
+            ->get()
+            ->pluck('obligacion')
+            ->filter()
+            ->unique('id')
+            ->sortBy('nombre')
+            ->values()
+            ->map(fn ($obligacion) => [
+                'id' => $obligacion->id,
+                'nombre' => $obligacion->nombre,
             ])
             ->toArray();
     }
@@ -167,6 +190,12 @@ public ?string $modalObligacion = null;
     }
 
     public function updatedMesSeleccionado()
+    {
+        $this->desactivarVistaRapida();
+        $this->resetPage();
+    }
+
+    public function updatedFiltroObligacion()
     {
         $this->desactivarVistaRapida();
         $this->resetPage();
@@ -209,6 +238,10 @@ public ?string $modalObligacion = null;
                 fn ($w) => $w->where('cliente_id', $this->cliente_id)
             )
             ->when(
+                $this->filtroObligacion,
+                fn ($w) => $w->where('obligacion_id', $this->filtroObligacion)
+            )
+            ->when(
                 $this->vistaRapida !== '',
                 fn ($w) => $this->aplicarVistaRapida($w)
             )
@@ -226,16 +259,6 @@ public ?string $modalObligacion = null;
                 $this->estatus,
                 fn($w) => $w->where('estatus', $this->estatus)
             )
-
-            ->when($this->buscar, function ($w) {
-                $bus = trim($this->buscar);
-            
-                $w->whereHas(
-                    'obligacion',
-                    fn($o) => $o->where('nombre', 'like', "%{$bus}%")
-                );
-            })
-            
 
             ;
 

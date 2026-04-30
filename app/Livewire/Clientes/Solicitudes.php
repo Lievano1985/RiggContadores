@@ -57,7 +57,7 @@ class Solicitudes extends Component
     public function render()
     {
         $solicitudes = SolicitudModel::query()
-            ->with(['responsable', 'obligacion', 'creadoPor'])
+            ->with(['responsable', 'obligacion', 'obligacionClienteContador.obligacion', 'creadoPor'])
             ->where('cliente_id', $this->cliente->id)
             ->latest()
             ->get();

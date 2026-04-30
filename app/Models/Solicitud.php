@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Solicitud extends Model
 {
@@ -12,6 +13,7 @@ class Solicitud extends Model
     protected $fillable = [
         'cliente_id',
         'obligacion_id',
+        'obligacion_cliente_contador_id',
         'modo_solicitud',
         'tipo_solicitud_id',
         'origen',
@@ -44,6 +46,11 @@ class Solicitud extends Model
         return $this->belongsTo(Obligacion::class);
     }
 
+    public function obligacionClienteContador(): BelongsTo
+    {
+        return $this->belongsTo(ObligacionClienteContador::class, 'obligacion_cliente_contador_id');
+    }
+
     public function tipoSolicitud(): BelongsTo
     {
         return $this->belongsTo(SolicitudTipo::class, 'tipo_solicitud_id');
@@ -62,5 +69,25 @@ class Solicitud extends Model
     public function cerradoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cerrado_por_user_id');
+    }
+
+    public function requerimientos(): HasMany
+    {
+        return $this->hasMany(SolicitudRequerimiento::class, 'solicitud_id');
+    }
+
+    public function getObligacionEtiquetaAttribute(): string
+    {
+        if ($this->obligacionClienteContador?->obligacion) {
+            $mes = $this->obligacionClienteContador->mes;
+            $ejercicio = $this->obligacionClienteContador->ejercicio;
+            $periodo = $mes && $ejercicio
+                ? ucfirst(\Carbon\Carbon::create()->month($mes)->translatedFormat('F')) . ' ' . $ejercicio
+                : null;
+
+            return trim($this->obligacionClienteContador->obligacion->nombre . ($periodo ? ' - ' . $periodo : ''));
+        }
+
+        return $this->obligacion?->nombre ?? '-';
     }
 }
