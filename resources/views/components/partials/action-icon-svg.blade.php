@@ -51,6 +51,47 @@
         </svg>
     @break
 
+    @case('minus-circle')
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-3-3 6-6m0 6-6-6" />
+        </svg>
+    @break
+
+    @case('document-minus')
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19.5 14.25V6.75a2.25 2.25 0 0 0-2.25-2.25h-7.5L4.5 9.75v9a2.25 2.25 0 0 0 2.25 2.25h5.25" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 4.5v5.25H4.5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17.25h4.5" />
+        </svg>
+    @break
+
+    @case('thumb-down')
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.042 21.672 13.684 16.24a1.125 1.125 0 0 1 1.091-1.398h2.074a2.25 2.25 0 0 0 2.186-1.714l1.285-5.142A2.25 2.25 0 0 0 18.137 5.25H6.75a2.25 2.25 0 0 0-2.25 2.25v4.5a2.25 2.25 0 0 0 2.25 2.25h4.318l1.792 5.375a1.125 1.125 0 0 0 2.182-.303Z" />
+        </svg>
+    @break
+
+    @case('arrow-uturn-left')
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 14 4.5 9.5 9 5m-4.5 4.5H16a3.5 3.5 0 0 1 0 7h-1.5" />
+        </svg>
+    @break
+
+    @case('plus')
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="1.5" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+    @break
+
     @case('chevron-down')
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="1.8" aria-hidden="true">
@@ -71,10 +112,4 @@
             <circle cx="12" cy="12" r="9" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01" />
         </svg>
-        @case('plus')
-            <svg xmlns="http://www.w3.org" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                class="w-5 h-5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-        @break
     @endswitch

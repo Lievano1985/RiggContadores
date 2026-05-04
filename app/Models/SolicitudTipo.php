@@ -15,13 +15,11 @@ class SolicitudTipo extends Model
         'descripcion_sugerida',
         'prioridad_default',
         'aplica_para',
-        'documentos_sugeridos',
         'configuracion_formulario',
         'activo',
     ];
 
     protected $casts = [
-        'documentos_sugeridos' => 'array',
         'configuracion_formulario' => 'array',
         'activo' => 'boolean',
     ];

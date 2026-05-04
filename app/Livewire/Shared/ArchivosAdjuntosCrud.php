@@ -67,6 +67,29 @@ class ArchivosAdjuntosCrud extends Component
         $this->nuevosArchivos = array_values($this->nuevosArchivos);
     }
 
+    public function updatedNuevosArchivos($value, string $key): void
+    {
+        if (!str_ends_with($key, '.file')) {
+            return;
+        }
+
+        [$index] = explode('.', $key);
+        $index = (int) $index;
+
+        if (!isset($this->nuevosArchivos[$index]['file']) || !$this->nuevosArchivos[$index]['file']) {
+            return;
+        }
+
+        if (!empty($this->nuevosArchivos[$index]['nombre'])) {
+            return;
+        }
+
+        $this->nuevosArchivos[$index]['nombre'] = pathinfo(
+            $this->nuevosArchivos[$index]['file']->getClientOriginalName(),
+            PATHINFO_FILENAME
+        );
+    }
+
     public function eliminarArchivo(int $archivoId): void
     {
         $archivo = $this->modelo->archivos()->findOrFail($archivoId);
@@ -99,12 +122,6 @@ class ArchivosAdjuntosCrud extends Component
             // devolver según origen
             $this->dispatch("archivos-ok-$origen");
         } catch (\Throwable $e) {
-
-            /*             $this->reset('nuevosArchivos');
- */
-            $this->resetErrorBag();
-            $this->resetValidation();
-
             $this->dispatch("archivos-error-$origen");
         } finally {
 

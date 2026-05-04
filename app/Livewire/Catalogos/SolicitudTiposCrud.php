@@ -18,7 +18,6 @@ class SolicitudTiposCrud extends Component
     public string $descripcion_sugerida = '';
     public string $prioridad_default = '';
     public string $aplica_para = 'ambos';
-    public string $documentos_sugeridos_texto = '';
     public bool $activo = true;
     public bool $modalFormVisible = false;
     public bool $isEdit = false;
@@ -49,7 +48,6 @@ class SolicitudTiposCrud extends Component
             'descripcion_sugerida' => ['nullable', 'string'],
             'prioridad_default' => ['nullable', Rule::in(['baja', 'media', 'alta', 'urgente'])],
             'aplica_para' => ['required', Rule::in(['cliente', 'despacho', 'ambos'])],
-            'documentos_sugeridos_texto' => ['nullable', 'string'],
             'activo' => ['boolean'],
         ];
     }
@@ -93,7 +91,6 @@ class SolicitudTiposCrud extends Component
         $this->descripcion_sugerida = $tipo->descripcion_sugerida ?? '';
         $this->prioridad_default = $tipo->prioridad_default ?? '';
         $this->aplica_para = $tipo->aplica_para;
-        $this->documentos_sugeridos_texto = implode(PHP_EOL, $tipo->documentos_sugeridos ?? []);
         $this->activo = (bool) $tipo->activo;
         $this->isEdit = true;
         $this->modalFormVisible = true;
@@ -103,19 +100,12 @@ class SolicitudTiposCrud extends Component
     {
         $this->validate();
 
-        $documentos = collect(preg_split('/\r\n|\r|\n/', $this->documentos_sugeridos_texto))
-            ->map(fn ($item) => trim((string) $item))
-            ->filter()
-            ->values()
-            ->all();
-
         $payload = [
             'nombre' => $this->nombre,
             'titulo_sugerido' => $this->titulo_sugerido ?: null,
             'descripcion_sugerida' => $this->descripcion_sugerida ?: null,
             'prioridad_default' => $this->prioridad_default ?: null,
             'aplica_para' => $this->aplica_para,
-            'documentos_sugeridos' => $documentos ?: null,
             'activo' => $this->activo,
         ];
 
@@ -369,7 +359,6 @@ class SolicitudTiposCrud extends Component
             'descripcion_sugerida',
             'prioridad_default',
             'aplica_para',
-            'documentos_sugeridos_texto',
             'activo',
         ]);
 

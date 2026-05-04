@@ -7,6 +7,6 @@
  --}}
 
 
- <img src="/img/logo.png" alt="Girl in a jacket" width="500" height="600">
+ <img src="/img/logo.png" alt="Logo" width="180" height="216">
 
  

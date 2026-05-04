@@ -57,15 +57,6 @@
                         </option>
                     @endforeach
                 </select>
-
-                <select wire:model.live="filtroTareaCatalogo"
-                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
-                    <option value="">Tarea (todas)</option>
-                    @foreach ($this->tareasDisponiblesFiltro as $tarea)
-                        <option value="{{ $tarea['id'] }}">{{ $tarea['nombre'] }}</option>
-                    @endforeach
-                </select>
-
                 <select wire:model.live="filtroObligacion"
                     class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
                     <option value="">Obligacion (todas)</option>
@@ -74,19 +65,29 @@
                         <option value="{{ $obligacion['id'] }}">{{ $obligacion['nombre'] }}</option>
                     @endforeach
                 </select>
+                <select wire:model.live="filtroTareaCatalogo"
+                    class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                    <option value="">Tarea (todas)</option>
+                    @foreach ($this->tareasDisponiblesFiltro as $tarea)
+                        <option value="{{ $tarea['id'] }}">{{ $tarea['nombre'] }}</option>
+                    @endforeach
+                </select>
+
+
             </div>
         </div>
 
         {{-- =========================
             TABLA
         ========================== --}}
-        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <div
+            class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
-        
+
                 {{-- =========================
                     HEADER
                 ========================== --}}
-                                                <thead class="bg-stone-100 dark:bg-stone-900">
+                <thead class="bg-stone-100 dark:bg-stone-900">
                     <tr>
                         <x-sortable-th field="cliente" label="Cliente" :sort-field="$sortField" :sort-direction="$sortDirection" />
                         <x-sortable-th field="ejercicio" label="Ejercicio" :sort-field="$sortField" :sort-direction="$sortDirection" />
@@ -99,21 +100,20 @@
                         <th class="px-4 py-2 text-left text-xs font-semibold">Acciones</th>
                     </tr>
                 </thead>
-        
+
                 {{-- =========================
                     BODY
                 ========================== --}}
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-        
+
                     @forelse ($tareas as $t)
                         @php
                             $vence = $t->fecha_limite ? \Carbon\Carbon::parse($t->fecha_limite) : null;
-        
+
                             $vencida = $vence && $vence->isPast() && $t->estatus !== 'cerrada';
                         @endphp
-        
-                        <tr
-                        @class([
+
+                        <tr @class([
                             'transition-all duration-400',
                         
                             // vencida SOLO si no esta resaltada
@@ -123,81 +123,78 @@
                         
                             // highlight tiene prioridad
                             'bg-amber-100 dark:bg-amber-900' => $highlightId === $t->id,
-                        ])
-                           
-                        >
-        
+                        ])>
+
                             <td class="px-4 py-2">
                                 {{ $t->cliente->nombre ?? ($t->cliente->razon_social ?? '-') }}
                             </td>
-        
+
                             <td class="px-4 py-2 whitespace-nowrap">
                                 {{ $t->ejercicio }}-{{ str_pad($t->mes, 2, '0', STR_PAD_LEFT) }}
                             </td>
-        
+
                             <td class="px-4 py-2">
                                 {{ $t->tareaCatalogo?->nombre ?? '-' }}
                             </td>
-        
+
                             <td class="px-4 py-2">
                                 {{ $t->obligacionClienteContador?->obligacion?->nombre ?? 'Sin obligacion' }}
                             </td>
-        
+
                             <td class="px-4 py-2 whitespace-nowrap">
                                 {{ $vence ? $vence->format('Y-m-d') : '-' }}
                             </td>
-        
+
                             <td class="px-4 py-2">
                                 <x-status-badge :status="$t->estatus" />
                             </td>
-        
+
                             <td class="px-4 py-2">
                                 {{ $t->tiempo_estimado ? $t->tiempo_estimado . ' min' : '-' }}
                             </td>
-        
+
                             <td class="px-4 py-2">
                                 {{ $t->duracion_minutos ? $t->duracion_minutos . ' min' : '-' }}
                             </td>
-        
+
                             <td class="px-4 py-2">
                                 <div class="flex items-center gap-1">
 
-                                {{-- ASIGNADA --}}
-                                @if ($t->estatus === 'asignada')
-                                    <x-action-icon icon="play" label="Iniciar" variant="neutral"
-                                        wire:click="iniciar({{ $t->id }})" />
-                                @endif
+                                    {{-- ASIGNADA --}}
+                                    @if ($t->estatus === 'asignada')
+                                        <x-action-icon icon="play" label="Iniciar" variant="neutral"
+                                            wire:click="iniciar({{ $t->id }})" />
+                                    @endif
 
-                                {{-- EN PROGRESO --}}
-                                @if ($t->estatus === 'en_progreso')
-                                    <x-action-icon icon="check" label="Terminar" variant="primary"
-                                        wire:click="terminar({{ $t->id }})" />
-                                @endif
+                                    {{-- EN PROGRESO --}}
+                                    @if ($t->estatus === 'en_progreso')
+                                        <x-action-icon icon="check" label="Terminar" variant="primary"
+                                            wire:click="terminar({{ $t->id }})" />
+                                    @endif
 
-                                {{-- RECHAZADA --}}
-                                @if ($t->estatus === 'rechazada')
-                                    <x-action-icon icon="eye" label="Ver rechazo" variant="danger"
-                                        wire:click="verRechazo({{ $t->id }})" />
-                                @endif
+                                    {{-- RECHAZADA --}}
+                                    @if ($t->estatus === 'rechazada')
+                                        <x-action-icon icon="eye" label="Ver rechazo" variant="danger"
+                                            wire:click="verRechazo({{ $t->id }})" />
+                                    @endif
 
                                 </div>
                             </td>
-        
+
                         </tr>
-        
+
                     @empty
                         <tr>
-                            <td colspan="9"
-                                class="px-4 py-6 text-center text-sm text-gray-600 dark:text-gray-300">
+                            <td colspan="9" class="px-4 py-6 text-center text-sm text-gray-600 dark:text-gray-300">
                                 No hay tareas para mostrar.
                             </td>
                         </tr>
                     @endforelse
-        
+
                 </tbody>
             </table>
         </div>
-        
+
 
         @include('livewire.shared.pagination-controls', ['paginator' => $tareas])
 
@@ -225,7 +222,8 @@
                     {{-- Comentario si esta en estatus rechazado --}}
                     @if ($tareaSeleccionada->estatus === 'rechazada')
                         <div class="mb-4">
-                            <label class="block text-sm mb-1 text-stone-600 dark:text-white">Comentario del rechazo</label>
+                            <label class="block text-sm mb-1 text-stone-600 dark:text-white">Comentario del
+                                rechazo</label>
                             <div class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded text-gray-800 dark:text-white">
                                 {{ $tareaSeleccionada->comentario ?? '-' }}
                             </div>

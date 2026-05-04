@@ -22,6 +22,16 @@
     }
 }" class="app-shell-body min-h-screen bg-white dark:bg-zinc-800">
 
+    @php
+        $mostrarCampanaNotificaciones = auth()->check() && auth()->user()->hasAnyRole(['admin_despacho', 'supervisor', 'contador']);
+        $totalNotificacionesSolicitudes = $mostrarCampanaNotificaciones
+            ? \App\Models\SolicitudNotificacion::query()
+                ->where('user_id', auth()->id())
+                ->whereNull('leida_at')
+                ->count()
+            : 0;
+    @endphp
+
     <div class="fixed left-3 top-3 z-50 lg:hidden"
         x-show="openToggleVisible && !sidebarVisible"
         x-transition:enter="transform transition ease-out duration-220"
@@ -71,7 +81,6 @@
         <div class="relative flex h-full flex-col">
 
             <div class="pt-2">
-
                 <a href="{{ route('dashboard') }}" class="flex w-full items-center justify-center px-4 pt-4"
                     wire:navigate>
                     <x-app-logo />
@@ -119,9 +128,60 @@
                 @hasanyrole('contador|admin_despacho|supervisor')
                     <flux:navlist variant="outline">
                         <flux:navlist.group :heading="__('Mi despacho')" class="grid">
+                            <flux:navlist.item icon="user-circle" :href="route('clientes.index')"
+                                :current="request()->routeIs('clientes.index')" wire:navigate
+                                class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                {{ __('Clientes') }}
+                            </flux:navlist.item>
+
+                            <flux:navlist.group expandable
+                                :expanded="request()->routeIs('contadores.asignaciones.index', 'control.validaciones.index', 'notificaciones.clientes.index')"
+                                heading="Obligaciones" class="mt-2 w-full dark:bg-gray-700 dark:text-white">
+
+                                <flux:navlist.item icon="paper-airplane" :href="route('contadores.asignaciones.index')"
+                                    :current="request()->routeIs('contadores.asignaciones.index')" wire:navigate
+                                    class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                    {{ __('Mis Asignaciones') }}
+                                </flux:navlist.item>
+
+                                @hasanyrole('supervisor|admin_despacho')
+                                    <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
+                                        :current="request()->routeIs('control.validaciones.index')" wire:navigate
+                                        class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                        {{ __('Validaciones') }}
+                                    </flux:navlist.item>
+                                @endhasanyrole
+
+                                @hasanyrole('admin_despacho')
+                                    <flux:navlist.item icon="envelope-open" :href="route('notificaciones.clientes.index')"
+                                        :current="request()->routeIs('notificaciones.clientes.index')" wire:navigate
+                                        class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                        {{ __('Notificaciones') }}
+                                    </flux:navlist.item>
+                                @endhasanyrole
+                            </flux:navlist.group>
+
+                            <flux:navlist.group expandable
+                                :expanded="request()->routeIs('solicitudes.index', 'solicitudes.create', 'solicitudes.asignadas', 'mis-requerimientos')"
+                                heading="Solicitudes" class="mt-2 w-full dark:bg-gray-700 dark:text-white">
+
+                                <flux:navlist.item icon="document-text"
+                                    :href="auth()->user()->hasRole('contador') ? route('solicitudes.asignadas') : route('solicitudes.index')"
+                                    :current="request()->routeIs('solicitudes.index', 'solicitudes.create', 'solicitudes.asignadas')" wire:navigate
+                                    class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                    {{ __('Nueva solicitud') }}
+                                </flux:navlist.item>
+
+                                <flux:navlist.item icon="clipboard-document-list" :href="route('mis-requerimientos')"
+                                    :current="request()->routeIs('mis-requerimientos')" wire:navigate
+                                    class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
+                                    {{ __('Mis Requerimientos') }}
+                                </flux:navlist.item>
+                            </flux:navlist.group>
+
                             <flux:navlist.group expandable
                                 :expanded="request()->routeIs('despacho.perfil', 'catalogos.regimenes-crud', 'catalogos.tareas-crud', 'catalogos.obligaciones-crud', 'catalogos.actividades-crud', 'catalogos.solicitud-tipos')"
-                                heading="Configuraciones" class="w-full dark:bg-gray-700 dark:text-white">
+                                heading="Configuraciones" class="mt-2 w-full dark:bg-gray-700 dark:text-white">
 
                                 <flux:navlist.item icon="globe-americas" :href="route('catalogos.regimenes-crud')"
                                     :current="request()->routeIs('catalogos.regimenes-crud')" wire:navigate
@@ -156,55 +216,13 @@
                                 @endif
                             </flux:navlist.group>
 
-                            <flux:navlist.item icon="user-circle" :href="route('clientes.index')"
-                                :current="request()->routeIs('clientes.index')" wire:navigate
-                                class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
-                                {{ __('Clientes') }}
-                            </flux:navlist.item>
-
-                            <flux:navlist.item icon="paper-airplane" :href="route('contadores.asignaciones.index')"
-                                :current="request()->routeIs('contadores.asignaciones.index')" wire:navigate
-                                class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
-                                {{ __('Mis Asignaciones') }}
-                            </flux:navlist.item>
-
-                            <flux:navlist.item icon="clipboard-document-list" :href="route('mis-requerimientos')"
-                                :current="request()->routeIs('mis-requerimientos')" wire:navigate
-                                class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
-                                {{ __('Mis Requerimientos') }}
-                            </flux:navlist.item>
-
-                            @hasanyrole('supervisor|admin_despacho')
-                                <flux:navlist.item icon="clipboard-document-list" :href="route('control.validaciones.index')"
-                                    :current="request()->routeIs('control.validaciones.index')" wire:navigate
+                            @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
+                                <flux:navlist.item icon="user-group" :href="route('Usuarios.index')"
+                                    :current="request()->routeIs('Usuarios.index')" wire:navigate
                                     class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
-                                    {{ __('Validaciones') }}
+                                    {{ __('Usuarios') }}
                                 </flux:navlist.item>
-
-                                @hasanyrole('admin_despacho')
-                                    <flux:navlist.item icon="envelope-open" :href="route('notificaciones.clientes.index')"
-                                        :current="request()->routeIs('notificaciones.clientes.index')" wire:navigate
-                                        class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
-                                        {{ __('Notificaciones') }}
-                                    </flux:navlist.item>
-
-                                    <flux:navlist.item icon="document-text" :href="route('solicitudes.index')"
-                                        :current="request()->routeIs('solicitudes.index', 'solicitudes.create', 'solicitudes.asignadas')" wire:navigate
-                                        class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
-                                        {{ __('Solicitudes') }}
-                                    </flux:navlist.item>
-
-                                @endhasanyrole
-
-                                @if (auth()->check() && auth()->user()->hasRole('admin_despacho'))
-                                    <flux:navlist.item icon="user-group" :href="route('Usuarios.index')"
-                                        :current="request()->routeIs('Usuarios.index')" wire:navigate
-                                        class="rigg-shell-link mt-2 border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
-                                        {{ __('Usuarios') }}
-                                    </flux:navlist.item>
-                                @endif
-
-                            @endhasanyrole
+                            @endif
                         </flux:navlist.group>
                     </flux:navlist>
                 @endhasanyrole
@@ -259,6 +277,34 @@
 
     <main class="app-shell-main p-6 transition-all duration-300"
         :class="{ 'lg:ml-72': sidebarVisible && window.innerWidth >= 1024 }">
+        <div class="sticky top-0 z-30 mb-0 flex items-center justify-between bg-transparent px-0 py-1 shadow-none backdrop-blur-0">
+            <div class="flex items-center gap-3">
+                @if ($title)
+                    <div class="hidden text-sm font-semibold text-stone-700 dark:text-stone-200 md:block">
+                        {{ $title }}
+                    </div>
+                @endif
+            </div>
+
+            <div class="flex items-center gap-3">
+                @if ($mostrarCampanaNotificaciones)
+                    <a href="{{ route('mis-notificaciones') }}"
+                        class="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-stone-200 bg-white text-stone-700 shadow-sm transition hover:border-amber-500 hover:text-amber-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:border-amber-500 dark:hover:text-amber-400"
+                        aria-label="Notificaciones" wire:navigate>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9a6 6 0 1 0-12 0v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.08 5.454 1.31m5.715 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                        </svg>
+
+                        @if ($totalNotificacionesSolicitudes > 0)
+                            <span class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold text-white">
+                                {{ $totalNotificacionesSolicitudes > 99 ? '99+' : $totalNotificacionesSolicitudes }}
+                            </span>
+                        @endif
+                    </a>
+                @endif
+            </div>
+        </div>
+
         {{ $slot }}
     </main>
 

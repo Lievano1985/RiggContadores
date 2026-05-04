@@ -23,6 +23,7 @@ use App\Livewire\Catalogos\SolicitudTiposCrud;
 use App\Livewire\Catalogos\TareasCrud;
 use App\Livewire\Notificaciones\ListaClientes;
 use App\Livewire\Solicitudes\Index as SolicitudesIndex;
+use App\Livewire\Solicitudes\MisNotificaciones as MisNotificacionesIndex;
 use App\Livewire\Solicitudes\MisRequerimientos as MisRequerimientosIndex;
 use App\Livewire\Usuarios\UsuariosIndex;
 
@@ -161,6 +162,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/mis-requerimientos', MisRequerimientosIndex::class)
         ->name('mis-requerimientos');
+
+    Route::get('/mis-notificaciones', MisNotificacionesIndex::class)
+        ->name('mis-notificaciones');
 
     Route::view('/dashboard', 'dashboard')
         ->middleware('verified')

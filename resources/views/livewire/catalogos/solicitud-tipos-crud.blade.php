@@ -26,7 +26,6 @@
                     <th class="px-4 py-2 text-left text-xs font-semibold">Titulo sugerido</th>
                     <x-sortable-th field="aplica_para" label="Aplica para" :sort-field="$sortField" :sort-direction="$sortDirection" />
                     <th class="px-4 py-2 text-left text-xs font-semibold">Prioridad</th>
-                    <th class="px-4 py-2 text-left text-xs font-semibold">Documentos</th>
                     <x-sortable-th field="activo" label="Activo" :sort-field="$sortField" :sort-direction="$sortDirection" align="center" />
                     <th class="px-4 py-2 text-center text-xs font-semibold">Acciones</th>
                 </tr>
@@ -38,9 +37,6 @@
                         <td class="px-4 py-2">{{ $tipo->titulo_sugerido ?: '-' }}</td>
                         <td class="px-4 py-2 capitalize">{{ $tipo->aplica_para }}</td>
                         <td class="px-4 py-2 capitalize">{{ $tipo->prioridad_default ?: '-' }}</td>
-                        <td class="px-4 py-2">
-                            {{ $tipo->documentos_sugeridos ? count($tipo->documentos_sugeridos) . ' sugeridos' : '-' }}
-                        </td>
                         <td class="px-4 py-2 text-center">
                             <label class="inline-flex items-center cursor-pointer mt-1">
                                 <input type="checkbox" wire:click="toggleActivo({{ $tipo->id }})"
@@ -63,7 +59,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <td colspan="6" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
                             No hay tipos de solicitud registrados.
                         </td>
                     </tr>

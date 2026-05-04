@@ -1,17 +1,17 @@
 @php use Illuminate\Support\Facades\Storage; @endphp
 
-<div wire:poll.10s x-data="{ sidebar: @entangle('sidebarVisible') }" class="p-6 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow space-y-4">
-    <div class="flex flex-wrap gap-2 justify-between items-center">
+<div x-data="{ sidebar: @entangle('sidebarVisible') }" class="space-y-4 rounded-lg bg-white p-6 text-gray-900 shadow dark:bg-gray-900 dark:text-white">
+    <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-xl font-bold text-stone-600 dark:text-white">Mis requerimientos</h2>
     </div>
 
     <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div class="flex flex-wrap items-center gap-2">
             <input type="text" placeholder="Buscar por cliente o requerimiento" wire:model.live="buscar"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="rounded border px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:bg-gray-700 dark:text-white">
 
             <select wire:model.live="estado"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="rounded border px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:bg-gray-700 dark:text-white">
                 <option value="">Estado (todos)</option>
                 <option value="abierto">Abierto</option>
                 <option value="respondido">Respondido</option>
@@ -21,7 +21,7 @@
             </select>
 
             <select wire:model.live="perPage"
-                class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                class="rounded border px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:bg-gray-700 dark:text-white">
                 @foreach ($perPageOptions as $option)
                     <option value="{{ $option }}">{{ $option === 'all' ? 'Todos' : $option }}</option>
                 @endforeach
@@ -29,8 +29,8 @@
         </div>
     </div>
 
-    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+    <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
             <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
                     <th class="px-4 py-2 text-left text-xs font-semibold">Cliente</th>
@@ -44,16 +44,37 @@
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 @forelse ($requerimientos as $requerimiento)
+                    @php
+                        $estadoClase = match ($requerimiento->estado) {
+                            'abierto' => 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+                            'respondido' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                            'validado' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+                            'rechazado' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+                            'cancelado' => 'bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-100',
+                            default => 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-200',
+                        };
+                    @endphp
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                         <td class="px-4 py-2">{{ $requerimiento->solicitud->cliente->nombre ?? ($requerimiento->solicitud->cliente->razon_social ?? '-') }}</td>
                         <td class="px-4 py-2">{{ $requerimiento->solicitud->titulo ?? '-' }}</td>
                         <td class="px-4 py-2">
-                            <div class="font-medium">{{ $requerimiento->titulo }}</div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="font-medium">{{ $requerimiento->titulo }}</div>
+                                @if ($requerimiento->tipo === 'resultado')
+                                    <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                        Resultado
+                                    </span>
+                                @endif
+                            </div>
                             @if ($requerimiento->descripcion)
                                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ \Illuminate\Support\Str::limit($requerimiento->descripcion, 80) }}</div>
                             @endif
                         </td>
-                        <td class="px-4 py-2">{{ str_replace('_', ' ', $requerimiento->estado) }}</td>
+                        <td class="px-4 py-2">
+                            <span class="inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium {{ $estadoClase }}">
+                                {{ str_replace('_', ' ', $requerimiento->estado) }}
+                            </span>
+                        </td>
                         <td class="px-4 py-2 whitespace-nowrap">{{ $requerimiento->fecha_limite?->format('d/m/Y') ?? '-' }}</td>
                         <td class="px-4 py-2">{{ $requerimiento->creadoPor?->name ?? '-' }}</td>
                         <td class="px-4 py-2">
@@ -76,48 +97,48 @@
         {{ $requerimientos->links('vendor.pagination.tailwind-links-only') }}
     </div>
 
-    <div x-cloak x-show="sidebar" x-transition.opacity class="fixed inset-0 bg-black/40 z-40 flex justify-end">
+    <div x-cloak x-show="sidebar" x-transition.opacity class="fixed inset-0 z-40 flex justify-end bg-black/40">
         <div class="flex-1" @click="$wire.cerrarSidebar()"></div>
 
-        <div class="w-full max-w-xl bg-white dark:bg-gray-900 shadow-xl h-full border-l flex flex-col">
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <div wire:poll.10s="sidebarVisible" class="flex h-full w-full max-w-xl flex-col border-l bg-white shadow-xl dark:bg-gray-900">
+            <div class="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
                 <h3 class="text-lg font-semibold text-stone-700 dark:text-white">Detalle de requerimiento</h3>
                 <button @click="$wire.cerrarSidebar()" class="text-gray-500 hover:text-black dark:hover:text-white">x</button>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4 space-y-6">
+            <div class="flex-1 space-y-6 overflow-y-auto p-4">
                 @if ($requerimientoSeleccionado)
-                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+                    <div class="space-y-2 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                         <div class="font-semibold text-stone-700 dark:text-white">{{ $requerimientoSeleccionado->titulo }}</div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">Solicitud: {{ $requerimientoSeleccionado->solicitud->titulo ?? '-' }}</div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">Cliente: {{ $requerimientoSeleccionado->solicitud->cliente->nombre ?? ($requerimientoSeleccionado->solicitud->cliente->razon_social ?? '-') }}</div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">Responsable del caso: {{ $requerimientoSeleccionado->solicitud->responsable?->name ?? '-' }}</div>
                     </div>
 
-                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                    <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                         <h5 class="font-semibold text-stone-700 dark:text-white">Lo solicitado</h5>
-                        <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ $requerimientoSeleccionado->descripcion ?: 'Sin descripcion.' }}</p>
+                        <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimientoSeleccionado->descripcion ?: 'Sin descripcion.' }}</p>
                         <div class="text-xs text-gray-500 dark:text-gray-400">
                             Creado por {{ $requerimientoSeleccionado->creadoPor?->name ?? '-' }} el {{ $requerimientoSeleccionado->created_at?->format('d/m/Y H:i') ?? '-' }}
                         </div>
                     </div>
 
-                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                    <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
                         <h5 class="font-semibold text-stone-700 dark:text-white">Respuesta</h5>
                         <textarea wire:model="respuesta_texto" rows="4"
                             @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
-                            class="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none disabled:opacity-60"></textarea>
-                        @error('respuesta_texto') <div class="text-red-500 text-xs mt-1">{{ $message }}</div> @enderror
+                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
+                        @error('respuesta_texto') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
 
                         @if ($requerimientoSeleccionado->estado === 'rechazado' && $requerimientoSeleccionado->comentario_validacion)
-                            <div class="rounded-lg border border-red-200 dark:border-red-800 p-3 space-y-2">
+                            <div class="space-y-2 rounded-lg border border-red-200 p-3 dark:border-red-800">
                                 <div class="text-sm font-medium text-red-700 dark:text-red-300">Respuesta rechazada</div>
-                                <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ $requerimientoSeleccionado->comentario_validacion }}</p>
+                                <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimientoSeleccionado->comentario_validacion }}</p>
                             </div>
                         @endif
 
-                        <div class="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-3">
-                            <div class="text-sm font-medium mb-2 text-stone-700 dark:text-white">Documentos de respuesta</div>
+                        <div class="rounded-lg border border-dashed border-gray-300 p-3 dark:border-gray-700">
+                            <div class="mb-2 text-sm font-medium text-stone-700 dark:text-white">Documentos de respuesta</div>
                             <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
                                 Adjunta documentos si aplica, aunque solo respondas con texto.
                             </p>
@@ -139,7 +160,7 @@
                         <div class="flex justify-end">
                             <button wire:click="guardarRespuesta"
                                 @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
-                                class="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700 text-sm disabled:opacity-60">
+                                class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700 disabled:opacity-60">
                                 Guardar respuesta
                             </button>
                         </div>

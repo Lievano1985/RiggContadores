@@ -108,5 +108,15 @@ public function requerimientosValidados()
     return $this->hasMany(SolicitudRequerimiento::class, 'validado_por_user_id');
 }
 
+public function solicitudNotificaciones()
+{
+    return $this->hasMany(SolicitudNotificacion::class);
+}
+
+public function solicitudHistorial()
+{
+    return $this->hasMany(SolicitudHistorial::class);
+}
+
 
 }

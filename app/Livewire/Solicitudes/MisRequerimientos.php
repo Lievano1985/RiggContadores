@@ -4,6 +4,8 @@ namespace App\Livewire\Solicitudes;
 
 use App\Livewire\Shared\HasPerPage;
 use App\Models\SolicitudRequerimiento;
+use App\Services\SolicitudHistorialService;
+use App\Services\SolicitudNotificacionService;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -94,6 +96,17 @@ class MisRequerimientos extends Component
             'validado_at' => null,
         ]);
 
+        SolicitudHistorialService::registrar(
+            $requerimiento->solicitud,
+            'requerimiento_respondido',
+            'Requerimiento respondido',
+            'Se envio respuesta al requerimiento "' . $requerimiento->titulo . '".',
+            auth()->id(),
+            $requerimiento
+        );
+
+        SolicitudNotificacionService::notificarRespuestaEnviada($requerimiento);
+
         $this->dispatch('requerimiento-actualizado');
         $this->cerrarSidebar();
         $this->dispatch('notify', message: 'Respuesta guardada correctamente.');
@@ -135,6 +148,7 @@ class MisRequerimientos extends Component
         $user = auth()->user();
 
         return SolicitudRequerimiento::query()
+            ->where('tipo', 'normal')
             ->when($user->cliente_id, function ($q) use ($user) {
                 $q->where('destinatario_tipo', 'cliente')
                     ->whereHas('solicitud', function ($solicitud) use ($user) {

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Solicitud extends Model
 {
@@ -74,6 +75,27 @@ class Solicitud extends Model
     public function requerimientos(): HasMany
     {
         return $this->hasMany(SolicitudRequerimiento::class, 'solicitud_id');
+    }
+
+    public function notificaciones(): HasMany
+    {
+        return $this->hasMany(SolicitudNotificacion::class, 'solicitud_id');
+    }
+
+    public function historial(): HasMany
+    {
+        return $this->hasMany(SolicitudHistorial::class, 'solicitud_id')->latest('created_at');
+    }
+
+    public function resultadoRequerimiento(): HasOne
+    {
+        return $this->hasOne(SolicitudRequerimiento::class, 'solicitud_id')
+            ->where('tipo', 'resultado');
+    }
+
+    public function getFechaVencimientoAttribute()
+    {
+        return $this->resultadoRequerimiento?->fecha_limite;
     }
 
     public function getObligacionEtiquetaAttribute(): string

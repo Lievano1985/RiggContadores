@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SolicitudRequerimiento extends Model
 {
@@ -15,6 +16,7 @@ class SolicitudRequerimiento extends Model
         'creado_por_user_id',
         'destinatario_tipo',
         'destinatario_user_id',
+        'tipo',
         'titulo',
         'descripcion',
         'estado',
@@ -63,6 +65,16 @@ class SolicitudRequerimiento extends Model
         return $this->morphMany(ArchivoAdjunto::class, 'archivoable');
     }
 
+    public function notificaciones(): HasMany
+    {
+        return $this->hasMany(SolicitudNotificacion::class, 'solicitud_requerimiento_id');
+    }
+
+    public function historial(): HasMany
+    {
+        return $this->hasMany(SolicitudHistorial::class, 'solicitud_requerimiento_id')->latest('created_at');
+    }
+
     public function getClienteAttribute()
     {
         return $this->solicitud?->cliente;
@@ -81,5 +93,10 @@ class SolicitudRequerimiento extends Model
     public function getEjercicioAttribute()
     {
         return $this->solicitud?->obligacionClienteContador?->ejercicio;
+    }
+
+    public function esResultado(): bool
+    {
+        return $this->tipo === 'resultado';
     }
 }

@@ -10,6 +10,8 @@ use App\Models\Solicitud;
 use App\Models\SolicitudRequerimiento;
 use App\Models\SolicitudTipo;
 use App\Models\User;
+use App\Services\SolicitudHistorialService;
+use App\Services\SolicitudNotificacionService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -30,6 +32,8 @@ class Index extends Component
     public ?int $solicitudEditandoId = null;
     public bool $confirmarCancelacion = false;
     public ?int $solicitudCancelarId = null;
+    public bool $confirmarCierre = false;
+    public ?int $solicitudCerrarId = null;
     public bool $detalleSidebarVisible = false;
     public ?int $solicitudDetalleId = null;
 
@@ -44,6 +48,7 @@ class Index extends Component
     public string $titulo_form = '';
     public string $descripcion_form = '';
     public string $prioridad_form = '';
+    public string $fecha_resultado_form = '';
     public bool $requerimientoFormVisible = false;
     public bool $editandoRequerimiento = false;
     public ?int $requerimientoEditandoId = null;
@@ -56,6 +61,7 @@ class Index extends Component
     public string $requerimiento_titulo = '';
     public string $requerimiento_descripcion = '';
     public string $requerimiento_fecha_limite = '';
+    public array $respuestaResultado = [];
 
     public array $clientesDisponibles = [];
     public array $tiposDisponibles = [];
@@ -65,6 +71,8 @@ class Index extends Component
     protected $listeners = [
         'adjuntos-actualizados' => '$refresh',
         'requerimiento-actualizado' => '$refresh',
+        'archivos-ok-resultado' => 'continuarGuardadoResultado',
+        'archivos-error-resultado' => 'cancelarGuardadoResultado',
     ];
 
     public function mount(): void
@@ -101,6 +109,10 @@ class Index extends Component
 
     public function abrirSidebarCrear(): void
     {
+        if (!$this->usuarioPuedeCrearSolicitud()) {
+            return;
+        }
+
         $this->resetFormulario();
         $this->editandoSolicitud = false;
         $this->solicitudEditandoId = null;
@@ -120,14 +132,12 @@ class Index extends Component
         $user = auth()->user();
 
         $solicitud = Solicitud::query()
-            ->with('cliente')
+            ->with(['cliente', 'resultadoRequerimiento'])
             ->whereKey($solicitudId)
-            ->whereHas('cliente', function ($q) use ($user) {
-                $q->where('despacho_id', $user->despacho_id);
-            })
+            ->where($this->scopeSolicitudesUsuario($user))
             ->first();
 
-        if (!$solicitud) {
+        if (!$solicitud || !$this->usuarioPuedeEditarSolicitud($solicitud)) {
             return;
         }
 
@@ -141,6 +151,7 @@ class Index extends Component
         $this->titulo_form = $solicitud->titulo;
         $this->descripcion_form = $solicitud->descripcion ?? '';
         $this->prioridad_form = $solicitud->prioridad ?? '';
+        $this->fecha_resultado_form = $solicitud->resultadoRequerimiento?->fecha_limite?->format('Y-m-d') ?? '';
 
         if ($solicitud->obligacion_cliente_contador_id && $solicitud->obligacionClienteContador) {
             $this->relacion_obligacion_form = 'con_relacion';
@@ -159,9 +170,7 @@ class Index extends Component
 
         $solicitud = Solicitud::query()
             ->whereKey($solicitudId)
-            ->whereHas('cliente', function ($q) use ($user) {
-                $q->where('despacho_id', $user->despacho_id);
-            })
+            ->where($this->scopeSolicitudesUsuario($user))
             ->first();
 
         if (!$solicitud) {
@@ -169,6 +178,12 @@ class Index extends Component
         }
 
         $this->solicitudDetalleId = $solicitud->id;
+        $this->respuestaResultado = SolicitudRequerimiento::query()
+            ->where('solicitud_id', $solicitud->id)
+            ->where('tipo', 'resultado')
+            ->pluck('respuesta_texto', 'id')
+            ->filter(fn ($valor) => $valor !== null)
+            ->toArray();
         $this->detalleSidebarVisible = true;
     }
 
@@ -177,6 +192,7 @@ class Index extends Component
         $this->detalleSidebarVisible = false;
         $this->solicitudDetalleId = null;
         $this->resetFormularioRequerimiento();
+        $this->respuestaResultado = [];
     }
 
     public function confirmarCancelacionSolicitud(int $solicitudId): void
@@ -186,12 +202,10 @@ class Index extends Component
         $solicitud = Solicitud::query()
             ->whereKey($solicitudId)
             ->whereNotIn('estado', ['cerrada', 'cancelada'])
-            ->whereHas('cliente', function ($q) use ($user) {
-                $q->where('despacho_id', $user->despacho_id);
-            })
+            ->where($this->scopeSolicitudesUsuario($user))
             ->first();
 
-        if (!$solicitud) {
+        if (!$solicitud || !$this->usuarioPuedeCancelarSolicitud($solicitud)) {
             return;
         }
 
@@ -206,12 +220,10 @@ class Index extends Component
         $solicitud = Solicitud::query()
             ->whereKey($this->solicitudCancelarId)
             ->whereNotIn('estado', ['cerrada', 'cancelada'])
-            ->whereHas('cliente', function ($q) use ($user) {
-                $q->where('despacho_id', $user->despacho_id);
-            })
+            ->where($this->scopeSolicitudesUsuario($user))
             ->first();
 
-        if (!$solicitud) {
+        if (!$solicitud || !$this->usuarioPuedeCancelarSolicitud($solicitud)) {
             $this->confirmarCancelacion = false;
             $this->solicitudCancelarId = null;
             return;
@@ -224,6 +236,14 @@ class Index extends Component
             'cerrada_at' => now(),
         ]);
 
+        SolicitudHistorialService::registrar(
+            $solicitud,
+            'solicitud_cancelada',
+            'Solicitud cancelada',
+            $solicitud->comentario_cierre ?: 'Solicitud cancelada desde bandeja.',
+            $user->id
+        );
+
         if ($this->solicitudDetalleId === $solicitud->id) {
             $this->solicitudDetalleId = $solicitud->id;
         }
@@ -233,9 +253,91 @@ class Index extends Component
         $this->dispatch('notify', message: 'Solicitud cancelada correctamente.');
     }
 
+    public function confirmarCierreSolicitud(int $solicitudId): void
+    {
+        $user = auth()->user();
+
+        $solicitud = Solicitud::query()
+            ->with('requerimientos')
+            ->whereKey($solicitudId)
+            ->whereNotIn('estado', ['cerrada', 'cancelada'])
+            ->where($this->scopeSolicitudesUsuario($user))
+            ->first();
+
+        if (!$solicitud) {
+            return;
+        }
+
+        if (!$this->usuarioPuedeCerrarSolicitud($solicitud)) {
+            return;
+        }
+
+        if ($this->solicitudTieneRequerimientosPendientes($solicitud)) {
+            $this->dispatch('notify', message: 'No puedes cerrar la solicitud mientras existan requerimientos pendientes.');
+            return;
+        }
+
+        $this->solicitudCerrarId = $solicitud->id;
+        $this->confirmarCierre = true;
+    }
+
+    public function cerrarSolicitudConfirmada(): void
+    {
+        $user = auth()->user();
+
+        $solicitud = Solicitud::query()
+            ->with('requerimientos')
+            ->whereKey($this->solicitudCerrarId)
+            ->whereNotIn('estado', ['cerrada', 'cancelada'])
+            ->where($this->scopeSolicitudesUsuario($user))
+            ->first();
+
+        if (!$solicitud) {
+            $this->confirmarCierre = false;
+            $this->solicitudCerrarId = null;
+            return;
+        }
+
+        if (!$this->usuarioPuedeCerrarSolicitud($solicitud)) {
+            $this->confirmarCierre = false;
+            $this->solicitudCerrarId = null;
+            return;
+        }
+
+        if ($this->solicitudTieneRequerimientosPendientes($solicitud)) {
+            $this->confirmarCierre = false;
+            $this->solicitudCerrarId = null;
+            $this->dispatch('notify', message: 'No puedes cerrar la solicitud mientras existan requerimientos pendientes.');
+            return;
+        }
+
+        $solicitud->update([
+            'estado' => 'cerrada',
+            'cerrado_por_user_id' => $user->id,
+            'comentario_cierre' => $solicitud->comentario_cierre ?: 'Solicitud cerrada desde bandeja.',
+            'cerrada_at' => now(),
+        ]);
+
+        SolicitudHistorialService::registrar(
+            $solicitud,
+            'solicitud_cerrada',
+            'Solicitud cerrada',
+            $solicitud->comentario_cierre ?: 'Solicitud cerrada desde bandeja.',
+            $user->id
+        );
+
+        SolicitudNotificacionService::notificarSolicitudCerrada($solicitud);
+
+        $this->confirmarCierre = false;
+        $this->solicitudCerrarId = null;
+        $this->dispatch('notify', message: 'Solicitud cerrada correctamente.');
+    }
+
     public function abrirFormularioRequerimiento(): void
     {
-        if (!$this->solicitudDetalleId) {
+        $solicitud = $this->solicitudDetalle();
+
+        if (!$solicitud || !$this->usuarioPuedeOperarRequerimientos($solicitud)) {
             return;
         }
 
@@ -264,7 +366,7 @@ class Index extends Component
     {
         $solicitud = $this->solicitudDetalle();
 
-        if (!$solicitud) {
+        if (!$solicitud || !$this->usuarioPuedeOperarRequerimientos($solicitud)) {
             return;
         }
 
@@ -297,6 +399,7 @@ class Index extends Component
             'solicitud_id' => $solicitud->id,
             'destinatario_tipo' => $this->requerimiento_destinatario_tipo,
             'destinatario_user_id' => $destinatarioUserId,
+            'tipo' => 'normal',
             'titulo' => $this->requerimiento_titulo,
             'descripcion' => $this->requerimiento_descripcion ?: null,
             'fecha_limite' => $this->requerimiento_fecha_limite ?: null,
@@ -311,11 +414,28 @@ class Index extends Component
             }
 
             $requerimiento->update($payload);
+            SolicitudHistorialService::registrar(
+                $solicitud,
+                'requerimiento_actualizado',
+                'Requerimiento actualizado',
+                'Se actualizo el requerimiento "' . $requerimiento->titulo . '".',
+                $user->id,
+                $requerimiento
+            );
             $mensaje = 'Requerimiento actualizado correctamente.';
         } else {
             $payload['creado_por_user_id'] = $user->id;
             $payload['estado'] = 'abierto';
-            SolicitudRequerimiento::create($payload);
+            $requerimiento = SolicitudRequerimiento::create($payload);
+            SolicitudHistorialService::registrar(
+                $solicitud,
+                'requerimiento_creado',
+                'Requerimiento creado',
+                'Se creo el requerimiento "' . $requerimiento->titulo . '".',
+                $user->id,
+                $requerimiento
+            );
+            SolicitudNotificacionService::notificarRequerimientoCreado($requerimiento);
             $mensaje = 'Requerimiento creado correctamente.';
         }
 
@@ -328,7 +448,7 @@ class Index extends Component
     {
         $solicitud = $this->solicitudDetalle();
 
-        if (!$solicitud) {
+        if (!$solicitud || !$this->usuarioPuedeOperarRequerimientos($solicitud)) {
             return;
         }
 
@@ -354,7 +474,7 @@ class Index extends Component
     {
         $solicitud = $this->solicitudDetalle();
 
-        if (!$solicitud || !$solicitud->requerimientos()->whereKey($requerimientoId)->exists()) {
+        if (!$solicitud || !$this->usuarioPuedeOperarRequerimientos($solicitud) || !$solicitud->requerimientos()->whereKey($requerimientoId)->exists()) {
             return;
         }
 
@@ -366,7 +486,7 @@ class Index extends Component
     {
         $solicitud = $this->solicitudDetalle();
 
-        if (!$solicitud) {
+        if (!$solicitud || !$this->usuarioPuedeOperarRequerimientos($solicitud)) {
             $this->confirmarEliminarRequerimiento = false;
             $this->requerimientoEliminarId = null;
             return;
@@ -381,6 +501,15 @@ class Index extends Component
             $this->requerimientoEliminarId = null;
             return;
         }
+
+        SolicitudHistorialService::registrar(
+            $solicitud,
+            'requerimiento_eliminado',
+            'Requerimiento eliminado',
+            'Se elimino el requerimiento "' . $requerimiento->titulo . '".',
+            auth()->id(),
+            $requerimiento
+        );
 
         foreach ($requerimiento->archivos as $archivo) {
             if ($archivo->archivo) {
@@ -435,6 +564,23 @@ class Index extends Component
             'comentario_validacion' => null,
         ]);
 
+        if ($requerimiento->tipo === 'resultado') {
+            $requerimiento->solicitud->update([
+                'estado' => 'resuelto',
+            ]);
+        }
+
+        SolicitudHistorialService::registrar(
+            $requerimiento->solicitud,
+            $requerimiento->tipo === 'resultado' ? 'resultado_validado' : 'requerimiento_validado',
+            $requerimiento->tipo === 'resultado' ? 'Resultado validado' : 'Respuesta validada',
+            $requerimiento->tipo === 'resultado'
+                ? 'Se valido el resultado final de la solicitud.'
+                : 'Se valido la respuesta del requerimiento "' . $requerimiento->titulo . '".',
+            auth()->id(),
+            $requerimiento
+        );
+
         $this->dispatch('requerimiento-actualizado');
         $this->dispatch('notify', message: 'Respuesta validada correctamente.');
     }
@@ -461,10 +607,88 @@ class Index extends Component
             'comentario_validacion' => $comentario,
         ]);
 
+        if ($requerimiento->tipo === 'resultado') {
+            $requerimiento->solicitud->update([
+                'estado' => 'en_proceso',
+            ]);
+        }
+
+        SolicitudHistorialService::registrar(
+            $requerimiento->solicitud,
+            $requerimiento->tipo === 'resultado' ? 'resultado_rechazado' : 'requerimiento_rechazado',
+            $requerimiento->tipo === 'resultado' ? 'Resultado rechazado' : 'Respuesta rechazada',
+            $comentario,
+            auth()->id(),
+            $requerimiento
+        );
+
+        SolicitudNotificacionService::notificarRechazo($requerimiento);
+
         $this->mostrarRechazoRequerimiento[$requerimientoId] = false;
         $this->comentarioRechazoRequerimiento[$requerimientoId] = $comentario;
         $this->dispatch('requerimiento-actualizado');
         $this->dispatch('notify', message: 'Respuesta rechazada correctamente.');
+    }
+
+    public function guardarRespuestaResultado(int $requerimientoId): void
+    {
+        $requerimiento = $this->requerimientoDesdeDetalle($requerimientoId);
+
+        if (!$requerimiento || $requerimiento->tipo !== 'resultado' || !$this->usuarioPuedeResponderResultado($requerimiento)) {
+            return;
+        }
+
+        $this->validate([
+            "respuestaResultado.$requerimientoId" => ['required', 'string'],
+        ]);
+
+        $this->dispatch('guardar-archivos-adjuntos', origen: 'resultado');
+    }
+
+    public function continuarGuardadoResultado(): void
+    {
+        $requerimiento = $this->requerimientoResultadoDesdeDetalle();
+
+        if (!$requerimiento || !$this->usuarioPuedeResponderResultado($requerimiento)) {
+            return;
+        }
+
+        $this->validate([
+            "respuestaResultado.$requerimiento->id" => ['required', 'string'],
+        ]);
+
+        $requerimiento->update([
+            'respuesta_texto' => $this->respuestaResultado[$requerimiento->id],
+            'respondido_por_user_id' => auth()->id(),
+            'respondido_at' => now(),
+            'estado' => 'respondido',
+            'comentario_validacion' => null,
+            'validado_por_user_id' => null,
+            'validado_at' => null,
+        ]);
+
+        $requerimiento->solicitud->update([
+            'estado' => 'pendiente_cliente',
+        ]);
+
+        SolicitudHistorialService::registrar(
+            $requerimiento->solicitud,
+            'resultado_entregado',
+            'Resultado entregado',
+            'El contador responsable entrego el resultado para revision.',
+            auth()->id(),
+            $requerimiento
+        );
+
+        SolicitudNotificacionService::notificarRespuestaEnviada($requerimiento);
+
+        $this->dispatch('requerimiento-actualizado');
+        $this->dispatch('notify', message: 'Resultado guardado correctamente.');
+    }
+
+    public function cancelarGuardadoResultado(): void
+    {
+        $this->dispatch('notify', message: 'Corrige los archivos antes de continuar.');
     }
 
     public function updatedClienteIdForm($value): void
@@ -530,6 +754,10 @@ class Index extends Component
 
     public function guardarSolicitud(): void
     {
+        if (!$this->usuarioPuedeCrearSolicitud()) {
+            return;
+        }
+
         $this->validate([
             'cliente_id_form' => ['required', 'integer'],
             'relacion_obligacion_form' => ['required', Rule::in(['sin_relacion', 'con_relacion'])],
@@ -542,6 +770,7 @@ class Index extends Component
             'titulo_form' => ['required', 'string', 'max:255'],
             'descripcion_form' => ['nullable', 'string'],
             'prioridad_form' => ['nullable', Rule::in(['baja', 'media', 'alta', 'urgente'])],
+            'fecha_resultado_form' => ['nullable', 'date'],
         ]);
 
         $user = auth()->user();
@@ -614,7 +843,6 @@ class Index extends Component
                 'titulo_sugerido' => $tipo->titulo_sugerido,
                 'descripcion_sugerida' => $tipo->descripcion_sugerida,
                 'prioridad_default' => $tipo->prioridad_default,
-                'documentos_sugeridos' => $tipo->documentos_sugeridos,
                 'configuracion_formulario' => $tipo->configuracion_formulario,
             ] : null,
             'estado' => 'abierta',
@@ -625,9 +853,7 @@ class Index extends Component
         if ($this->editandoSolicitud && $this->solicitudEditandoId) {
             $solicitud = Solicitud::query()
                 ->whereKey($this->solicitudEditandoId)
-                ->whereHas('cliente', function ($q) use ($user) {
-                    $q->where('despacho_id', $user->despacho_id);
-                })
+                ->where($this->scopeSolicitudesUsuario($user))
                 ->first();
 
             if (!$solicitud) {
@@ -635,10 +861,72 @@ class Index extends Component
             }
 
             $solicitud->update($payload);
+
+            $resultadoRequerimiento = $solicitud->resultadoRequerimiento()->first();
+
+            if ($resultadoRequerimiento) {
+                $resultadoRequerimiento->update([
+                    'destinatario_user_id' => $cliente->responsable_solicitudes_id,
+                    'fecha_limite' => $this->fecha_resultado_form ?: null,
+                ]);
+            } else {
+                SolicitudRequerimiento::create([
+                    'solicitud_id' => $solicitud->id,
+                    'creado_por_user_id' => $solicitud->creado_por_user_id ?? $user->id,
+                    'destinatario_tipo' => 'interno',
+                    'destinatario_user_id' => $cliente->responsable_solicitudes_id,
+                    'tipo' => 'resultado',
+                    'titulo' => 'Resultado esperado',
+                    'descripcion' => 'Entrega aqui el resultado final esperado de la solicitud para su validacion y cierre.',
+                    'estado' => 'abierto',
+                    'fecha_limite' => $this->fecha_resultado_form ?: null,
+                ]);
+            }
+
+            SolicitudHistorialService::registrar(
+                $solicitud,
+                'solicitud_actualizada',
+                'Solicitud actualizada',
+                'Se actualizaron los datos generales de la solicitud.',
+                $user->id
+            );
+
             $mensaje = 'Solicitud actualizada correctamente.';
         } else {
             $payload['creado_por_user_id'] = $user->id;
-            Solicitud::create($payload);
+            $solicitud = Solicitud::create($payload);
+
+            $resultadoRequerimiento = SolicitudRequerimiento::create([
+                'solicitud_id' => $solicitud->id,
+                'creado_por_user_id' => $user->id,
+                'destinatario_tipo' => 'interno',
+                'destinatario_user_id' => $cliente->responsable_solicitudes_id,
+                'tipo' => 'resultado',
+                'titulo' => 'Resultado esperado',
+                'descripcion' => 'Entrega aqui el resultado final esperado de la solicitud para su validacion y cierre.',
+                'estado' => 'abierto',
+                'fecha_limite' => $this->fecha_resultado_form ?: null,
+            ]);
+
+            SolicitudHistorialService::registrar(
+                $solicitud,
+                'solicitud_creada',
+                'Solicitud creada',
+                'Se creo la solicitud "' . $solicitud->titulo . '".',
+                $user->id
+            );
+
+            SolicitudHistorialService::registrar(
+                $solicitud,
+                'resultado_generado',
+                'Resultado esperado generado',
+                'Se genero automaticamente el requerimiento de resultado esperado.',
+                $user->id,
+                $resultadoRequerimiento
+            );
+
+            SolicitudNotificacionService::notificarSolicitudCreada($solicitud);
+
             $mensaje = 'Solicitud creada correctamente.';
         }
 
@@ -652,10 +940,8 @@ class Index extends Component
         $user = auth()->user();
 
         $query = Solicitud::query()
-            ->with(['cliente', 'responsable', 'obligacion', 'obligacionClienteContador.obligacion'])
-            ->whereHas('cliente', function ($q) use ($user) {
-                $q->where('despacho_id', $user->despacho_id);
-            })
+            ->with(['cliente', 'responsable', 'creadoPor', 'obligacion', 'obligacionClienteContador.obligacion', 'resultadoRequerimiento'])
+            ->where($this->scopeSolicitudesUsuario($user))
             ->when($this->vistaSolicitudes === 'asignadas', fn ($q) => $q->where('responsable_user_id', $user->id))
             ->when($this->buscar !== '', function ($q) {
                 $buscar = trim($this->buscar);
@@ -703,6 +989,8 @@ class Index extends Component
             'solicitudDetalle' => $this->solicitudDetalle(),
             'usuariosInternosRequerimiento' => $this->usuariosInternosRequerimiento(),
             'tituloModulo' => $this->vistaSolicitudes === 'asignadas' ? 'Solicitudes asignadas' : 'Solicitudes',
+            'puedeCrearSolicitud' => $this->usuarioPuedeCrearSolicitud(),
+            'usuarioEsAdminOSupervisor' => $this->usuarioEsAdminOSupervisor(),
         ]);
     }
 
@@ -786,6 +1074,7 @@ class Index extends Component
         $this->titulo_form = '';
         $this->descripcion_form = '';
         $this->prioridad_form = '';
+        $this->fecha_resultado_form = '';
         $this->obligacionesDisponibles = [];
     }
 
@@ -826,15 +1115,16 @@ class Index extends Component
                 'tipoSolicitud',
                 'obligacion',
                 'obligacionClienteContador.obligacion',
+                'resultadoRequerimiento',
+                'historial.user',
+                'historial.requerimiento',
                 'requerimientos.creadoPor',
                 'requerimientos.destinatario',
                 'requerimientos.respondidoPor',
                 'requerimientos.archivos',
             ])
             ->whereKey($this->solicitudDetalleId)
-            ->whereHas('cliente', function ($q) use ($user) {
-                $q->where('despacho_id', $user->despacho_id);
-            })
+            ->where($this->scopeSolicitudesUsuario($user))
             ->first();
     }
 
@@ -885,6 +1175,94 @@ class Index extends Component
 
     private function usuarioPuedeValidarRequerimiento(SolicitudRequerimiento $requerimiento): bool
     {
-        return (int) $requerimiento->solicitud->responsable_user_id === (int) auth()->id();
+        if ($requerimiento->tipo === 'resultado') {
+            return (int) $requerimiento->solicitud->creado_por_user_id === (int) auth()->id();
+        }
+
+        return (int) $requerimiento->creado_por_user_id === (int) auth()->id();
+    }
+
+    private function solicitudTieneRequerimientosPendientes(Solicitud $solicitud): bool
+    {
+        return $solicitud->requerimientos->contains(function ($requerimiento) {
+            return !in_array($requerimiento->estado, ['validado', 'cancelado'], true);
+        });
+    }
+
+    private function usuarioPuedeCrearSolicitud(): bool
+    {
+        return auth()->check();
+    }
+
+    private function usuarioEsAdminOSupervisor(): bool
+    {
+        return auth()->user()->hasAnyRole(['admin_despacho', 'supervisor']);
+    }
+
+    private function usuarioPuedeEditarSolicitud(Solicitud $solicitud): bool
+    {
+        return (int) $solicitud->creado_por_user_id === (int) auth()->id();
+    }
+
+    private function usuarioPuedeCancelarSolicitud(Solicitud $solicitud): bool
+    {
+        return $this->usuarioEsAdminOSupervisor()
+            || (int) $solicitud->creado_por_user_id === (int) auth()->id();
+    }
+
+    private function usuarioPuedeCerrarSolicitud(Solicitud $solicitud): bool
+    {
+        if ($this->usuarioEsAdminOSupervisor()) {
+            return true;
+        }
+
+        return (int) $solicitud->creado_por_user_id === (int) auth()->id();
+    }
+
+    private function usuarioPuedeOperarRequerimientos(Solicitud $solicitud): bool
+    {
+        return (int) $solicitud->responsable_user_id === (int) auth()->id();
+    }
+
+    private function usuarioPuedeResponderResultado(SolicitudRequerimiento $requerimiento): bool
+    {
+        return $requerimiento->tipo === 'resultado'
+            && (int) $requerimiento->destinatario_user_id === (int) auth()->id()
+            && !in_array($requerimiento->estado, ['validado', 'cancelado'], true);
+    }
+
+    private function requerimientoResultadoDesdeDetalle(): ?SolicitudRequerimiento
+    {
+        $solicitud = $this->solicitudDetalle();
+
+        if (!$solicitud) {
+            return null;
+        }
+
+        return $solicitud->requerimientos->firstWhere('tipo', 'resultado');
+    }
+
+    private function scopeSolicitudesUsuario(User $user): \Closure
+    {
+        return function ($query) use ($user) {
+            $query->whereHas('cliente', function ($cliente) use ($user) {
+                $cliente->where('despacho_id', $user->despacho_id);
+
+                if ($user->hasRole('cliente')) {
+                    $cliente->where('id', $user->cliente_id);
+                }
+            });
+
+            if ($user->hasRole('contador')) {
+                $query->where(function ($sub) use ($user) {
+                    $sub->where('responsable_user_id', $user->id)
+                        ->orWhere('creado_por_user_id', $user->id);
+                });
+            }
+
+            if ($user->hasRole('cliente')) {
+                $query->where('creado_por_user_id', $user->id);
+            }
+        };
     }
 }

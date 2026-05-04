@@ -32,7 +32,7 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
             $table->json('datos_formulario')->nullable();
             $table->json('plantilla_snapshot')->nullable();
-            $table->enum('estado', ['abierta', 'en_proceso', 'pendiente_cliente', 'cerrada', 'cancelada'])
+            $table->enum('estado', ['abierta', 'en_proceso', 'pendiente_cliente', 'resuelto', 'cerrada', 'cancelada'])
                 ->default('abierta');
             $table->string('prioridad')->nullable();
             $table->foreignId('responsable_user_id')

@@ -22,6 +22,8 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('users')
                 ->nullOnDelete();
+            $table->enum('tipo', ['normal', 'resultado'])
+                ->default('normal');
             $table->string('titulo');
             $table->text('descripcion')->nullable();
             $table->enum('estado', ['abierto', 'respondido', 'validado', 'rechazado', 'cancelado'])
@@ -42,6 +44,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['solicitud_id', 'estado']);
+            $table->index(['solicitud_id', 'tipo'], 'sol_req_tipo_idx');
             $table->index(['destinatario_tipo', 'destinatario_user_id'], 'sol_req_dest_idx');
             $table->index(['fecha_limite']);
         });
