@@ -14,17 +14,18 @@ use App\Services\SolicitudHistorialService;
 use App\Services\SolicitudNotificacionService;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 class Index extends Component
 {
-    use WithPagination, HasPerPage;
+    use WithPagination, HasPerPage, WithFileUploads;
 
     public string $vistaSolicitudes = 'todas';
     public string $sortField = 'created_at';
     public string $sortDirection = 'desc';
     public string $buscar = '';
-    public string $estado = '';
+    public string $estado = 'activos';
     public string $origen = '';
     public string $responsable = '';
     public bool $sidebarVisible = false;
@@ -62,6 +63,7 @@ class Index extends Component
     public string $requerimiento_descripcion = '';
     public string $requerimiento_fecha_limite = '';
     public array $respuestaResultado = [];
+    public array $formularioResultado = [];
 
     public array $clientesDisponibles = [];
     public array $tiposDisponibles = [];
@@ -184,6 +186,7 @@ class Index extends Component
             ->pluck('respuesta_texto', 'id')
             ->filter(fn ($valor) => $valor !== null)
             ->toArray();
+        $this->formularioResultado = $this->mapearFormularioResultadoSolicitud($solicitud);
         $this->detalleSidebarVisible = true;
     }
 
@@ -193,6 +196,7 @@ class Index extends Component
         $this->solicitudDetalleId = null;
         $this->resetFormularioRequerimiento();
         $this->respuestaResultado = [];
+        $this->formularioResultado = [];
     }
 
     public function confirmarCancelacionSolicitud(int $solicitudId): void
@@ -345,6 +349,7 @@ class Index extends Component
         $this->editandoRequerimiento = false;
         $this->requerimientoEditandoId = null;
         $this->requerimientoFormVisible = true;
+        $this->dispatch('enfocar-formulario-requerimiento');
     }
 
     public function cerrarFormularioRequerimiento(): void
@@ -468,6 +473,7 @@ class Index extends Component
         $this->requerimiento_descripcion = $requerimiento->descripcion ?? '';
         $this->requerimiento_fecha_limite = $requerimiento->fecha_limite?->format('Y-m-d') ?? '';
         $this->requerimientoFormVisible = true;
+        $this->dispatch('enfocar-formulario-requerimiento');
     }
 
     public function confirmarEliminarRequerimiento(int $requerimientoId): void
@@ -568,6 +574,30 @@ class Index extends Component
             $requerimiento->solicitud->update([
                 'estado' => 'resuelto',
             ]);
+            if ($this->resultadoUsaFormulario($requerimiento)) {
+                $requerimiento->solicitud->update([
+                    'estado_formulario' => 'validado',
+                ]);
+            }
+
+            $this->cerrarSolicitudPorRequerimientoPrincipalValidado(
+                $requerimiento->solicitud,
+                $requerimiento,
+                'Solicitud cerrada al validar el resultado final.'
+            );
+        } elseif ($requerimiento->esRequerimientoFormulario()) {
+            $requerimiento->solicitud->update([
+                'estado_formulario' => 'validado',
+                'estado' => $requerimiento->solicitud->usaFormularioComoCierre() ? 'resuelto' : $requerimiento->solicitud->estado,
+            ]);
+
+            if ($requerimiento->solicitud->usaFormularioComoCierre()) {
+                $this->cerrarSolicitudPorRequerimientoPrincipalValidado(
+                    $requerimiento->solicitud,
+                    $requerimiento,
+                    'Solicitud cerrada al validar el formulario definido.'
+                );
+            }
         }
 
         SolicitudHistorialService::registrar(
@@ -611,6 +641,16 @@ class Index extends Component
             $requerimiento->solicitud->update([
                 'estado' => 'en_proceso',
             ]);
+            if ($this->resultadoUsaFormulario($requerimiento)) {
+                $requerimiento->solicitud->update([
+                    'estado_formulario' => 'pendiente',
+                ]);
+            }
+        } elseif ($requerimiento->esRequerimientoFormulario()) {
+            $requerimiento->solicitud->update([
+                'estado_formulario' => 'pendiente',
+                'estado' => 'en_proceso',
+            ]);
         }
 
         SolicitudHistorialService::registrar(
@@ -642,6 +682,10 @@ class Index extends Component
             "respuestaResultado.$requerimientoId" => ['required', 'string'],
         ]);
 
+        if ($this->resultadoUsaFormulario($requerimiento)) {
+            $this->validarFormularioResultado($requerimiento->solicitud);
+        }
+
         $this->dispatch('guardar-archivos-adjuntos', origen: 'resultado');
     }
 
@@ -656,6 +700,22 @@ class Index extends Component
         $this->validate([
             "respuestaResultado.$requerimiento->id" => ['required', 'string'],
         ]);
+
+        if ($this->resultadoUsaFormulario($requerimiento)) {
+            $this->validarFormularioResultado($requerimiento->solicitud);
+
+            $datosFormulario = $this->normalizarFormularioResultado($requerimiento->solicitud);
+            $archivosFormulario = $this->guardarArchivosFormularioResultado($requerimiento->solicitud);
+
+            if (!empty($archivosFormulario)) {
+                $datosFormulario = array_replace($datosFormulario, $archivosFormulario);
+            }
+
+            $requerimiento->solicitud->update([
+                'datos_formulario' => $datosFormulario,
+                'estado_formulario' => 'respondido',
+            ]);
+        }
 
         $requerimiento->update([
             'respuesta_texto' => $this->respuestaResultado[$requerimiento->id],
@@ -726,6 +786,17 @@ class Index extends Component
         $this->cargarObligacionesPeriodo($this->cliente_id_form, $this->periodo_anio_form, $value ? (int) $value : null);
     }
 
+    public function updatedOrigenForm(string $value): void
+    {
+        if ($value === 'cliente' && !$this->usuarioPuedeCrearSolicitudParaCliente()) {
+            $this->origen_form = 'despacho';
+            return;
+        }
+
+        $this->cargarOpcionesFormulario();
+        $this->cargarObligacionesPeriodo($this->cliente_id_form, $this->periodo_anio_form, $this->periodo_mes_form);
+    }
+
     public function updatedModoSolicitudForm(string $value): void
     {
         if ($value === 'general') {
@@ -784,6 +855,18 @@ class Index extends Component
             return;
         }
 
+        if ($this->origen_form === 'cliente') {
+            if (!$this->usuarioPuedeCrearSolicitudParaCliente()) {
+                $this->addError('origen_form', 'Solo el usuario encargado del cliente puede crear solicitudes dirigidas al cliente.');
+                return;
+            }
+
+            if ((int) $cliente->responsable_solicitudes_id !== (int) $user->id) {
+                $this->addError('cliente_id_form', 'Solo puedes crear solicitudes dirigidas al cliente para tus clientes asignados.');
+                return;
+            }
+        }
+
         $obligacionRelacionada = null;
         if ($this->relacion_obligacion_form === 'con_relacion') {
             if (!$this->periodo_anio_form || !$this->periodo_mes_form) {
@@ -837,6 +920,10 @@ class Index extends Component
             'titulo' => $this->titulo_form,
             'descripcion' => $this->descripcion_form ?: null,
             'datos_formulario' => null,
+            'estado_formulario' => $this->resolverEstadoFormularioInicial(
+                $this->modo_solicitud_form,
+                $this->origen_form
+            ),
             'plantilla_snapshot' => $tipo ? [
                 'tipo_id' => $tipo->id,
                 'nombre' => $tipo->nombre,
@@ -846,7 +933,7 @@ class Index extends Component
                 'configuracion_formulario' => $tipo->configuracion_formulario,
             ] : null,
             'estado' => 'abierta',
-            'prioridad' => $this->prioridad_form ?: null,
+            'prioridad' => $this->prioridadResolvida($tipo?->prioridad_default),
             'responsable_user_id' => $cliente->responsable_solicitudes_id,
         ];
 
@@ -860,28 +947,22 @@ class Index extends Component
                 return;
             }
 
+            if ($this->modo_solicitud_form === 'definida') {
+                $payload['datos_formulario'] = $solicitud->datos_formulario;
+            }
+
+            if ($this->modo_solicitud_form === 'general') {
+                $payload['datos_formulario'] = null;
+                $payload['estado_formulario'] = 'no_aplica';
+            } elseif (!empty($solicitud->datos_formulario) && in_array($solicitud->estado_formulario, ['respondido', 'validado'], true)) {
+                $payload['estado_formulario'] = $solicitud->estado_formulario;
+            }
+
             $solicitud->update($payload);
 
-            $resultadoRequerimiento = $solicitud->resultadoRequerimiento()->first();
+            $this->sincronizarRequerimientoResultado($solicitud, $user, $cliente->responsable_solicitudes_id);
 
-            if ($resultadoRequerimiento) {
-                $resultadoRequerimiento->update([
-                    'destinatario_user_id' => $cliente->responsable_solicitudes_id,
-                    'fecha_limite' => $this->fecha_resultado_form ?: null,
-                ]);
-            } else {
-                SolicitudRequerimiento::create([
-                    'solicitud_id' => $solicitud->id,
-                    'creado_por_user_id' => $solicitud->creado_por_user_id ?? $user->id,
-                    'destinatario_tipo' => 'interno',
-                    'destinatario_user_id' => $cliente->responsable_solicitudes_id,
-                    'tipo' => 'resultado',
-                    'titulo' => 'Resultado esperado',
-                    'descripcion' => 'Entrega aqui el resultado final esperado de la solicitud para su validacion y cierre.',
-                    'estado' => 'abierto',
-                    'fecha_limite' => $this->fecha_resultado_form ?: null,
-                ]);
-            }
+            $this->asegurarRequerimientoFormulario($solicitud, $user, $tipo);
 
             SolicitudHistorialService::registrar(
                 $solicitud,
@@ -896,17 +977,7 @@ class Index extends Component
             $payload['creado_por_user_id'] = $user->id;
             $solicitud = Solicitud::create($payload);
 
-            $resultadoRequerimiento = SolicitudRequerimiento::create([
-                'solicitud_id' => $solicitud->id,
-                'creado_por_user_id' => $user->id,
-                'destinatario_tipo' => 'interno',
-                'destinatario_user_id' => $cliente->responsable_solicitudes_id,
-                'tipo' => 'resultado',
-                'titulo' => 'Resultado esperado',
-                'descripcion' => 'Entrega aqui el resultado final esperado de la solicitud para su validacion y cierre.',
-                'estado' => 'abierto',
-                'fecha_limite' => $this->fecha_resultado_form ?: null,
-            ]);
+            $resultadoRequerimiento = $this->sincronizarRequerimientoResultado($solicitud, $user, $cliente->responsable_solicitudes_id);
 
             SolicitudHistorialService::registrar(
                 $solicitud,
@@ -916,14 +987,20 @@ class Index extends Component
                 $user->id
             );
 
-            SolicitudHistorialService::registrar(
-                $solicitud,
-                'resultado_generado',
-                'Resultado esperado generado',
-                'Se genero automaticamente el requerimiento de resultado esperado.',
-                $user->id,
-                $resultadoRequerimiento
-            );
+            if ($resultadoRequerimiento) {
+                SolicitudHistorialService::registrar(
+                    $solicitud,
+                    'resultado_generado',
+                    'Resultado esperado generado',
+                    'Se genero automaticamente el requerimiento de resultado esperado.',
+                    $user->id,
+                    $resultadoRequerimiento
+                );
+
+                SolicitudNotificacionService::notificarRequerimientoCreado($resultadoRequerimiento);
+            }
+
+            $this->asegurarRequerimientoFormulario($solicitud, $user, $tipo);
 
             SolicitudNotificacionService::notificarSolicitudCreada($solicitud);
 
@@ -942,7 +1019,22 @@ class Index extends Component
         $query = Solicitud::query()
             ->with(['cliente', 'responsable', 'creadoPor', 'obligacion', 'obligacionClienteContador.obligacion', 'resultadoRequerimiento'])
             ->where($this->scopeSolicitudesUsuario($user))
-            ->when($this->vistaSolicitudes === 'asignadas', fn ($q) => $q->where('responsable_user_id', $user->id))
+            ->when($this->vistaSolicitudes === 'asignadas', function ($q) use ($user) {
+                $q->where('responsable_user_id', $user->id);
+
+                if ($user->hasRole('contador')) {
+                    $q->whereDoesntHave('requerimientos', function ($requerimiento) use ($user) {
+                        $requerimiento
+                            ->whereIn('estado', ['abierto', 'respondido', 'rechazado'])
+                            ->where(function ($principal) {
+                                $principal->where('tipo', 'resultado')
+                                    ->orWhere('titulo', 'like', 'Completar formulario%');
+                            })
+                            ->where('destinatario_tipo', 'interno')
+                            ->where('destinatario_user_id', $user->id);
+                    });
+                }
+            })
             ->when($this->buscar !== '', function ($q) {
                 $buscar = trim($this->buscar);
 
@@ -956,7 +1048,8 @@ class Index extends Component
                         });
                 });
             })
-            ->when($this->estado !== '', fn ($q) => $q->where('estado', $this->estado))
+            ->when($this->estado === 'activos', fn ($q) => $q->whereNotIn('estado', ['cerrada', 'cancelada']))
+            ->when(!in_array($this->estado, ['', 'activos'], true), fn ($q) => $q->where('estado', $this->estado))
             ->when($this->origen !== '', fn ($q) => $q->where('origen', $this->origen))
             ->when($this->responsable !== '', fn ($q) => $q->where('responsable_user_id', $this->responsable));
 
@@ -990,6 +1083,7 @@ class Index extends Component
             'usuariosInternosRequerimiento' => $this->usuariosInternosRequerimiento(),
             'tituloModulo' => $this->vistaSolicitudes === 'asignadas' ? 'Solicitudes asignadas' : 'Solicitudes',
             'puedeCrearSolicitud' => $this->usuarioPuedeCrearSolicitud(),
+            'puedeCrearSolicitudParaCliente' => $this->usuarioPuedeCrearSolicitudParaCliente(),
             'usuarioEsAdminOSupervisor' => $this->usuarioEsAdminOSupervisor(),
         ]);
     }
@@ -1012,10 +1106,21 @@ class Index extends Component
 
     private function cargarOpcionesFormulario(): void
     {
-        $despachoId = auth()->user()->despacho_id;
+        $user = auth()->user();
 
-        $this->clientesDisponibles = Cliente::query()
-            ->where('despacho_id', $despachoId)
+        $clientesQuery = Cliente::query()
+            ->where('despacho_id', $user->despacho_id);
+
+        if ($this->origen_form === 'cliente') {
+            if (!$this->usuarioPuedeCrearSolicitudParaCliente()) {
+                $this->clientesDisponibles = [];
+                $this->cliente_id_form = null;
+            } else {
+                $clientesQuery->where('responsable_solicitudes_id', $user->id);
+            }
+        }
+
+        $this->clientesDisponibles = $clientesQuery
             ->orderByRaw('coalesce(nombre, razon_social)')
             ->get()
             ->map(fn ($cliente) => [
@@ -1023,6 +1128,10 @@ class Index extends Component
                 'nombre' => $cliente->nombre ?: $cliente->razon_social,
             ])
             ->toArray();
+
+        if ($this->cliente_id_form && !collect($this->clientesDisponibles)->contains(fn ($cliente) => (int) $cliente['id'] === (int) $this->cliente_id_form)) {
+            $this->cliente_id_form = null;
+        }
 
         $this->tiposDisponibles = SolicitudTipo::query()
             ->where('activo', true)
@@ -1097,6 +1206,175 @@ class Index extends Component
         }
 
         return SolicitudTipo::query()->find($this->tipo_solicitud_id_form);
+    }
+
+    private function resolverEstadoFormularioInicial(string $modoSolicitud, string $dirigidaA): ?string
+    {
+        if ($modoSolicitud !== 'definida') {
+            return 'no_aplica';
+        }
+
+        if (auth()->user()->hasRole('cliente')) {
+            return 'respondido';
+        }
+
+        return 'pendiente';
+    }
+
+    private function asegurarRequerimientoFormulario(Solicitud $solicitud, User $user, ?SolicitudTipo $tipo): void
+    {
+        if (
+            $solicitud->modo_solicitud !== 'definida'
+            || $solicitud->estado_formulario !== 'pendiente'
+        ) {
+            return;
+        }
+
+        $titulo = 'Completar formulario';
+        if ($tipo?->nombre) {
+            $titulo .= ': ' . $tipo->nombre;
+        }
+
+        $existente = $solicitud->requerimientos()
+            ->where('tipo', 'normal')
+            ->where('titulo', $titulo)
+            ->first();
+
+        if ($existente) {
+            return;
+        }
+
+        $campos = $solicitud->campos_formulario;
+        $listaCampos = collect($campos)
+            ->map(function (array $campo) {
+                $label = $campo['label'] ?? 'Campo';
+                $required = !empty($campo['required']) ? ' (requerido)' : '';
+
+                return '- ' . $label . $required;
+            })
+            ->implode("\n");
+
+        $descripcion = 'Completa el formulario solicitado para continuar con la solicitud.';
+
+        if ($tipo?->nombre) {
+            $descripcion .= "\n\nTipo de solicitud: " . $tipo->nombre . '.';
+        }
+
+        if ($listaCampos !== '') {
+            $descripcion .= "\n\nCampos esperados:\n" . $listaCampos;
+        }
+
+        $destinatarioTipo = $solicitud->origen === 'cliente' ? 'cliente' : 'interno';
+        $destinatarioUserId = $destinatarioTipo === 'interno'
+            ? $solicitud->responsable_user_id
+            : null;
+
+        $requerimiento = SolicitudRequerimiento::create([
+            'solicitud_id' => $solicitud->id,
+            'creado_por_user_id' => $user->id,
+            'destinatario_tipo' => $destinatarioTipo,
+            'destinatario_user_id' => $destinatarioUserId,
+            'tipo' => 'normal',
+            'titulo' => $titulo,
+            'descripcion' => $descripcion,
+            'estado' => 'abierto',
+            'fecha_limite' => $this->fechaResultadoResuelta(),
+        ]);
+
+        SolicitudHistorialService::registrar(
+            $solicitud,
+            'requerimiento_creado',
+            'Requerimiento de formulario creado',
+            'Se genero automaticamente el requerimiento para completar el formulario de la solicitud.',
+            $user->id,
+            $requerimiento
+        );
+
+        SolicitudNotificacionService::notificarRequerimientoCreado($requerimiento);
+    }
+
+    private function sincronizarRequerimientoResultado(Solicitud $solicitud, User $user, int $responsableUserId): ?SolicitudRequerimiento
+    {
+        $resultadoRequerimiento = $solicitud->resultadoRequerimiento()->first();
+        $destinatarioTipo = $solicitud->origen === 'cliente' ? 'cliente' : 'interno';
+        $destinatarioUserId = $solicitud->origen === 'cliente' ? null : $responsableUserId;
+        $descripcionResultado = $solicitud->origen === 'cliente'
+            ? 'Responde aqui con la informacion final solicitada para su validacion y cierre.'
+            : 'Entrega aqui el resultado final esperado de la solicitud para su validacion y cierre.';
+
+        if ($solicitud->usaFormularioComoCierre()) {
+            if ($resultadoRequerimiento && $resultadoRequerimiento->estado !== 'cancelado') {
+                $resultadoRequerimiento->update([
+                    'estado' => 'cancelado',
+                    'comentario_validacion' => 'No aplica para solicitudes definidas dirigidas al cliente.',
+                ]);
+            }
+
+            return null;
+        }
+
+        if ($resultadoRequerimiento) {
+            $resultadoRequerimiento->update([
+                'estado' => $resultadoRequerimiento->estado === 'cancelado' ? 'abierto' : $resultadoRequerimiento->estado,
+                'destinatario_tipo' => $destinatarioTipo,
+                'destinatario_user_id' => $destinatarioUserId,
+                'descripcion' => $descripcionResultado,
+                'fecha_limite' => $this->fechaResultadoResuelta(),
+            ]);
+
+            return $resultadoRequerimiento;
+        }
+
+        return SolicitudRequerimiento::create([
+            'solicitud_id' => $solicitud->id,
+            'creado_por_user_id' => $solicitud->creado_por_user_id ?? $user->id,
+            'destinatario_tipo' => $destinatarioTipo,
+            'destinatario_user_id' => $destinatarioUserId,
+            'tipo' => 'resultado',
+            'titulo' => 'Resultado esperado',
+            'descripcion' => $descripcionResultado,
+            'estado' => 'abierto',
+            'fecha_limite' => $this->fechaResultadoResuelta(),
+        ]);
+    }
+
+    private function fechaResultadoResuelta(): string
+    {
+        return $this->fecha_resultado_form !== ''
+            ? $this->fecha_resultado_form
+            : now()->addDays(2)->toDateString();
+    }
+
+    private function prioridadResolvida(?string $prioridadDefaultTipo = null): string
+    {
+        return $this->prioridad_form !== ''
+            ? $this->prioridad_form
+            : ($prioridadDefaultTipo ?: 'media');
+    }
+
+    private function cerrarSolicitudPorRequerimientoPrincipalValidado(Solicitud $solicitud, SolicitudRequerimiento $requerimiento, string $comentarioCierre): void
+    {
+        if ($this->solicitudTieneRequerimientosPendientes($solicitud)) {
+            return;
+        }
+
+        $solicitud->update([
+            'estado' => 'cerrada',
+            'cerrado_por_user_id' => auth()->id(),
+            'comentario_cierre' => $solicitud->comentario_cierre ?: $comentarioCierre,
+            'cerrada_at' => now(),
+        ]);
+
+        SolicitudHistorialService::registrar(
+            $solicitud,
+            'solicitud_cerrada',
+            'Solicitud cerrada',
+            $solicitud->comentario_cierre ?: $comentarioCierre,
+            auth()->id(),
+            $requerimiento
+        );
+
+        SolicitudNotificacionService::notificarSolicitudCerrada($solicitud);
     }
 
     private function solicitudDetalle(): ?Solicitud
@@ -1184,7 +1462,11 @@ class Index extends Component
 
     private function solicitudTieneRequerimientosPendientes(Solicitud $solicitud): bool
     {
-        return $solicitud->requerimientos->contains(function ($requerimiento) {
+        return $solicitud->requerimientos->contains(function ($requerimiento) use ($solicitud) {
+            if ($solicitud->usaFormularioComoCierre() && $requerimiento->tipo === 'resultado') {
+                return false;
+            }
+
             return !in_array($requerimiento->estado, ['validado', 'cancelado'], true);
         });
     }
@@ -1192,6 +1474,20 @@ class Index extends Component
     private function usuarioPuedeCrearSolicitud(): bool
     {
         return auth()->check();
+    }
+
+    private function usuarioPuedeCrearSolicitudParaCliente(): bool
+    {
+        if (!auth()->check()) {
+            return false;
+        }
+
+        $user = auth()->user();
+
+        return Cliente::query()
+            ->where('despacho_id', $user->despacho_id)
+            ->where('responsable_solicitudes_id', $user->id)
+            ->exists();
     }
 
     private function usuarioEsAdminOSupervisor(): bool
@@ -1221,7 +1517,8 @@ class Index extends Component
 
     private function usuarioPuedeOperarRequerimientos(Solicitud $solicitud): bool
     {
-        return (int) $solicitud->responsable_user_id === (int) auth()->id();
+        return $this->usuarioEsAdminOSupervisor()
+            || (int) $solicitud->creado_por_user_id === (int) auth()->id();
     }
 
     private function usuarioPuedeResponderResultado(SolicitudRequerimiento $requerimiento): bool
@@ -1242,6 +1539,183 @@ class Index extends Component
         return $solicitud->requerimientos->firstWhere('tipo', 'resultado');
     }
 
+    private function resultadoUsaFormulario(SolicitudRequerimiento $requerimiento): bool
+    {
+        return $requerimiento->tipo === 'resultado'
+            && $requerimiento->solicitud?->modo_solicitud === 'definida'
+            && $requerimiento->solicitud?->origen === 'despacho';
+    }
+
+    private function mapearFormularioResultadoSolicitud(Solicitud $solicitud): array
+    {
+        if ($solicitud->modo_solicitud !== 'definida') {
+            return [];
+        }
+
+        $datos = is_array($solicitud->datos_formulario) ? $solicitud->datos_formulario : [];
+        $respuesta = [];
+
+        foreach ($solicitud->campos_formulario as $campo) {
+            $key = $campo['key'] ?? null;
+
+            if (!$key) {
+                continue;
+            }
+
+            if (($campo['type'] ?? 'text') === 'checkbox') {
+                $respuesta[$key] = (bool) ($datos[$key] ?? false);
+                continue;
+            }
+
+            $respuesta[$key] = ($campo['type'] ?? 'text') === 'file'
+                ? null
+                : ($datos[$key] ?? null);
+        }
+
+        return $respuesta;
+    }
+
+    private function validarFormularioResultado(Solicitud $solicitud): void
+    {
+        $rules = [];
+        $datosActuales = is_array($solicitud->datos_formulario) ? $solicitud->datos_formulario : [];
+
+        foreach ($solicitud->campos_formulario as $campo) {
+            $key = $campo['key'] ?? null;
+
+            if (!$key) {
+                continue;
+            }
+
+            $required = (bool) ($campo['required'] ?? false);
+            $type = $campo['type'] ?? 'text';
+            $ruleKey = "formularioResultado.$key";
+            $yaTieneArchivo = $type === 'file' && !empty($datosActuales[$key] ?? null);
+
+            $rules[$ruleKey] = match ($type) {
+                'checkbox' => $required ? ['accepted'] : ['nullable', 'boolean'],
+                'number' => $required ? ['required', 'numeric'] : ['nullable', 'numeric'],
+                'date' => $required ? ['required', 'date'] : ['nullable', 'date'],
+                'select', 'text', 'textarea' => $required ? ['required'] : ['nullable'],
+                'file' => ($required && !$yaTieneArchivo)
+                    ? ['required', 'file', 'max:20480']
+                    : ['nullable', 'file', 'max:20480'],
+                default => ['nullable'],
+            };
+        }
+
+        if (!empty($rules)) {
+            $this->validate($rules);
+        }
+    }
+
+    private function normalizarFormularioResultado(Solicitud $solicitud): array
+    {
+        $normalizado = [];
+        $datosActuales = is_array($solicitud->datos_formulario) ? $solicitud->datos_formulario : [];
+
+        foreach ($solicitud->campos_formulario as $campo) {
+            $key = $campo['key'] ?? null;
+
+            if (!$key) {
+                continue;
+            }
+
+            $type = $campo['type'] ?? 'text';
+            $value = $this->formularioResultado[$key] ?? null;
+
+            $normalizado[$key] = match ($type) {
+                'checkbox' => (bool) $value,
+                'number' => $value === null || $value === '' ? null : (is_numeric($value) ? $value + 0 : $value),
+                'file' => is_object($value) && method_exists($value, 'getClientOriginalName')
+                    ? $value->getClientOriginalName()
+                    : ($datosActuales[$key] ?? null),
+                default => $value === '' ? null : $value,
+            };
+        }
+
+        return $normalizado;
+    }
+
+    private function guardarArchivosFormularioResultado(Solicitud $solicitud): array
+    {
+        $archivosGuardados = [];
+        $cliente = $solicitud->cliente;
+        $despacho = $cliente?->despacho;
+        $datosActuales = is_array($solicitud->datos_formulario) ? $solicitud->datos_formulario : [];
+
+        if (!$cliente || !$despacho) {
+            return $archivosGuardados;
+        }
+
+        foreach ($solicitud->campos_formulario as $campo) {
+            $key = $campo['key'] ?? null;
+            $type = $campo['type'] ?? 'text';
+
+            if (!$key || $type !== 'file') {
+                continue;
+            }
+
+            $archivo = $this->formularioResultado[$key] ?? null;
+
+            if (!$archivo || !is_object($archivo) || !method_exists($archivo, 'getClientOriginalName')) {
+                continue;
+            }
+
+            $nombreAnterior = $datosActuales[$key] ?? null;
+            if ($nombreAnterior) {
+                $archivoAnterior = $solicitud->archivos()->where('nombre', $nombreAnterior)->first();
+
+                if ($archivoAnterior) {
+                    if ($archivoAnterior->archivo) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($archivoAnterior->archivo);
+                    }
+
+                    $archivoAnterior->delete();
+                }
+            }
+
+            $extension = strtolower($archivo->getClientOriginalExtension());
+            $mes = now()->format('m');
+            $anio = now()->format('y');
+            $segundos = now()->format('s');
+            $rfcNormalizado = \Str::upper($cliente->rfc);
+            $nombreNormalizado = \Str::slug($campo['label'] ?? $key, '-');
+            $nombreFinal = "{$anio}-{$mes}-{$rfcNormalizado}-{$nombreNormalizado}-{$segundos}.{$extension}";
+
+            $rutaStorage = null;
+            $urlDrive = null;
+
+            if (in_array($despacho->politica_almacenamiento, ['storage_only', 'both'])) {
+                $rutaStorage = $archivo->storeAs('adjuntos', $nombreFinal, 'public');
+            }
+
+            if (in_array($despacho->politica_almacenamiento, ['drive_only', 'both'])) {
+                $folderId = null;
+
+                if ($solicitud->carpeta_drive_id) {
+                    $folderId = \App\Models\CarpetaDrive::find($solicitud->carpeta_drive_id)?->drive_folder_id;
+                }
+
+                if ($folderId) {
+                    $drive = app(\App\Services\DriveService::class);
+                    $res = $drive->subirArchivo($nombreFinal, $archivo, $folderId, $archivo->getMimeType());
+                    $urlDrive = is_array($res) ? ($res['webViewLink'] ?? null) : $res;
+                }
+            }
+
+            $solicitud->archivos()->create([
+                'nombre' => $nombreFinal,
+                'archivo' => $rutaStorage,
+                'archivo_drive_url' => $urlDrive,
+            ]);
+
+            $archivosGuardados[$key] = $nombreFinal;
+        }
+
+        return $archivosGuardados;
+    }
+
     private function scopeSolicitudesUsuario(User $user): \Closure
     {
         return function ($query) use ($user) {
@@ -1254,10 +1728,7 @@ class Index extends Component
             });
 
             if ($user->hasRole('contador')) {
-                $query->where(function ($sub) use ($user) {
-                    $sub->where('responsable_user_id', $user->id)
-                        ->orWhere('creado_por_user_id', $user->id);
-                });
+                $query->where('creado_por_user_id', $user->id);
             }
 
             if ($user->hasRole('cliente')) {

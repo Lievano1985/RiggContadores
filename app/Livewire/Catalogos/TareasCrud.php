@@ -7,6 +7,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\TareaCatalogo;
 use App\Models\Obligacion;
+use App\Services\GeneradorObligaciones;
 
 class TareasCrud extends Component
 {
@@ -124,13 +125,26 @@ $obligaciones = \App\Models\Obligacion::orderBy('nombre')->get();
         $this->validate();
 
         if ($this->isEditing && $this->form['id']) {
-            TareaCatalogo::find($this->form['id'])->update($this->form);
+            $tarea = TareaCatalogo::findOrFail($this->form['id']);
+            $tarea->update($this->form);
+            $mensaje = 'Tarea guardada correctamente.';
         } else {
-            TareaCatalogo::create($this->form);
+            $datos = $this->form;
+            $datos['activo'] = true;
+
+            $tarea = TareaCatalogo::create($datos);
+            $mensaje = 'Tarea creada correctamente.';
+        }
+
+        $asignadas = app(GeneradorObligaciones::class)
+            ->sincronizarTareaPeriodoActual($tarea);
+
+        if ($asignadas > 0) {
+            $mensaje .= " Se asigno a {$asignadas} obligaciones del periodo actual.";
         }
 
         $this->modalVisible = false;
-        $this->dispatch('notify', message: 'Tarea guardada correctamente.');
+        $this->dispatch('notify', message: $mensaje);
     }
 
     public function toggleActivo($id)

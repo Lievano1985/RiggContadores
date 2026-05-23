@@ -7,6 +7,7 @@ use App\Models\User;
 
 use App\Models\CarpetaDrive;
 use App\Services\DriveService;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +28,8 @@ class DatosGenerales extends Component
     public $nombre_comercial, $codigo_postal, $tipo_persona, $tiene_trabajadores;
     public $inicio_obligaciones, $fin_obligaciones, $contrato, $vigencia;
     public $representante_legal, $rfc_representante, $correo_representante;
+    public $correo_usuario_cliente;
+    public $nuevo_password_cliente, $nuevo_password_cliente_confirmation;
 
     public function mount(Cliente $cliente)
     {
@@ -37,6 +40,7 @@ class DatosGenerales extends Component
         $this->inicio_obligaciones = optional($cliente->inicio_obligaciones)->toDateString();
         $this->fin_obligaciones = optional($cliente->fin_obligaciones)->toDateString();
         $this->vigencia = optional($cliente->vigencia)->toDateString();
+        $this->correo_usuario_cliente = $cliente->usuario?->email ?? $cliente->correo;
     }
 
     public function guardar()
@@ -73,6 +77,8 @@ class DatosGenerales extends Component
             ]);
         }
 
+        $this->correo_usuario_cliente = $this->correo;
+
         if ($this->archivoContrato) {
             $this->procesarArchivoContrato();
         }
@@ -82,6 +88,132 @@ class DatosGenerales extends Component
 
         $this->dispatch('notify', message: 'Datos generales actualizados correctamente.');
         $this->dispatch('DatosFiscalesActualizados');
+    }
+
+    public function resetearPasswordCliente(): void
+    {
+        if (! $this->puedeResetearPassword()) {
+            abort(403);
+        }
+
+        $usuario = User::where('cliente_id', $this->cliente->id)->first();
+
+        if (! $usuario) {
+            $this->dispatch('notify', message: 'Este cliente no tiene un usuario de acceso creado.');
+            return;
+        }
+
+        $this->sincronizarCorreoClienteYUsuario($usuario);
+
+        $this->validate([
+            'nuevo_password_cliente' => 'required|string|min:8|confirmed',
+        ], [], [
+            'nuevo_password_cliente' => 'nueva contrasena',
+        ]);
+
+        $usuario->update([
+            'password' => Hash::make($this->nuevo_password_cliente),
+        ]);
+
+        $this->reset('nuevo_password_cliente', 'nuevo_password_cliente_confirmation');
+
+        $this->dispatch('notify', message: 'La contrasena del cliente se actualizo correctamente.');
+    }
+
+    public function actualizarCorreoUsuarioCliente(): void
+    {
+        if (! $this->puedeResetearPassword()) {
+            abort(403);
+        }
+
+        $usuario = User::where('cliente_id', $this->cliente->id)->first();
+
+        if (! $usuario) {
+            $this->dispatch('notify', message: 'Este cliente no tiene un usuario creado.');
+            return;
+        }
+
+        $this->validate([
+            'correo_usuario_cliente' => 'required|email',
+        ], [], [
+            'correo_usuario_cliente' => 'correo del usuario',
+        ]);
+
+        $emailEnUso = User::query()
+            ->where('email', $this->correo_usuario_cliente)
+            ->where('id', '!=', $usuario->id)
+            ->exists();
+
+        if ($emailEnUso) {
+            $this->addError('correo_usuario_cliente', 'Ya existe otro usuario con ese correo.');
+            return;
+        }
+
+        $usuario->update([
+            'email' => $this->correo_usuario_cliente,
+        ]);
+
+        $this->cliente->update([
+            'correo' => $this->correo_usuario_cliente,
+        ]);
+
+        $this->cliente->refresh();
+        $this->correo = $this->correo_usuario_cliente;
+
+        $this->dispatch('notify', message: 'El correo del cliente y su usuario se actualizaron correctamente.');
+    }
+
+    public function crearAccesoCliente(): void
+    {
+        if (! $this->puedeResetearPassword()) {
+            abort(403);
+        }
+
+        $usuarioExistente = User::where('cliente_id', $this->cliente->id)->first();
+
+        if ($usuarioExistente) {
+            $this->dispatch('notify', message: 'Este cliente ya tiene un usuario de acceso creado.');
+            return;
+        }
+
+        if (blank($this->correo)) {
+            $this->addError('nuevo_password_cliente', 'El cliente no tiene correo definido para crear el acceso.');
+            return;
+        }
+
+        $emailEnUso = User::where('email', $this->correo)->exists();
+
+        if ($emailEnUso) {
+            $this->addError('nuevo_password_cliente', 'Ya existe otro usuario con ese correo. Actualiza el correo del cliente o usa otro.');
+            return;
+        }
+
+        $this->validate([
+            'nuevo_password_cliente' => 'required|string|min:8|confirmed',
+        ], [], [
+            'nuevo_password_cliente' => 'nueva contrasena',
+        ]);
+
+        $usuario = User::create([
+            'name' => $this->cliente->nombre,
+            'email' => $this->correo,
+            'password' => Hash::make($this->nuevo_password_cliente),
+            'cliente_id' => $this->cliente->id,
+            'despacho_id' => $this->cliente->despacho_id,
+        ]);
+
+        $usuario->assignRole('cliente');
+
+        $this->cliente->update([
+            'correo' => $this->correo,
+        ]);
+
+        $this->cliente->refresh();
+        $this->correo_usuario_cliente = $this->correo;
+
+        $this->reset('nuevo_password_cliente', 'nuevo_password_cliente_confirmation');
+
+        $this->dispatch('notify', message: 'El usuario del cliente se creo correctamente.');
     }
     public function updatedClienteTieneTrabajadores($value)
     {
@@ -214,6 +346,47 @@ class DatosGenerales extends Component
 
     public function render()
     {
-        return view('livewire.clientes.datos-generales');
+        return view('livewire.clientes.datos-generales', [
+            'usuarioCliente' => User::where('cliente_id', $this->cliente->id)->first(),
+            'puedeResetearPassword' => $this->puedeResetearPassword(),
+        ]);
+    }
+
+    private function puedeResetearPassword(): bool
+    {
+        return auth()->check() && auth()->user()->hasAnyRole(['admin_despacho', 'super_admin']);
+    }
+
+    private function sincronizarCorreoClienteYUsuario(User $usuario): void
+    {
+        $this->validate([
+            'correo' => 'required|email',
+        ], [], [
+            'correo' => 'correo',
+        ]);
+
+        $emailEnUso = User::query()
+            ->where('email', $this->correo)
+            ->where('id', '!=', $usuario->id)
+            ->exists();
+
+        if ($emailEnUso) {
+            throw ValidationException::withMessages([
+                'correo' => 'Ya existe otro usuario con ese correo.',
+            ]);
+        }
+
+        $usuario->update([
+            'email' => $this->correo,
+            'name' => $this->nombre,
+        ]);
+
+        $this->cliente->update([
+            'correo' => $this->correo,
+            'nombre' => $this->nombre,
+        ]);
+
+        $this->cliente->refresh();
+        $this->correo_usuario_cliente = $this->correo;
     }
 }

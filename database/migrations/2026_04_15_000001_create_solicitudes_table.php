@@ -31,6 +31,8 @@ return new class extends Migration
             $table->string('titulo');
             $table->text('descripcion')->nullable();
             $table->json('datos_formulario')->nullable();
+            $table->enum('estado_formulario', ['no_aplica', 'pendiente', 'respondido', 'validado'])
+                ->nullable();
             $table->json('plantilla_snapshot')->nullable();
             $table->enum('estado', ['abierta', 'en_proceso', 'pendiente_cliente', 'resuelto', 'cerrada', 'cancelada'])
                 ->default('abierta');
@@ -57,6 +59,7 @@ return new class extends Migration
             $table->index(['origen']);
             $table->index(['modo_solicitud']);
             $table->index(['tipo_solicitud_id']);
+            $table->index(['estado_formulario']);
         });
     }
 

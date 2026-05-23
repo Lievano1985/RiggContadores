@@ -14,7 +14,7 @@
         };
 
         const initializeThemeSupport = () => {
-            const currentTheme = document.documentElement.dataset.theme || localStorage.getItem('app-theme') || 'dark';
+            const currentTheme = document.documentElement.dataset.theme || localStorage.getItem('app-theme') || 'rigg';
             window.AppTheme = { apply: applyTheme };
             applyTheme(currentTheme);
         };

@@ -243,6 +243,87 @@
         @endif
     @endif
 
+        @if ($puedeResetearPassword && $modoEdicion)
+            <div class="mt-8 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900/40">
+                <div class="mb-4">
+                    <h2 class="text-sm font-semibold text-stone-700 dark:text-stone-100">Usuario del cliente</h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Solo el administrador puede crear el usuario del cliente o cambiar su contrasena.
+                    </p>
+                </div>
+
+                @if ($usuarioCliente)
+                    <div class="mb-4 mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium">Usuario</label>
+                            <input type="text" value="{{ $usuarioCliente->name }}"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                disabled>
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-sm font-medium">Correo actual</label>
+                            <input type="text" value="{{ $usuarioCliente->email }}"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                disabled>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium">Nueva contrasena</label>
+                            <input type="password" wire:model.defer="nuevo_password_cliente"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            @error('nuevo_password_cliente')
+                                <div class="mt-1 text-xs text-red-500">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-sm font-medium">Confirmar contrasena</label>
+                            <input type="password" wire:model.defer="nuevo_password_cliente_confirmation"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" wire:click="resetearPasswordCliente"
+                            class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+                            Cambiar contrasena
+                        </button>
+                    </div>
+                @else
+                    <div class="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+                        Este cliente aun no tiene un usuario creado. Puedes generarlo aqui mismo.
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium">Nueva contrasena</label>
+                            <input type="password" wire:model.defer="nuevo_password_cliente"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            @error('nuevo_password_cliente')
+                                <div class="mt-1 text-xs text-red-500">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="mb-1 block text-sm font-medium">Confirmar contrasena</label>
+                            <input type="password" wire:model.defer="nuevo_password_cliente_confirmation"
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" wire:click="crearAccesoCliente"
+                            class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+                            Crear usuario del cliente
+                        </button>
+                    </div>
+                @endif
+            </div>
+        @endif
+
         @if ($modoEdicion)
             <div class="mt-6 text-right">
                 <button type="submit" class="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700">

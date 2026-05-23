@@ -453,7 +453,9 @@ class ValidacionesIndex extends Component
 
         if ($this->filtroEstatus === 'auto') {
             $query->whereNotIn('estatus', $this->estatusExcluidosCliente);
+        }
 
+        if ($this->filtroEstatus === 'auto' && $this->incluirVencidas) {
             $query->where(function ($q) {
                 $q->where(function ($qq) {
                     $qq->whereYear('fecha_vencimiento', now()->year)

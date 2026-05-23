@@ -12,6 +12,7 @@
 
             <select wire:model.live="estado"
                 class="rounded border px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:bg-gray-700 dark:text-white">
+                <option value="activos">Estado (activos)</option>
                 <option value="">Estado (todos)</option>
                 <option value="abierto">Abierto</option>
                 <option value="respondido">Respondido</option>
@@ -130,6 +131,107 @@
                             class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
                         @error('respuesta_texto') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
 
+                        @if ($requerimientoSeleccionado->esRequerimientoFormulario())
+                            <div class="space-y-3 rounded-lg border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <h6 class="font-semibold text-stone-700 dark:text-white">Formulario solicitado</h6>
+                                    <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                        {{ $requerimientoSeleccionado->solicitud->estado_formulario_label }}
+                                    </span>
+                                </div>
+
+                                @foreach ($requerimientoSeleccionado->solicitud->campos_formulario as $campo)
+                                    @php
+                                        $campoKey = $campo['key'] ?? null;
+                                        $campoType = $campo['type'] ?? 'text';
+                                        $campoRequired = !empty($campo['required']);
+                                    @endphp
+
+                                    @if ($campoKey)
+                                        <div class="space-y-1">
+                                            <label class="block text-sm font-medium text-stone-700 dark:text-white">
+                                                {{ $campo['label'] ?? $campoKey }}
+                                                @if ($campoRequired)
+                                                    <span class="text-red-500">*</span>
+                                                @endif
+                                            </label>
+
+                                            @if ($campoType === 'textarea')
+                                                <textarea wire:model.defer="formulario_respuesta.{{ $campoKey }}" rows="3"
+                                                    @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                                    placeholder="{{ $campo['placeholder'] ?? '' }}"></textarea>
+                                            @elseif ($campoType === 'select')
+                                                <select wire:model.defer="formulario_respuesta.{{ $campoKey }}"
+                                                    @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                                    <option value="">Seleccione...</option>
+                                                    @foreach (($campo['options'] ?? []) as $option)
+                                                        <option value="{{ $option }}">{{ $option }}</option>
+                                                    @endforeach
+                                                </select>
+                                            @elseif ($campoType === 'checkbox')
+                                                <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                                    <input type="checkbox" wire:model.defer="formulario_respuesta.{{ $campoKey }}"
+                                                        @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                                        class="rounded border-gray-300 text-amber-600 focus:ring-amber-500 dark:border-gray-600 dark:bg-gray-700">
+                                                    <span>{{ $campo['help'] ?? 'Marcar si aplica' }}</span>
+                                                </label>
+                                            @elseif ($campoType === 'date')
+                                                <input type="date" wire:model.defer="formulario_respuesta.{{ $campoKey }}"
+                                                    @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                            @elseif ($campoType === 'number')
+                                                <input type="number" wire:model.defer="formulario_respuesta.{{ $campoKey }}"
+                                                    @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                                    placeholder="{{ $campo['placeholder'] ?? '' }}">
+                                            @elseif ($campoType === 'file')
+                                                <input type="file" wire:model="formulario_respuesta.{{ $campoKey }}"
+                                                    @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                                    @if (!empty($campo['accept'])) accept="{{ $campo['accept'] }}" @endif
+                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                    Tamano maximo sugerido: 20 MB.
+                                                    @if (!empty($campo['accept']))
+                                                        Tipos sugeridos: {{ $campo['accept'] }}
+                                                    @endif
+                                                </div>
+                                                @php
+                                                    $archivoActualFormulario = null;
+                                                    $valorActualArchivo = $requerimientoSeleccionado->solicitud->datos_formulario[$campoKey] ?? null;
+
+                                                    if ($valorActualArchivo) {
+                                                        $archivoActualFormulario = $requerimientoSeleccionado->solicitud->archivos->firstWhere('nombre', $valorActualArchivo);
+                                                    }
+                                                @endphp
+                                                @if ($archivoActualFormulario)
+                                                    <a href="{{ $archivoActualFormulario->archivo ? Storage::disk('public')->url($archivoActualFormulario->archivo) : $archivoActualFormulario->archivo_drive_url }}"
+                                                        target="_blank"
+                                                        class="text-xs text-amber-600 hover:underline dark:text-amber-300">
+                                                        Archivo actual: {{ $archivoActualFormulario->nombre }}
+                                                    </a>
+                                                @endif
+                                            @else
+                                                <input type="text" wire:model.defer="formulario_respuesta.{{ $campoKey }}"
+                                                    @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                                    placeholder="{{ $campo['placeholder'] ?? '' }}">
+                                            @endif
+
+                                            @if (!empty($campo['help']) && $campoType !== 'checkbox')
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $campo['help'] }}</div>
+                                            @endif
+
+                                            @error('formulario_respuesta.' . $campoKey)
+                                                <div class="text-xs text-red-500">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @endif
+
                         @if ($requerimientoSeleccionado->estado === 'rechazado' && $requerimientoSeleccionado->comentario_validacion)
                             <div class="space-y-2 rounded-lg border border-red-200 p-3 dark:border-red-800">
                                 <div class="text-sm font-medium text-red-700 dark:text-red-300">Respuesta rechazada</div>
@@ -137,15 +239,17 @@
                             </div>
                         @endif
 
-                        <div class="rounded-lg border border-dashed border-gray-300 p-3 dark:border-gray-700">
-                            <div class="mb-2 text-sm font-medium text-stone-700 dark:text-white">Documentos de respuesta</div>
-                            <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                                Adjunta documentos si aplica, aunque solo respondas con texto.
-                            </p>
-                            @livewire('shared.archivos-adjuntos-crud', ['modelo' => $requerimientoSeleccionado], key('mis-req-archivos-' . $requerimientoSeleccionado->id))
-                        </div>
+                        @if (!$requerimientoSeleccionado->esRequerimientoFormulario())
+                            <div class="rounded-lg border border-dashed border-gray-300 p-3 dark:border-gray-700">
+                                <div class="mb-2 text-sm font-medium text-stone-700 dark:text-white">Documentos de respuesta</div>
+                                <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                                    Adjunta documentos si aplica, aunque solo respondas con texto.
+                                </p>
+                                @livewire('shared.archivos-adjuntos-crud', ['modelo' => $requerimientoSeleccionado], key('mis-req-archivos-' . $requerimientoSeleccionado->id))
+                            </div>
+                        @endif
 
-                        @if ($requerimientoSeleccionado->archivos->isNotEmpty())
+                        @if (!$requerimientoSeleccionado->esRequerimientoFormulario() && $requerimientoSeleccionado->archivos->isNotEmpty())
                             <div class="space-y-2">
                                 @foreach ($requerimientoSeleccionado->archivos as $archivo)
                                     <a href="{{ $archivo->archivo ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"

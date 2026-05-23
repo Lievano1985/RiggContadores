@@ -12,6 +12,7 @@ namespace App\Livewire\Catalogos;
 use App\Livewire\Shared\HasPerPage;
 use App\Models\Obligacion;
 use App\Models\TareaCatalogo;
+use App\Services\GeneradorObligaciones;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -241,11 +242,22 @@ class ObligacionesTareas extends Component
         $datos['activo'] = true;
 
         if ($this->sidebarModo === 'editar_tarea') {
-            TareaCatalogo::findOrFail($this->tareaSeleccionadaId)->update($datos);
+            $tarea = TareaCatalogo::findOrFail($this->tareaSeleccionadaId);
+            $tarea->update($datos);
+            $mensaje = 'Tarea actualizada correctamente.';
         } else {
-            TareaCatalogo::create($datos);
+            $tarea = TareaCatalogo::create($datos);
+            $mensaje = 'Tarea creada correctamente.';
         }
 
+        $asignadas = app(GeneradorObligaciones::class)
+            ->sincronizarTareaPeriodoActual($tarea);
+
+        if ($asignadas > 0) {
+            $mensaje .= " Se asigno a {$asignadas} obligaciones del periodo actual.";
+        }
+
+        $this->dispatch('notify', message: $mensaje);
         $this->cerrarSidebar();
         $this->resetPage();
     }

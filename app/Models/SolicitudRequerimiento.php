@@ -99,4 +99,11 @@ class SolicitudRequerimiento extends Model
     {
         return $this->tipo === 'resultado';
     }
+
+    public function esRequerimientoFormulario(): bool
+    {
+        return !$this->esResultado()
+            && $this->solicitud?->modo_solicitud === 'definida'
+            && str_starts_with((string) $this->titulo, 'Completar formulario');
+    }
 }

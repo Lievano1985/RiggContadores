@@ -58,15 +58,7 @@ class MisNotificaciones extends Component
         $usuario = auth()->user();
         $puedeVerOtras = $this->usuarioPuedeVerNotificacionesDeOtros();
 
-        $query = SolicitudNotificacion::query()
-            ->with(['solicitud.cliente', 'solicitud.responsable', 'requerimiento.destinatario'])
-            ->when(!$puedeVerOtras, fn ($q) => $q->where('user_id', auth()->id()))
-            ->when($puedeVerOtras, function ($q) use ($usuario) {
-                $q->whereHas('user', function ($userQuery) use ($usuario) {
-                    $userQuery->where('despacho_id', $usuario->despacho_id)
-                        ->whereNull('cliente_id');
-                });
-            })
+        $query = $this->consultaNotificaciones()
             ->when($this->estado === 'pendientes', fn ($q) => $q->whereNull('leida_at'))
             ->when($this->estado === 'leidas', fn ($q) => $q->whereNotNull('leida_at'))
             ->when($puedeVerOtras && $this->usuario !== '', function ($q) {
@@ -112,5 +104,29 @@ class MisNotificaciones extends Component
     private function usuarioPuedeVerNotificacionesDeOtros(): bool
     {
         return auth()->user()->hasAnyRole(['admin_despacho', 'supervisor']);
+    }
+
+    private function consultaNotificaciones()
+    {
+        $usuario = auth()->user();
+        $puedeVerOtras = $this->usuarioPuedeVerNotificacionesDeOtros();
+
+        return SolicitudNotificacion::query()
+            ->with([
+                'user',
+                'solicitud.cliente',
+                'solicitud.responsable',
+                'solicitud.creadoPor',
+                'requerimiento.destinatario',
+                'requerimiento.respondidoPor',
+                'requerimiento.creadoPor',
+            ])
+            ->when(!$puedeVerOtras, fn ($q) => $q->where('user_id', auth()->id()))
+            ->when($puedeVerOtras, function ($q) use ($usuario) {
+                $q->whereHas('user', function ($userQuery) use ($usuario) {
+                    $userQuery->where('despacho_id', $usuario->despacho_id)
+                        ->whereNull('cliente_id');
+                });
+            });
     }
 }

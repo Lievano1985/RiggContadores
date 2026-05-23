@@ -11,13 +11,13 @@ class SolicitudNotificacionService
 {
     public static function notificarSolicitudCreada(Solicitud $solicitud): void
     {
-        $solicitud->loadMissing('cliente', 'responsable', 'creadoPor');
+        $solicitud->loadMissing('cliente.usuario', 'responsable', 'creadoPor', 'requerimientos');
 
         $titulo = 'Nueva solicitud asignada';
         $mensaje = 'Se creo la solicitud "' . $solicitud->titulo . '" para ' . ($solicitud->cliente->nombre ?: $solicitud->cliente->razon_social ?: 'cliente') . '.';
 
         self::crearParaUsuarios(
-            self::usuariosSeguimiento($solicitud, [$solicitud->responsable_user_id]),
+            self::usuariosSeguimiento($solicitud, self::debeNotificarResponsablePorSolicitud($solicitud) ? [$solicitud->responsable_user_id] : []),
             [
                 'solicitud_id' => $solicitud->id,
                 'tipo' => 'solicitud_creada',
@@ -29,29 +29,50 @@ class SolicitudNotificacionService
                 ],
             ]
         );
+
+        $tieneRequerimientoActivoParaCliente = $solicitud->requerimientos
+            ->contains(fn ($requerimiento) => $requerimiento->destinatario_tipo === 'cliente' && $requerimiento->estado !== 'cancelado');
+
+        $debeNotificarClienteDirecto = $solicitud->origen === 'cliente'
+            && !$solicitud->creadoPor?->hasRole('cliente')
+            && !$tieneRequerimientoActivoParaCliente
+            && !($solicitud->modo_solicitud === 'definida' && $solicitud->estado_formulario === 'pendiente');
+
+        if ($debeNotificarClienteDirecto) {
+            $clienteUserId = $solicitud->cliente?->usuario?->id;
+
+            if ($clienteUserId) {
+                self::crearParaUsuarios(
+                    [$clienteUserId],
+                    [
+                        'solicitud_id' => $solicitud->id,
+                        'tipo' => 'solicitud_recibida',
+                        'titulo' => 'Nueva solicitud',
+                        'mensaje' => 'Se genero una nueva solicitud para ti: "' . $solicitud->titulo . '".',
+                        'url' => route('Clientes.portal'),
+                        'datos' => [
+                            'cliente_id' => $solicitud->cliente_id,
+                        ],
+                    ]
+                );
+            }
+        }
+
     }
 
     public static function notificarRequerimientoCreado(SolicitudRequerimiento $requerimiento): void
     {
-        $requerimiento->loadMissing('solicitud.cliente', 'destinatario');
-
-        $destinatarios = [];
-
-        if ($requerimiento->destinatario_tipo === 'interno' && $requerimiento->destinatario_user_id) {
-            $destinatarios[] = $requerimiento->destinatario_user_id;
-        }
+        $requerimiento->loadMissing('solicitud.cliente.usuario', 'destinatario');
 
         self::crearParaUsuarios(
-            self::usuariosSeguimiento($requerimiento->solicitud, $destinatarios),
+            self::destinatariosDelRequerimiento($requerimiento),
             [
                 'solicitud_id' => $requerimiento->solicitud_id,
                 'solicitud_requerimiento_id' => $requerimiento->id,
                 'tipo' => 'requerimiento_creado',
                 'titulo' => 'Nuevo requerimiento',
                 'mensaje' => 'Se genero el requerimiento "' . $requerimiento->titulo . '" en la solicitud "' . $requerimiento->solicitud->titulo . '".',
-                'url' => $requerimiento->destinatario_tipo === 'interno'
-                    ? route('mis-requerimientos')
-                    : route('solicitudes.index'),
+                'url' => route('mis-requerimientos'),
                 'datos' => [
                     'destinatario_tipo' => $requerimiento->destinatario_tipo,
                 ],
@@ -61,17 +82,17 @@ class SolicitudNotificacionService
 
     public static function notificarRespuestaEnviada(SolicitudRequerimiento $requerimiento): void
     {
-        $requerimiento->loadMissing('solicitud.cliente', 'solicitud.creadoPor', 'solicitud.responsable');
+        $requerimiento->loadMissing('solicitud.cliente', 'solicitud.creadoPor', 'solicitud.responsable', 'creadoPor');
 
         if ($requerimiento->tipo === 'resultado') {
             $destinatarios = self::usuariosSeguimiento($requerimiento->solicitud, [$requerimiento->solicitud->creado_por_user_id]);
             $url = self::urlSolicitudesPara($requerimiento->solicitud->creadoPor);
-            $titulo = 'Resultado entregado';
-            $mensaje = 'El resultado de la solicitud "' . $requerimiento->solicitud->titulo . '" esta listo para revision.';
+            $titulo = 'Respuesta recibida';
+            $mensaje = 'El requerimiento "' . $requerimiento->titulo . '" fue respondido.';
             $tipo = 'resultado_entregado';
         } else {
-            $destinatarios = self::usuariosSeguimiento($requerimiento->solicitud, [$requerimiento->solicitud->responsable_user_id]);
-            $url = self::urlSolicitudesPara($requerimiento->solicitud->responsable);
+            $destinatarios = self::usuariosSeguimiento($requerimiento->solicitud, [$requerimiento->creado_por_user_id]);
+            $url = self::urlSolicitudesPara($requerimiento->creadoPor);
             $titulo = 'Respuesta recibida';
             $mensaje = 'El requerimiento "' . $requerimiento->titulo . '" fue respondido.';
             $tipo = 'requerimiento_respondido';
@@ -92,11 +113,11 @@ class SolicitudNotificacionService
 
     public static function notificarRechazo(SolicitudRequerimiento $requerimiento): void
     {
-        $requerimiento->loadMissing('solicitud.cliente', 'solicitud.responsable');
+        $requerimiento->loadMissing('solicitud.cliente.usuario', 'solicitud.responsable');
 
         $destinatarios = $requerimiento->tipo === 'resultado'
             ? self::usuariosSeguimiento($requerimiento->solicitud, [$requerimiento->solicitud->responsable_user_id])
-            : self::usuariosSeguimiento($requerimiento->solicitud, array_filter([$requerimiento->destinatario_user_id]));
+            : self::usuariosSeguimiento($requerimiento->solicitud, self::destinatariosDelRequerimiento($requerimiento));
 
         self::crearParaUsuarios($destinatarios, [
             'solicitud_id' => $requerimiento->solicitud_id,
@@ -106,9 +127,7 @@ class SolicitudNotificacionService
             'mensaje' => $requerimiento->tipo === 'resultado'
                 ? 'El resultado de la solicitud "' . $requerimiento->solicitud->titulo . '" fue devuelto para correccion.'
                 : 'Se rechazo la respuesta del requerimiento "' . $requerimiento->titulo . '".',
-            'url' => $requerimiento->tipo === 'resultado'
-                ? route('solicitudes.asignadas')
-                : ($requerimiento->destinatario_tipo === 'interno' ? route('mis-requerimientos') : route('solicitudes.index')),
+            'url' => route('mis-requerimientos'),
             'datos' => [
                 'comentario' => $requerimiento->comentario_validacion,
             ],
@@ -117,10 +136,12 @@ class SolicitudNotificacionService
 
     public static function notificarSolicitudCerrada(Solicitud $solicitud): void
     {
-        $solicitud->loadMissing('cliente', 'creadoPor');
+        $solicitud->loadMissing('cliente', 'creadoPor', 'responsable');
+
+        $destinatariosSeguimiento = self::usuariosSeguimiento($solicitud, [$solicitud->creado_por_user_id]);
 
         self::crearParaUsuarios(
-            self::usuariosSeguimiento($solicitud, [$solicitud->creado_por_user_id]),
+            $destinatariosSeguimiento,
             [
                 'solicitud_id' => $solicitud->id,
                 'tipo' => 'solicitud_cerrada',
@@ -130,13 +151,36 @@ class SolicitudNotificacionService
                 'datos' => [],
             ]
         );
+
+        if (
+            $solicitud->responsable_user_id
+            && !in_array((int) $solicitud->responsable_user_id, array_map('intval', $destinatariosSeguimiento), true)
+        ) {
+            self::crearParaUsuarios(
+                [$solicitud->responsable_user_id],
+                [
+                    'solicitud_id' => $solicitud->id,
+                    'tipo' => 'solicitud_cerrada',
+                    'titulo' => 'Solicitud cerrada',
+                    'mensaje' => 'La solicitud "' . $solicitud->titulo . '" fue cerrada.',
+                    'url' => self::urlSolicitudesPara($solicitud->responsable),
+                    'datos' => [],
+                ]
+            );
+        }
     }
 
     private static function crearParaUsuarios(array $userIds, array $payload): void
     {
+        $actorId = auth()->id();
+
         $userIds = User::query()
-            ->whereIn('id', collect($userIds)->filter()->map(fn ($id) => (int) $id)->unique()->values())
-            ->whereNull('cliente_id')
+            ->whereIn('id', collect($userIds)
+                ->filter()
+                ->map(fn ($id) => (int) $id)
+                ->reject(fn ($id) => $actorId && $id === (int) $actorId)
+                ->unique()
+                ->values())
             ->pluck('id');
 
         if ($userIds->isEmpty()) {
@@ -167,12 +211,37 @@ class SolicitudNotificacionService
         return array_values(array_unique(array_merge($baseUserIds, $seguimiento)));
     }
 
+    private static function destinatariosDelRequerimiento(SolicitudRequerimiento $requerimiento): array
+    {
+        if ($requerimiento->destinatario_tipo === 'interno' && $requerimiento->destinatario_user_id) {
+            return [(int) $requerimiento->destinatario_user_id];
+        }
+
+        if ($requerimiento->destinatario_tipo === 'cliente') {
+            $clienteUserId = $requerimiento->solicitud?->cliente?->usuario?->id;
+
+            return $clienteUserId ? [(int) $clienteUserId] : [];
+        }
+
+        return [];
+    }
+
     private static function urlSolicitudesPara(?User $user): string
     {
+        if ($user && $user->hasRole('cliente')) {
+            return route('Clientes.portal');
+        }
+
         if ($user && $user->hasRole('contador')) {
             return route('solicitudes.asignadas');
         }
 
         return route('solicitudes.index');
+    }
+
+    private static function debeNotificarResponsablePorSolicitud(Solicitud $solicitud): bool
+    {
+        return !$solicitud->requerimientos
+            ->contains(fn ($requerimiento) => $requerimiento->estado !== 'cancelado');
     }
 }

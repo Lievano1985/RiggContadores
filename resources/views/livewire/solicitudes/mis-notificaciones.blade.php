@@ -63,8 +63,21 @@
 
                         <div class="text-xs text-stone-500 dark:text-stone-400">
                             Para:
-                            {{ $notificacion->requerimiento?->destinatario?->name ?? $notificacion->solicitud?->responsable?->name ?? '-' }}
+                            {{ $notificacion->user?->name ?? '-' }}
                         </div>
+
+                        @if (!in_array($notificacion->tipo, ['requerimiento_respondido', 'resultado_entregado'], true))
+                            <div class="text-xs text-stone-500 dark:text-stone-400">
+                                De:
+                                {{ $notificacion->requerimiento?->creadoPor?->name ?? $notificacion->solicitud?->creadoPor?->name ?? '-' }}
+                            </div>
+                        @endif
+
+                        @if (in_array($notificacion->tipo, ['requerimiento_respondido', 'resultado_entregado'], true) && $notificacion->requerimiento?->respondidoPor)
+                            <div class="text-xs text-stone-500 dark:text-stone-400">
+                                Respondido por: {{ $notificacion->requerimiento->respondidoPor->name }}
+                            </div>
+                        @endif
 
                         @if ($notificacion->solicitud?->cliente)
                             <div class="text-xs text-stone-500 dark:text-stone-400">

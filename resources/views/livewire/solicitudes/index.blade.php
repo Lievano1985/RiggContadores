@@ -1,5 +1,3 @@
-@php use Illuminate\Support\Facades\Storage; @endphp
-
 <div x-data="{ sidebar: @entangle('sidebarVisible'), detalleSidebar: @entangle('detalleSidebarVisible') }" class="space-y-4 rounded-lg bg-white p-6 text-gray-900 shadow dark:bg-gray-900 dark:text-white">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-xl font-bold text-stone-600 dark:text-white">{{ $tituloModulo }}</h2>
@@ -17,6 +15,7 @@
 
             <select wire:model.live="estado"
                 class="rounded border px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:bg-gray-700 dark:text-white">
+                <option value="activos">Estado (activos)</option>
                 <option value="">Estado (todos)</option>
                 <option value="abierta">Abierta</option>
                 <option value="en_proceso">En proceso</option>
@@ -50,8 +49,8 @@
                     <x-sortable-th field="cliente" label="Cliente" :sort-field="$sortField" :sort-direction="$sortDirection" />
                     <x-sortable-th field="titulo" label="Titulo" :sort-field="$sortField" :sort-direction="$sortDirection" />
                     <x-sortable-th field="estado" label="Estado" :sort-field="$sortField" :sort-direction="$sortDirection" />
-                    <x-sortable-th field="responsable" label="Responsable" :sort-field="$sortField" :sort-direction="$sortDirection" />
-                    <th class="px-4 py-2 text-left text-xs font-semibold">Obligacion</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold">Creada por</th>
+                    <x-sortable-th field="responsable" label="Atiende" :sort-field="$sortField" :sort-direction="$sortDirection" />
                     <th class="px-4 py-2 text-left text-xs font-semibold">Vencimiento</th>
                     <th class="px-4 py-2 text-left text-xs font-semibold">Acciones</th>
                 </tr>
@@ -79,8 +78,10 @@
                                 {{ $solicitud->estado === 'pendiente_cliente' ? 'En revision' : str_replace('_', ' ', $solicitud->estado) }}
                             </span>
                         </td>
-                        <td class="px-4 py-2">{{ $solicitud->responsable->name ?? '-' }}</td>
-                        <td class="px-4 py-2">{{ $solicitud->obligacion_etiqueta }}</td>
+                        <td class="px-4 py-2">{{ $solicitud->creadoPor->name ?? '-' }}</td>
+                        <td class="px-4 py-2">
+                            {{ $solicitud->origen === 'cliente' ? 'Cliente' : ($solicitud->responsable->name ?? '-') }}
+                        </td>
                         <td class="px-4 py-2 whitespace-nowrap">{{ $solicitud->fecha_vencimiento?->format('d/m/Y') ?? '-' }}</td>
                         <td class="px-4 py-2 whitespace-nowrap">
                             <div class="flex items-center gap-2">
@@ -91,8 +92,6 @@
                                         wire:click="editarSolicitud({{ $solicitud->id }})" />
                                 @endif
                                 @if (!in_array($solicitud->estado, ['cerrada', 'cancelada']) && ($usuarioEsAdminOSupervisor || $solicitud->creado_por_user_id === auth()->id()))
-                                    <x-action-icon icon="check" label="Cerrar" variant="primary"
-                                        wire:click="confirmarCierreSolicitud({{ $solicitud->id }})" />
                                     <x-action-icon icon="trash" label="Cancelar" variant="danger"
                                         wire:click="confirmarCancelacionSolicitud({{ $solicitud->id }})" />
                                 @endif
@@ -124,21 +123,105 @@
                 <button @click="$wire.cerrarSidebar()" class="text-gray-500 hover:text-black dark:hover:text-white">x</button>
             </div>
 
-            <div class="flex-1 space-y-6 overflow-y-auto p-4">
+            <div x-on:enfocar-formulario-requerimiento.window="$nextTick(() => $refs.requerimientoForm?.scrollIntoView({ behavior: 'smooth', block: 'start' }))"
+                class="flex-1 space-y-6 overflow-y-auto p-4">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-sm font-medium">Cliente</label>
-                        <select wire:model.live="cliente_id_form"
-                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                            <option value="">Seleccione...</option>
-                            @foreach ($clientesDisponibles as $cliente)
-                                <option value="{{ $cliente['id'] }}">{{ $cliente['nombre'] }}</option>
-                            @endforeach
-                        </select>
+                        <div
+                            x-data="{
+                                open: false,
+                                search: '',
+                                selectedId: @entangle('cliente_id_form').live,
+                                options: @js($clientesDisponibles),
+                                filteredOptions() {
+                                    const term = this.search.toLowerCase().trim();
+                                    if (!term) return this.options;
+                                    return this.options.filter(option => (option.nombre || '').toLowerCase().includes(term));
+                                },
+                                selectedOption() {
+                                    return this.options.find(option => Number(option.id) === Number(this.selectedId)) || null;
+                                },
+                                syncSearch() {
+                                    const selected = this.selectedOption();
+                                    this.search = selected ? selected.nombre : '';
+                                },
+                                selectOption(option) {
+                                    this.selectedId = Number(option.id);
+                                    this.search = option.nombre;
+                                    this.open = false;
+                                },
+                                clearSelection() {
+                                    this.selectedId = null;
+                                    this.search = '';
+                                    this.open = false;
+                                }
+                            }"
+                            x-init="syncSearch()"
+                            x-effect="syncSearch()"
+                            class="relative">
+                            <input type="text"
+                                x-model="search"
+                                @focus="open = true"
+                                @click="open = true"
+                                @input="open = true"
+                                @keydown.escape.window="open = false"
+                                placeholder="Buscar cliente..."
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 pr-20 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+
+                            <div x-show="!search && !selectedId"
+                                x-cloak
+                                class="pointer-events-none absolute inset-y-0 right-10 flex items-center text-xs text-gray-400">
+                                Buscar
+                            </div>
+
+                            <button type="button"
+                                x-show="selectedId"
+                                x-cloak
+                                @click="clearSelection()"
+                                class="absolute inset-y-0 right-2 my-auto h-7 rounded px-2 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-600 dark:hover:text-white">
+                                Limpiar
+                            </button>
+
+                            <div x-cloak
+                                x-show="open"
+                                @click.outside="open = false"
+                                class="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                                <template x-if="filteredOptions().length === 0">
+                                    <div class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                                        Sin coincidencias.
+                                    </div>
+                                </template>
+
+                                <template x-for="option in filteredOptions()" :key="option.id">
+                                    <button type="button"
+                                        @click="selectOption(option)"
+                                        class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-amber-50 dark:hover:bg-gray-700">
+                                        <span x-text="option.nombre" class="truncate"></span>
+                                        <span x-show="Number(selectedId) === Number(option.id)" class="text-xs text-amber-600 dark:text-amber-300">Seleccionado</span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
                         @error('cliente_id_form') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
                     </div>
 
-                    <input type="hidden" wire:model="origen_form">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium">Dirigida a</label>
+                        <select wire:model.live="origen_form"
+                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            <option value="despacho">Despacho</option>
+                            @if ($puedeCrearSolicitudParaCliente)
+                                <option value="cliente">Cliente</option>
+                            @endif
+                        </select>
+                        @error('origen_form') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
+                        @unless ($puedeCrearSolicitudParaCliente)
+                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                Las solicitudes dirigidas al cliente solo las puede crear el usuario encargado de ese cliente.
+                            </div>
+                        @endunless
+                    </div>
 
                     <div>
                         <label class="mb-1 block text-sm font-medium">Modo de solicitud</label>
@@ -339,6 +422,7 @@
                                 <div><span class="font-medium">Modo:</span> {{ ucfirst($solicitudDetalle->modo_solicitud) }}</div>
                                 <div><span class="font-medium">Tipo ID:</span> {{ $solicitudDetalle->tipo_solicitud_id ?: '-' }}</div>
                                 <div><span class="font-medium">Relacion obligacion:</span> {{ $solicitudDetalle->obligacion_cliente_contador_id ?: 'Sin relacion' }}</div>
+                                <div><span class="font-medium">Estado formulario:</span> {{ $solicitudDetalle->estado_formulario_label }}</div>
                             </div>
                         </div>
                     </div>
@@ -348,22 +432,10 @@
                         <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $solicitudDetalle->descripcion ?: 'Sin descripcion.' }}</p>
                     </div>
 
-                    @if ($solicitudDetalle->modo_solicitud === 'definida')
-                        <div class="space-y-3 rounded-lg border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
-                            <h5 class="font-semibold text-stone-700 dark:text-white">Formulario base</h5>
-                            <p class="text-sm text-gray-600 dark:text-gray-300">
-                                Tipo: {{ $solicitudDetalle->tipoSolicitud?->nombre ?? ($solicitudDetalle->plantilla_snapshot['nombre'] ?? '-') }}
-                            </p>
-                            <p class="text-sm text-gray-600 dark:text-gray-300">
-                                Datos capturados y requerimientos se integraran en este bloque.
-                            </p>
-                        </div>
-                    @endif
-
                     <div class="space-y-4 rounded-lg border border-violet-200 bg-violet-50/60 p-4 dark:border-violet-900/60 dark:bg-violet-950/20">
                         <div class="flex items-center justify-between gap-3">
                             <h5 class="font-semibold text-stone-700 dark:text-white">Requerimientos</h5>
-                            @if ($solicitudDetalle->responsable_user_id === auth()->id())
+                            @if (($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()) && $solicitudDetalle->modo_solicitud !== 'definida')
                                 <button wire:click="abrirFormularioRequerimiento"
                                     class="rounded bg-amber-600 px-3 py-2 text-xs text-white hover:bg-amber-700">
                                     + Nuevo requerimiento
@@ -372,7 +444,7 @@
                         </div>
 
                         @if ($requerimientoFormVisible)
-                            <div class="space-y-4 rounded-lg border border-white/70 bg-white/80 p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900/50">
+                            <div x-ref="requerimientoForm" class="space-y-4 rounded-lg border border-white/70 bg-white/80 p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900/50">
                                 <div class="flex items-center justify-between gap-3">
                                     <h6 class="font-semibold text-stone-700 dark:text-white">
                                         {{ $editandoRequerimiento ? 'Editar requerimiento' : 'Nuevo requerimiento' }}
@@ -441,6 +513,7 @@
 
                         <div class="space-y-3">
                             @forelse ($solicitudDetalle->requerimientos as $requerimiento)
+                                @continue($solicitudDetalle->usaFormularioComoCierre() && $requerimiento->tipo === 'resultado')
                                 @php
                                     $requerimientoEstadoClass = match ($requerimiento->estado) {
                                         'abierto' => 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
@@ -450,8 +523,16 @@
                                         'cancelado' => 'bg-stone-200 text-stone-700 dark:bg-stone-700 dark:text-stone-100',
                                         default => 'bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-200',
                                     };
+                                    $usuarioPuedeVerRespuestaResultado = $requerimiento->tipo !== 'resultado'
+                                        || $solicitudDetalle->creado_por_user_id === auth()->id();
+                                    $mostrarFormularioRespondido = $solicitudDetalle->modo_solicitud === 'definida'
+                                        && in_array($solicitudDetalle->estado_formulario, ['respondido', 'validado'], true)
+                                        && (
+                                            ($requerimiento->tipo === 'resultado' && $usuarioPuedeVerRespuestaResultado)
+                                            || ($requerimiento->esRequerimientoFormulario() && $solicitudDetalle->creado_por_user_id === auth()->id())
+                                        );
                                 @endphp
-                                <div x-data="{ open: {{ $requerimiento->tipo === 'resultado' ? 'true' : 'false' }} }"
+                                <div x-data="{ open: {{ $requerimiento->tipo === 'resultado' || $requerimiento->esRequerimientoFormulario() ? 'true' : 'false' }} }"
                                     class="overflow-visible rounded-xl border-2 border-stone-300 bg-stone-100 shadow-md dark:border-stone-600 dark:bg-stone-800">
                                     <div @click="open = !open"
                                         class="flex items-start justify-between gap-3 px-4 py-4 text-left hover:bg-stone-200/70 dark:hover:bg-stone-700/50">
@@ -494,41 +575,98 @@
                                     </div>
 
                                     <div x-show="open" x-transition class="space-y-3 border-t border-stone-300 px-4 pb-4 pt-4 dark:border-stone-600">
-                                        @if ($requerimiento->descripcion)
+                                        @if ($requerimiento->descripcion && !$requerimiento->esRequerimientoFormulario())
                                             <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimiento->descripcion }}</p>
                                         @endif
 
-                                        @if ($requerimiento->respuesta_texto)
+                                        @if ($requerimiento->respuesta_texto && $usuarioPuedeVerRespuestaResultado && !$requerimiento->esRequerimientoFormulario())
                                             <div class="space-y-2 rounded-lg border border-emerald-200 p-3 dark:border-emerald-800">
                                                 <div class="text-sm font-medium text-emerald-700 dark:text-emerald-300">Respuesta</div>
                                                 <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimiento->respuesta_texto }}</p>
+
+                                                @if ($requerimiento->archivos->isNotEmpty())
+                                                    <div class="space-y-2">
+                                                        <div class="text-xs font-medium text-stone-700 dark:text-white">Archivos adjuntos</div>
+                                                        @foreach ($requerimiento->archivos as $archivo)
+                                                            <a href="{{ $archivo->archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
+                                                                target="_blank"
+                                                                class="block text-sm text-amber-600 hover:underline dark:text-amber-300">
+                                                                {{ $archivo->nombre }}
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+
                                                 <div class="text-xs text-gray-500 dark:text-gray-400">
                                                     Respondido por {{ $requerimiento->respondidoPor?->name ?? '-' }} el {{ $requerimiento->respondido_at?->format('d/m/Y H:i') ?? '-' }}
                                                 </div>
                                             </div>
                                         @endif
 
+                                        @if ($mostrarFormularioRespondido)
+                                            <div class="space-y-3 rounded-lg border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
+                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                    <h6 class="font-semibold text-stone-700 dark:text-white">Formulario respondido</h6>
+                                                    <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                                        {{ $solicitudDetalle->estado_formulario_label }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="space-y-2">
+                                                    @foreach ($solicitudDetalle->resumen_formulario as $campo)
+                                                        @php
+                                                            $archivoFormularioRespondido = null;
+
+                                                            if (($campo['type'] ?? null) === 'file' && filled($campo['value'])) {
+                                                                $archivoFormularioRespondido = $solicitudDetalle->archivos->firstWhere('nombre', $campo['value']);
+                                                            }
+                                                        @endphp
+                                                        <div class="rounded border border-sky-100 px-3 py-2 text-sm dark:border-sky-900/30">
+                                                            <div class="flex flex-wrap items-center gap-2">
+                                                                <span class="font-medium text-stone-700 dark:text-white">{{ $campo['label'] }}</span>
+                                                                @if ($campo['required'])
+                                                                    <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                                                                        Requerido
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                                @if (filled($campo['value']))
+                                                                    @if (($campo['type'] ?? null) === 'file' && $archivoFormularioRespondido)
+                                                                        <a href="{{ $archivoFormularioRespondido->archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($archivoFormularioRespondido->archivo) : $archivoFormularioRespondido->archivo_drive_url }}"
+                                                                            target="_blank"
+                                                                            class="text-amber-600 hover:underline">
+                                                                            {{ $archivoFormularioRespondido->nombre }}
+                                                                        </a>
+                                                                    @else
+                                                                        {{ is_array($campo['value']) ? implode(', ', $campo['value']) : $campo['value'] }}
+                                                                    @endif
+                                                                @else
+                                                                    Sin respuesta capturada.
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+
+                                                @if (filled($requerimiento->respuesta_texto))
+                                                    <div class="space-y-2 rounded border border-sky-100 bg-white/70 px-3 py-3 dark:border-sky-900/30 dark:bg-gray-800/30">
+                                                        <div class="text-sm font-medium text-stone-700 dark:text-white">Comentario adicional</div>
+                                                        <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimiento->respuesta_texto }}</p>
+                                                    </div>
+                                                @endif
+
+                                                @if ($requerimiento->respondido_at)
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                        Respondido por {{ $requerimiento->respondidoPor?->name ?? '-' }} el {{ $requerimiento->respondido_at?->format('d/m/Y H:i') ?? '-' }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endif
+
                                         @if ($requerimiento->tipo === 'resultado' && $requerimiento->destinatario_user_id === auth()->id())
-                                            <div class="space-y-3 rounded-lg border border-blue-200 p-3 dark:border-blue-800">
-                                                <div class="text-sm font-medium text-blue-700 dark:text-blue-300">Entregar resultado</div>
-                                                <textarea wire:model="respuestaResultado.{{ $requerimiento->id }}" rows="4"
-                                                    @disabled(in_array($requerimiento->estado, ['validado', 'cancelado']))
-                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
-                                                @error('respuestaResultado.' . $requerimiento->id) <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
-                                                <div class="rounded-lg border border-dashed border-gray-300 p-3 dark:border-gray-700">
-                                                    <div class="mb-2 text-sm font-medium text-stone-700 dark:text-white">Documentos de resultado</div>
-                                                    <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                                                        Adjunta aqui los archivos del resultado final si aplica.
-                                                    </p>
-                                                    @livewire('shared.archivos-adjuntos-crud', ['modelo' => $requerimiento], key('resultado-archivos-' . $requerimiento->id))
-                                                </div>
-                                                <div class="flex justify-end">
-                                                    <button wire:click="guardarRespuestaResultado({{ $requerimiento->id }})"
-                                                        @disabled(in_array($requerimiento->estado, ['validado', 'cancelado']))
-                                                        class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700 disabled:opacity-60">
-                                                        Guardar resultado
-                                                    </button>
-                                                </div>
+                                            <div class="rounded-lg border border-blue-200 bg-blue-50/60 p-3 text-sm text-blue-700 dark:border-blue-800 dark:bg-blue-950/20 dark:text-blue-300">
+                                                Este requerimiento principal se responde desde <span class="font-medium">Mis Requerimientos</span>.
                                             </div>
                                         @endif
 
@@ -561,11 +699,11 @@
                                         @endif
 
                                         <div class="flex justify-end gap-2">
-                                            @if ($solicitudDetalle->responsable_user_id === auth()->id() && $requerimiento->tipo !== 'resultado')
+                                            @if (($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()) && $requerimiento->tipo !== 'resultado')
                                                 <x-action-icon icon="edit" label="Editar" variant="primary"
-                                                    wire:click="editarRequerimiento({{ $requerimiento->id }})" />
+                                                    wire:click.stop="editarRequerimiento({{ $requerimiento->id }})" />
                                                 <x-action-icon icon="trash" label="Eliminar" variant="danger"
-                                                    wire:click="confirmarEliminarRequerimiento({{ $requerimiento->id }})" />
+                                                    wire:click.stop="confirmarEliminarRequerimiento({{ $requerimiento->id }})" />
                                             @endif
 
                                             @if (

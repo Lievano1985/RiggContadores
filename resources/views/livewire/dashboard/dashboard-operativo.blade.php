@@ -1212,7 +1212,7 @@
                         this.chart.destroy();
                     }
 
-                    const currentTheme = document.documentElement.dataset.theme || 'dark';
+                    const currentTheme = document.documentElement.dataset.theme || 'rigg';
                     const isDark = currentTheme === 'dark';
                     const isRigg = currentTheme === 'rigg';
                     const labelColor = isDark ? '#9ca3af' : (isRigg ? '#4b5d74' : '#6b7280');
@@ -1297,4 +1297,3 @@
         }
     </script>
 </div>
-

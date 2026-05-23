@@ -222,11 +222,55 @@ class GeneradorObligaciones
         }
     }
 
+    /**
+     * Agrega una tarea de catalogo a obligaciones activas que ya existen en el mes actual.
+     */
+    public function sincronizarTareaPeriodoActual(TareaCatalogo $tarea, ?Carbon $fechaReferencia = null): int
+    {
+        if (! $tarea->obligacion_id || ! $tarea->activo) {
+            return 0;
+        }
+
+        $ref = $fechaReferencia?->copy()->startOfMonth() ?? now()->copy()->startOfMonth();
+        $asignadas = 0;
+
+        ObligacionClienteContador::query()
+            ->where('obligacion_id', $tarea->obligacion_id)
+            ->where('ejercicio', (int) $ref->year)
+            ->where('mes', (int) $ref->month)
+            ->where('is_activa', true)
+            ->chunkById(200, function ($obligaciones) use ($tarea, &$asignadas) {
+                foreach ($obligaciones as $occ) {
+                    $asignacion = TareaAsignada::firstOrCreate(
+                        [
+                            'cliente_id'                     => $occ->cliente_id,
+                            'tarea_catalogo_id'              => $tarea->id,
+                            'obligacion_cliente_contador_id' => $occ->id,
+                            'ejercicio'                      => $occ->ejercicio,
+                            'mes'                            => $occ->mes,
+                        ],
+                        [
+                            'contador_id'      => $occ->contador_id,
+                            'carpeta_drive_id' => null,
+                            'sin_carpeta'      => false,
+                            'fecha_asignacion' => now(),
+                            'fecha_limite'     => $occ->fecha_vencimiento,
+                            'estatus'          => 'asignada',
+                        ]
+                    );
+
+                    if ($asignacion->wasRecentlyCreated) {
+                        $asignadas++;
+                    }
+                }
+            });
+
+        return $asignadas;
+    }
 
     /**
-     * Genera manualmente obligaciones específicas para un cliente, en un mes/año determinado.
-     * No afecta la lógica de CRON. Usado desde componente Livewire.
-     * Autor: Luis Liévano - JL3 Digital
+     * Genera manualmente obligaciones especificas para un cliente, en un mes/anio determinado.
+     * No afecta la logica de CRON. Usado desde componente Livewire.
      */
     public function generarManualClienteObligaciones(Cliente $cliente, array $obligacionIds, int $anio, int $mes): array
     {

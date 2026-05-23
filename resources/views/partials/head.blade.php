@@ -7,7 +7,7 @@
 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 <script>
     (() => {
-        const savedTheme = localStorage.getItem('app-theme') || 'dark';
+        const savedTheme = localStorage.getItem('app-theme') || 'rigg';
         document.documentElement.dataset.theme = savedTheme;
         document.documentElement.classList.toggle('dark', savedTheme === 'dark');
     })();

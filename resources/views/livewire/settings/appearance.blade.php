@@ -10,7 +10,7 @@ new class extends Component {
     @include('partials.settings-heading')
 
     <x-settings.layout :heading="__('Apariencia')" :subheading=" __('Actualiza el tema visual de tu cuenta.')">
-        <flux:radio.group x-data="{ appTheme: document.documentElement.dataset.theme || 'dark' }"
+        <flux:radio.group x-data="{ appTheme: document.documentElement.dataset.theme || 'rigg' }"
             x-on:app-theme-changed.window="appTheme = $event.detail.theme"
             variant="segmented" x-model="appTheme" x-on:change="window.AppTheme?.apply(appTheme)">
             <flux:radio value="light" icon="sun">{{ __('Claro') }}</flux:radio>
