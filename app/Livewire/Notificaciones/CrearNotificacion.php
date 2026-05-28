@@ -261,15 +261,19 @@ class CrearNotificacion extends Component
      
         // 5️⃣ Enviar correo con Brevo
         $brevo = new BrevoService();
+        $nombreDespacho = $this->cliente->despacho?->nombre ?: config('app.name');
+        $periodoTexto = ($this->mesesManual[(int) $this->periodo_mes] ?? $this->periodo_mes)
+            . ' ' . $this->periodo_ejercicio;
 
         $response = $brevo->enviarNotificacionClientePlantilla(
             $this->cliente->correo,
             $this->cliente->nombre,
             $this->asunto,
             $this->mensaje,
-            $this->periodo_mes . '/' . $this->periodo_ejercicio,
+            $periodoTexto,
             $attachments,
-            $correosCc
+            $correosCc,
+            $nombreDespacho
         );
 
 

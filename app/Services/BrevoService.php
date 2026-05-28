@@ -69,14 +69,18 @@ class BrevoService
         string $mensaje,
         string $periodo,
         array $attachments = [],
-        array $cc = []
+        array $cc = [],
+        ?string $empresa = null
      ) {
+        $empresa = $empresa ?: config('app.name');
+
         $params = [
             'nombre'  => $nombre,
             'asunto'  => $asunto,
             'mensaje' => $mensaje,
             'periodo' => $periodo,
-            'empresa' => config('app.name'),
+            'empresa' => $empresa,
+            'despacho' => $empresa,
         ];
 
         if (!empty($attachments)) {
