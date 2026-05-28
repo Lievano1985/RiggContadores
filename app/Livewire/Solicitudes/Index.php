@@ -50,6 +50,7 @@ class Index extends Component
     public string $descripcion_form = '';
     public string $prioridad_form = '';
     public string $fecha_resultado_form = '';
+    public array $solicitud_archivos_form = [];
     public bool $requerimientoFormVisible = false;
     public bool $editandoRequerimiento = false;
     public ?int $requerimientoEditandoId = null;
@@ -842,6 +843,7 @@ class Index extends Component
             'descripcion_form' => ['nullable', 'string'],
             'prioridad_form' => ['nullable', Rule::in(['baja', 'media', 'alta', 'urgente'])],
             'fecha_resultado_form' => ['nullable', 'date'],
+            'solicitud_archivos_form.*' => ['nullable', 'file', 'max:20480'],
         ]);
 
         $user = auth()->user();
@@ -960,6 +962,8 @@ class Index extends Component
 
             $solicitud->update($payload);
 
+            $this->guardarArchivosSolicitud($solicitud);
+
             $this->sincronizarRequerimientoResultado($solicitud, $user, $cliente->responsable_solicitudes_id);
 
             $this->asegurarRequerimientoFormulario($solicitud, $user, $tipo);
@@ -977,6 +981,8 @@ class Index extends Component
             $payload['creado_por_user_id'] = $user->id;
             $solicitud = Solicitud::create($payload);
 
+            $this->guardarArchivosSolicitud($solicitud);
+
             $resultadoRequerimiento = $this->sincronizarRequerimientoResultado($solicitud, $user, $cliente->responsable_solicitudes_id);
 
             SolicitudHistorialService::registrar(
@@ -991,7 +997,7 @@ class Index extends Component
                 SolicitudHistorialService::registrar(
                     $solicitud,
                     'resultado_generado',
-                    'Resultado esperado generado',
+                    'Requerimiento resultado generado',
                     'Se genero automaticamente el requerimiento de resultado esperado.',
                     $user->id,
                     $resultadoRequerimiento
@@ -1080,6 +1086,7 @@ class Index extends Component
             'responsableClienteSeleccionado' => $this->clienteSeleccionadoResponsable(),
             'tipoSeleccionado' => $this->tipoSeleccionado(),
             'solicitudDetalle' => $this->solicitudDetalle(),
+            'solicitudEditandoActual' => $this->solicitudEditandoActual(),
             'usuariosInternosRequerimiento' => $this->usuariosInternosRequerimiento(),
             'tituloModulo' => $this->vistaSolicitudes === 'asignadas' ? 'Solicitudes asignadas' : 'Solicitudes',
             'puedeCrearSolicitud' => $this->usuarioPuedeCrearSolicitud(),
@@ -1184,6 +1191,7 @@ class Index extends Component
         $this->descripcion_form = '';
         $this->prioridad_form = '';
         $this->fecha_resultado_form = '';
+        $this->solicitud_archivos_form = [];
         $this->obligacionesDisponibles = [];
     }
 
@@ -1488,6 +1496,85 @@ class Index extends Component
             ->where('despacho_id', $user->despacho_id)
             ->where('responsable_solicitudes_id', $user->id)
             ->exists();
+    }
+
+    private function solicitudEditandoActual(): ?Solicitud
+    {
+        if (!$this->editandoSolicitud || !$this->solicitudEditandoId) {
+            return null;
+        }
+
+        return Solicitud::query()
+            ->with('archivos')
+            ->find($this->solicitudEditandoId);
+    }
+
+    private function guardarArchivosSolicitud(Solicitud $solicitud): void
+    {
+        if (empty($this->solicitud_archivos_form)) {
+            return;
+        }
+
+        $cliente = $solicitud->cliente;
+        $despacho = $cliente?->despacho;
+
+        if (!$cliente || !$despacho) {
+            return;
+        }
+
+        foreach ($this->solicitud_archivos_form as $archivo) {
+            if (!$archivo || !is_object($archivo) || !method_exists($archivo, 'getClientOriginalName')) {
+                continue;
+            }
+
+            $nombreFinal = $this->construirNombreArchivoSolicitud($cliente->rfc, $solicitud->titulo, $archivo);
+            $rutaStorage = null;
+            $urlDrive = null;
+
+            if (in_array($despacho->politica_almacenamiento, ['storage_only', 'both'])) {
+                $rutaStorage = $archivo->storeAs('adjuntos', $nombreFinal, 'public');
+            }
+
+            if (in_array($despacho->politica_almacenamiento, ['drive_only', 'both'])) {
+                $folderId = null;
+
+                if ($solicitud->carpeta_drive_id) {
+                    $folderId = \App\Models\CarpetaDrive::find($solicitud->carpeta_drive_id)?->drive_folder_id;
+                }
+
+                if ($folderId) {
+                    $drive = app(\App\Services\DriveService::class);
+                    $res = $drive->subirArchivo(
+                        $nombreFinal,
+                        $archivo,
+                        $folderId,
+                        $archivo->getMimeType()
+                    );
+
+                    $urlDrive = is_array($res) ? ($res['webViewLink'] ?? null) : $res;
+                }
+            }
+
+            $solicitud->archivos()->create([
+                'nombre' => $nombreFinal,
+                'archivo' => $rutaStorage,
+                'archivo_drive_url' => $urlDrive,
+            ]);
+        }
+
+        $this->solicitud_archivos_form = [];
+    }
+
+    private function construirNombreArchivoSolicitud(string $rfc, string $titulo, $archivo): string
+    {
+        $extension = strtolower($archivo->getClientOriginalExtension());
+        $mes = now()->format('m');
+        $anio = now()->format('y');
+        $segundos = now()->format('s');
+        $rfcNormalizado = \Str::upper($rfc);
+        $tituloNormalizado = \Str::slug($titulo, '-');
+
+        return "{$anio}-{$mes}-{$rfcNormalizado}-solicitud-{$tituloNormalizado}-{$segundos}.{$extension}";
     }
 
     private function usuarioEsAdminOSupervisor(): bool

@@ -402,7 +402,7 @@ public ?string $modalObligacion = null;
         $this->modalObligacion =
             $o->obligacion->nombre ?? 'Obligación';
     
-        $this->soloLectura = false;
+        $this->soloLectura = ! in_array($o->estatus, ['en_progreso', 'reabierta'], true);
         $this->openModal = true;
     }
     
@@ -422,6 +422,11 @@ public ?string $modalObligacion = null;
 
         $o = $this->findMine((int)$this->selectedId);
 
+        if (! in_array($o->estatus, ['en_progreso', 'reabierta'], true)) {
+            $this->dispatch('notify', message: 'Esta obligacion ya fue terminada y solo puede consultarse.');
+            return;
+        }
+
         if ($this->hayTareasPendientes($o->id)) {
             $this->dispatch('notify', message: 'Cierra tareas ligadas primero');
             return;
@@ -436,7 +441,7 @@ public ?string $modalObligacion = null;
         $o->fecha_finalizado = $this->fecha_finalizado;
         $o->comentario = $this->comentario;
 
-        if (in_array($o->estatus, ['asignada', 'en_progreso'], true)) {
+        if (in_array($o->estatus, ['en_progreso', 'reabierta'], true)) {
             $o->estatus = 'realizada';
             $o->fecha_termino = now();
             $o->fecha_inicio ??= now();
@@ -500,7 +505,15 @@ public ?string $modalObligacion = null;
         }
 
         $this->selectedId = $o->id;
+        $this->numero_operacion = $o->numero_operacion;
+        $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
         $this->comentario = $o->comentario;
+        $this->modalCliente =
+            $o->cliente->nombre
+            ?? $o->cliente->razon_social
+            ?? 'Cliente';
+        $this->modalObligacion =
+            $o->obligacion->nombre ?? 'Obligacion';
         $this->soloLectura = true;
 
         $this->openModal = true;
@@ -510,7 +523,7 @@ public ?string $modalObligacion = null;
     {
         $o = $this->findMine($id);
 
-        if ($o->estatus !== 'rechazada') {
+        if (! in_array($o->estatus, ['rechazada', 'reabierta'], true)) {
             return;
         }
 
@@ -522,6 +535,15 @@ public ?string $modalObligacion = null;
         $this->highlightId = $o->id;
         $this->dispatch('limpiar-highlight');
         $this->selectedId = $o->id;
+        $this->numero_operacion = $o->numero_operacion;
+        $this->fecha_finalizado = optional($o->fecha_finalizado)->toDateString();
+        $this->comentario = $o->comentario;
+        $this->modalCliente =
+            $o->cliente->nombre
+            ?? $o->cliente->razon_social
+            ?? 'Cliente';
+        $this->modalObligacion =
+            $o->obligacion->nombre ?? 'Obligacion';
         $this->soloLectura = false;
 
         $this->openModal = true;

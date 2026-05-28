@@ -450,6 +450,11 @@ public function updatingClienteId()
 
         $t = $this->findMine($this->tareaId);
 
+        if ($t->estatus !== 'en_progreso') {
+            $this->dispatch('notify', message: 'Esta tarea ya fue terminada y solo puede consultarse.');
+            return;
+        }
+
         // =============================
         // Subida de archivo (tu lógica intacta)
         // =============================
@@ -539,6 +544,11 @@ public function updatingClienteId()
 
     public function saveResultTarea(): void
     {
+        if (! $this->tareaSeleccionada || $this->tareaSeleccionada->estatus !== 'en_progreso') {
+            $this->dispatch('notify', message: 'Esta tarea ya fue terminada y solo puede consultarse.');
+            return;
+        }
+
         $this->dispatch('guardar-archivos-adjuntos', origen: 'tareas');
     }
 
@@ -549,6 +559,11 @@ public function updatingClienteId()
         }
 
         $t = $this->findMine($this->tareaSeleccionada->id);
+
+        if ($t->estatus !== 'en_progreso') {
+            $this->dispatch('notify', message: 'Esta tarea ya fue terminada y solo puede consultarse.');
+            return;
+        }
 
         $t->update([
             'estatus'       => 'realizada',
@@ -606,6 +621,28 @@ public function updatingClienteId()
     $this->openModal = true;
 }
 
+public function verResultado(int $id): void
+{
+    $t = $this->findMine($id);
+
+    $this->tareaSeleccionada = $t;
+    $this->comentario = $t->comentario;
+    $this->archivo = null;
+
+    $this->modalCliente =
+        $t->cliente->nombre
+        ?? $t->cliente->razon_social
+        ?? 'Cliente';
+
+    $this->modalTarea = $t->tareaCatalogo->nombre ?? 'Tarea';
+
+    $this->modalObligacion =
+        $t->obligacionClienteContador?->obligacion?->nombre;
+
+    $this->soloLectura = true;
+    $this->openModal = true;
+}
+
 
 public function limpiarHighlight(): void
 {
@@ -616,7 +653,7 @@ public function corregir(int $id): void
 {
     $t = $this->findMine($id);
 
-    if ($t->estatus !== 'rechazada') {
+    if (! in_array($t->estatus, ['rechazada', 'reabierta'], true)) {
         return;
     }
 

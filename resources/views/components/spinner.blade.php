@@ -2,6 +2,22 @@
 
 <div
     x-data="{ show:false }"
+    x-init="
+        let spinnerHookRegistered = false;
+        const registerSpinnerHook = () => {
+            if (!window.Livewire || spinnerHookRegistered) return;
+
+            Livewire.hook('commit', ({ succeed, fail }) => {
+                succeed(() => show = false);
+                fail(() => show = false);
+            });
+
+            spinnerHookRegistered = true;
+        };
+
+        registerSpinnerHook();
+        document.addEventListener('livewire:init', registerSpinnerHook);
+    "
     x-cloak
 
     x-show="show"

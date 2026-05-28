@@ -304,6 +304,29 @@
                         @error('descripcion_form') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
                     </div>
 
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-medium">Archivos de apoyo</label>
+                        <input type="file" wire:model="solicitud_archivos_form" multiple
+                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            Opcional. Puedes adjuntar archivos guía o soporte para quien atenderá el requerimiento.
+                        </div>
+                        @error('solicitud_archivos_form.*') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
+
+                        @if ($editandoSolicitud && $solicitudEditandoActual && $solicitudEditandoActual->archivos->isNotEmpty())
+                            <div class="mt-3 space-y-2">
+                                <div class="text-xs font-medium text-stone-700 dark:text-white">Archivos actuales</div>
+                                @foreach ($solicitudEditandoActual->archivos as $archivo)
+                                    <a href="{{ $archivo->archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
+                                        target="_blank"
+                                        class="block text-sm text-amber-600 hover:underline dark:text-amber-300">
+                                        {{ $archivo->nombre }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
                     <div>
                         <label class="mb-1 block text-sm font-medium">Prioridad</label>
                         <select wire:model="prioridad_form"
@@ -349,6 +372,9 @@
                     Cancelar
                 </button>
                 <button wire:click="guardarSolicitud"
+                    @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
+                    wire:loading.attr="disabled"
+                    wire:target="guardarSolicitud"
                     class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
                     {{ $editandoSolicitud ? 'Actualizar solicitud' : 'Guardar solicitud' }}
                 </button>
@@ -504,6 +530,9 @@
                                         Cancelar
                                     </button>
                                     <button wire:click="guardarRequerimiento"
+                                        @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
+                                        wire:loading.attr="disabled"
+                                        wire:target="guardarRequerimiento"
                                         class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
                                         {{ $editandoRequerimiento ? 'Actualizar requerimiento' : 'Guardar requerimiento' }}
                                     </button>
@@ -764,12 +793,35 @@
                                             'requerimiento_rechazado', 'resultado_rechazado', 'solicitud_cancelada', 'requerimiento_eliminado' => 'bg-rose-500',
                                             default => 'bg-stone-400',
                                         };
+                                        $detalleEvento = match ($evento->tipo) {
+                                            'solicitud_creada',
+                                            'solicitud_actualizada',
+                                            'solicitud_cerrada',
+                                            'solicitud_cancelada' => $solicitudDetalle->titulo,
+                                            'resultado_entregado',
+                                            'resultado_validado',
+                                            'resultado_rechazado' => 'Resultado esperado',
+                                            'resultado_generado' => 'Asignado a ' . (
+                                                $evento->requerimiento?->destinatario_tipo === 'cliente'
+                                                    ? 'Cliente'
+                                                    : ($evento->requerimiento?->destinatario?->name ?? 'Sin asignar')
+                                            ),
+                                            'requerimiento_creado',
+                                            'requerimiento_actualizado',
+                                            'requerimiento_respondido',
+                                            'requerimiento_validado',
+                                            'requerimiento_rechazado',
+                                            'requerimiento_eliminado' => $evento->requerimiento?->titulo,
+                                            default => $evento->descripcion,
+                                        };
                                     @endphp
                                     <div class="flex items-start gap-3">
                                         <div class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{ $eventoColor }}"></div>
                                         <div class="min-w-0">
                                             <div class="font-medium text-gray-900 dark:text-white">{{ $evento->titulo }}</div>
-                                            @if ($evento->descripcion)
+                                            @if (filled($detalleEvento))
+                                                <div class="mt-0.5 whitespace-pre-line text-gray-600 dark:text-gray-300">{{ $detalleEvento }}</div>
+                                            @elseif ($evento->descripcion)
                                                 <div class="mt-0.5 whitespace-pre-line text-gray-600 dark:text-gray-300">{{ $evento->descripcion }}</div>
                                             @endif
                                             <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">

@@ -114,6 +114,27 @@
                         <div class="text-sm text-gray-500 dark:text-gray-400">Solicitud: {{ $requerimientoSeleccionado->solicitud->titulo ?? '-' }}</div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">Cliente: {{ $requerimientoSeleccionado->solicitud->cliente->nombre ?? ($requerimientoSeleccionado->solicitud->cliente->razon_social ?? '-') }}</div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">Responsable del caso: {{ $requerimientoSeleccionado->solicitud->responsable?->name ?? '-' }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Creada por: {{ $requerimientoSeleccionado->solicitud->creadoPor?->name ?? '-' }}</div>
+                    </div>
+
+                    <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                        <h5 class="font-semibold text-stone-700 dark:text-white">Contexto de la solicitud</h5>
+                        <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
+                            {{ $requerimientoSeleccionado->solicitud->descripcion ?: 'Sin descripcion adicional en la solicitud.' }}
+                        </p>
+
+                        @if ($requerimientoSeleccionado->solicitud->archivos->isNotEmpty())
+                            <div class="space-y-2">
+                                <div class="text-xs font-medium text-stone-700 dark:text-white">Archivos de apoyo</div>
+                                @foreach ($requerimientoSeleccionado->solicitud->archivos as $archivo)
+                                    <a href="{{ $archivo->archivo ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
+                                        target="_blank"
+                                        class="block text-sm text-amber-700 hover:underline dark:text-amber-300">
+                                        {{ $archivo->nombre }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
@@ -263,6 +284,9 @@
 
                         <div class="flex justify-end">
                             <button wire:click="guardarRespuesta"
+                                @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
+                                wire:loading.attr="disabled"
+                                wire:target="guardarRespuesta"
                                 @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
                                 class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700 disabled:opacity-60">
                                 Guardar respuesta

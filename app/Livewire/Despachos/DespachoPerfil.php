@@ -102,8 +102,6 @@ class DespachoPerfil extends Component
                 message: "Se generaron {$resultado['generadas']} obligaciones del periodo actual."
             );
         } else {
-            dd($resultado);
-
             $this->dispatch(
                 'notify',
                 message: 'El periodo actual ya estaba completamente generado. No se realizaron cambios.'

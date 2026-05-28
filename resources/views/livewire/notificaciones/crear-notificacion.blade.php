@@ -1,6 +1,9 @@
 <div x-data="{ selectorOpen: false }" class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow">
     @php
-        $obligacionesElegidas = collect($obligacionesDisponibles)->whereIn('id', $obligacionesSeleccionadas)->values();
+        $obligacionesElegidas = collect($obligacionesDisponibles)
+            ->whereIn('id', $obligacionesSeleccionadas)
+            ->sortBy(fn ($oc) => mb_strtolower($oc->obligacion->nombre ?? ''))
+            ->values();
         $archivosElegidos = collect($archivosDisponibles)->filter(
             fn ($archivo) => in_array((string) $archivo['id'], $archivoIdsSeleccionados, true)
         )->values();
@@ -104,11 +107,19 @@
                                     {{ ucfirst($archivo['origen_tipo']) }}: {{ $archivo['origen_nombre'] }}
                                 </div>
                             </div>
-                            <button type="button"
-                                wire:click="quitarArchivo({{ $archivo['id'] }})"
-                                class="text-red-600 hover:text-red-800 text-xs">
-                                Quitar
-                            </button>
+                            <div class="flex items-center gap-2 shrink-0">
+                                @if (!empty($archivo['url']))
+                                    <a href="{{ $archivo['url'] }}" target="_blank"
+                                        class="text-blue-600 hover:text-blue-800 text-xs">
+                                        Ver
+                                    </a>
+                                @endif
+                                <button type="button"
+                                    wire:click="quitarArchivo({{ $archivo['id'] }})"
+                                    class="text-red-600 hover:text-red-800 text-xs">
+                                    Quitar
+                                </button>
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -165,8 +176,8 @@
         class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
         <div class="absolute inset-0" @click="selectorOpen = false"></div>
 
-        <div class="relative w-full max-w-6xl rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="relative w-full max-w-6xl max-h-[calc(100vh-2rem)] rounded-2xl bg-white dark:bg-gray-900 shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <div>
                     <h3 class="text-lg font-semibold text-stone-700 dark:text-white">
                         Seleccionar obligaciones y archivos
@@ -183,7 +194,7 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-gray-200 dark:divide-gray-700">
+            <div class="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x divide-gray-200 dark:divide-gray-700 overflow-y-auto flex-1 min-h-0">
                 <section class="p-5">
                     <div class="flex items-center justify-between mb-3">
                         <h4 class="text-sm font-semibold text-stone-700 dark:text-white">
@@ -265,6 +276,12 @@
                                         <div class="text-xs text-gray-400 dark:text-gray-500">
                                             {{ $archivo['detalle'] }}
                                         </div>
+                                        @if (!empty($archivo['url']))
+                                            <a href="{{ $archivo['url'] }}" target="_blank"
+                                                class="inline-block mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                                Ver archivo
+                                            </a>
+                                        @endif
                                     </div>
                                 </label>
                             @endforeach
@@ -273,7 +290,7 @@
                 </section>
             </div>
 
-            <div class="flex items-center justify-between px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-stone-50 dark:bg-gray-800/60">
+            <div class="flex items-center justify-between px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-stone-50 dark:bg-gray-800/60 flex-shrink-0">
                 <p class="text-sm text-gray-500 dark:text-gray-400">
                     {{ count($obligacionesSeleccionadas) }} obligaciones y {{ count($archivoIdsSeleccionados) }} archivos listos.
                 </p>

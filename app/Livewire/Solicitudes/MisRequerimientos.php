@@ -148,6 +148,7 @@ class MisRequerimientos extends Component
                 'solicitud.cliente',
                 'solicitud.archivos',
                 'solicitud.responsable',
+                'solicitud.creadoPor',
                 'creadoPor',
                 'respondidoPor',
                 'archivos',

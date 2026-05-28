@@ -122,7 +122,9 @@ class CrearNotificacion extends Component
             })
             ->with('obligacion');
 
-        $this->obligacionesDisponibles = $query->get();
+        $this->obligacionesDisponibles = $query->get()
+            ->sortBy(fn ($oc) => mb_strtolower($oc->obligacion->nombre ?? ''))
+            ->values();
 
         // Inicialmente todas
         $this->obligacionesFiltradas = $this->obligacionesDisponibles;
@@ -139,7 +141,7 @@ class CrearNotificacion extends Component
                     mb_strtolower($oc->obligacion->nombre ?? ''),
                     $texto
                 );
-            });
+            })->values();
     }
     public function quitarObligacion($id)
     {
@@ -357,6 +359,7 @@ class CrearNotificacion extends Component
                 return [
                     'id' => $archivo->id,
                     'nombre' => $archivo->nombre ?? basename($archivo->archivo ?: ''),
+                    'url' => $this->resolverUrlArchivo($archivo),
                     'origen_tipo' => 'obligacion',
                     'origen_id' => (int) $archivo->archivoable_id,
                     'origen_nombre' => $obligacion?->obligacion?->nombre ?? 'Obligacion',
@@ -381,6 +384,7 @@ class CrearNotificacion extends Component
                 return [
                     'id' => $archivo->id,
                     'nombre' => $archivo->nombre ?? basename($archivo->archivo ?: ''),
+                    'url' => $this->resolverUrlArchivo($archivo),
                     'origen_tipo' => 'tarea',
                     'origen_id' => (int) $archivo->archivoable_id,
                     'origen_nombre' => $tarea?->tareaCatalogo?->nombre ?? 'Tarea',
@@ -403,6 +407,19 @@ class CrearNotificacion extends Component
             ->pluck('id')
             ->map(fn ($id) => (string) $id)
             ->all();
+    }
+
+    private function resolverUrlArchivo(ArchivoAdjunto $archivo): ?string
+    {
+        if ($archivo->tieneArchivoDrive()) {
+            return $archivo->archivo_drive_url;
+        }
+
+        if ($archivo->tieneArchivoStorage()) {
+            return Storage::disk('public')->url($archivo->archivo);
+        }
+
+        return null;
     }
 
     private function construirAdjuntoBrevo(ArchivoAdjunto $archivo): ?array

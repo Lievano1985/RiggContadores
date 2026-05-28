@@ -178,6 +178,16 @@
                                             wire:click="verRechazo({{ $t->id }})" />
                                     @endif
 
+                                    @if ($t->estatus === 'reabierta')
+                                        <x-action-icon icon="upload" label="Corregir resultado" variant="success"
+                                            wire:click="corregir({{ $t->id }})" />
+                                    @endif
+
+                                    @if (in_array($t->estatus, ['realizada', 'revisada', 'cerrada', 'terminada'], true))
+                                        <x-action-icon icon="eye" label="Ver resultado" variant="info"
+                                            wire:click="verResultado({{ $t->id }})" />
+                                    @endif
+
                                 </div>
                             </td>
 
@@ -230,6 +240,40 @@
                         </div>
                     @endif
 
+                    @if ($soloLectura && $tareaSeleccionada->estatus !== 'rechazada')
+                        <div class="mb-4">
+                            <label class="block text-sm mb-1 text-stone-600 dark:text-white">Archivos</label>
+                            <div class="rounded border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                                @forelse ($tareaSeleccionada->archivos as $archivo)
+                                    <div class="text-sm">
+                                        <span class="font-medium text-stone-700 dark:text-white">{{ $archivo->nombre }}</span>
+                                        @if ($archivo->archivo)
+                                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($archivo->archivo) }}"
+                                                target="_blank" class="ml-2 text-blue-600 dark:text-blue-400 hover:underline">
+                                                Ver archivo
+                                            </a>
+                                        @endif
+                                        @if ($archivo->archivo_drive_url)
+                                            <a href="{{ $archivo->archivo_drive_url }}" target="_blank"
+                                                class="ml-2 text-blue-600 dark:text-blue-400 hover:underline">
+                                                Ver Drive
+                                            </a>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">Sin archivos adjuntos.</p>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm mb-1 text-stone-600 dark:text-white">Comentario</label>
+                            <div class="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded text-gray-800 dark:text-white whitespace-pre-line">
+                                {{ $tareaSeleccionada->comentario ?? '-' }}
+                            </div>
+                        </div>
+                    @endif
+
                     {{-- Archivos y comentario solo si esta en progreso --}}
                     @if ($tareaSeleccionada->estatus === 'en_progreso')
                         {{-- COMPONENTE DE ARCHIVOS --}}
@@ -261,7 +305,7 @@
                         @endif
 
                         {{-- Boton "Finalizar" si ya esta en progreso --}}
-                        @if ($tareaSeleccionada->estatus === 'en_progreso')
+                        @if (!$soloLectura && $tareaSeleccionada->estatus === 'en_progreso')
                             <button wire:click="saveResultTarea"
                                 @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
                                 class="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded text-white">
