@@ -123,10 +123,22 @@
                             {{ $requerimientoSeleccionado->solicitud->descripcion ?: 'Sin descripcion adicional en la solicitud.' }}
                         </p>
 
-                        @if ($requerimientoSeleccionado->solicitud->archivos->isNotEmpty())
+                        @php
+                            $nombresArchivosFormulario = collect($requerimientoSeleccionado->solicitud->resumen_formulario ?? [])
+                                ->filter(fn ($campo) => ($campo['type'] ?? null) === 'file' && !empty($campo['value']))
+                                ->pluck('value')
+                                ->filter()
+                                ->values();
+
+                            $archivosApoyo = $requerimientoSeleccionado->solicitud->archivos
+                                ->reject(fn ($archivo) => $nombresArchivosFormulario->contains($archivo->nombre))
+                                ->values();
+                        @endphp
+
+                        @if ($archivosApoyo->isNotEmpty())
                             <div class="space-y-2">
                                 <div class="text-xs font-medium text-stone-700 dark:text-white">Archivos de apoyo</div>
-                                @foreach ($requerimientoSeleccionado->solicitud->archivos as $archivo)
+                                @foreach ($archivosApoyo as $archivo)
                                     <a href="{{ $archivo->archivo ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
                                         target="_blank"
                                         class="block text-sm text-amber-700 hover:underline dark:text-amber-300">
