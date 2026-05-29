@@ -88,7 +88,9 @@ class Solicitud extends Model
 
     public function historial(): HasMany
     {
-        return $this->hasMany(SolicitudHistorial::class, 'solicitud_id')->latest('created_at');
+        return $this->hasMany(SolicitudHistorial::class, 'solicitud_id')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
     }
 
     public function archivos(): MorphMany
@@ -198,11 +200,16 @@ class Solicitud extends Model
 
     public function usaFormularioComoCierre(): bool
     {
-        return $this->modo_solicitud === 'definida';
+        return $this->modo_solicitud === 'definida' && !$this->esCreadaPorCliente();
     }
 
     public function usaResultadoComoCierre(): bool
     {
         return !$this->usaFormularioComoCierre();
+    }
+
+    public function esCreadaPorCliente(): bool
+    {
+        return (int) ($this->creadoPor?->cliente_id ?? 0) > 0;
     }
 }

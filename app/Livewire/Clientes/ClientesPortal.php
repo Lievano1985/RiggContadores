@@ -160,6 +160,8 @@ class ClientesPortal extends Component
                     ]);
                 }
 
+                $this->asegurarRequerimientoResultado($solicitud, $user, (int) $cliente->responsable_solicitudes_id);
+
                 SolicitudHistorialService::registrar(
                     $solicitud,
                     'solicitud_actualizada',
@@ -217,6 +219,21 @@ class ClientesPortal extends Component
                 'El cliente creo la solicitud "' . $solicitud->titulo . '".',
                 $user->id
             );
+
+            $resultadoRequerimiento = $this->asegurarRequerimientoResultado($solicitud, $user, (int) $cliente->responsable_solicitudes_id);
+
+            if ($resultadoRequerimiento) {
+                SolicitudHistorialService::registrar(
+                    $solicitud,
+                    'resultado_generado',
+                    'Requerimiento resultado generado',
+                    'Se genero automaticamente el requerimiento de resultado esperado.',
+                    $user->id,
+                    $resultadoRequerimiento
+                );
+
+                SolicitudNotificacionService::notificarRequerimientoCreado($resultadoRequerimiento);
+            }
 
             SolicitudNotificacionService::notificarSolicitudCreada($solicitud);
 
@@ -441,6 +458,41 @@ class ClientesPortal extends Component
             ->whereIn('aplica_para', ['cliente', 'ambos'])
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'titulo_sugerido', 'descripcion_sugerida', 'prioridad_default', 'configuracion_formulario']);
+    }
+
+    private function asegurarRequerimientoResultado(Solicitud $solicitud, $user, int $responsableUserId): ?SolicitudRequerimiento
+    {
+        if ($solicitud->usaFormularioComoCierre()) {
+            return null;
+        }
+
+        $resultadoRequerimiento = $solicitud->resultadoRequerimiento()->first();
+        $descripcionResultado = 'Entrega aqui el resultado final esperado de la solicitud para su validacion y cierre.';
+        $fechaLimite = now()->addDays(2)->toDateString();
+
+        if ($resultadoRequerimiento) {
+            $resultadoRequerimiento->update([
+                'estado' => $resultadoRequerimiento->estado === 'cancelado' ? 'abierto' : $resultadoRequerimiento->estado,
+                'destinatario_tipo' => 'interno',
+                'destinatario_user_id' => $responsableUserId,
+                'descripcion' => $descripcionResultado,
+                'fecha_limite' => $resultadoRequerimiento->fecha_limite ?: $fechaLimite,
+            ]);
+
+            return $resultadoRequerimiento;
+        }
+
+        return SolicitudRequerimiento::create([
+            'solicitud_id' => $solicitud->id,
+            'creado_por_user_id' => $solicitud->creado_por_user_id ?? $user->id,
+            'destinatario_tipo' => 'interno',
+            'destinatario_user_id' => $responsableUserId,
+            'tipo' => 'resultado',
+            'titulo' => 'Resultado esperado',
+            'descripcion' => $descripcionResultado,
+            'estado' => 'abierto',
+            'fecha_limite' => $fechaLimite,
+        ]);
     }
 
     private function formularioInicial(array $configuracion): array

@@ -1815,7 +1815,14 @@ class Index extends Component
             });
 
             if ($user->hasRole('contador')) {
-                $query->where('creado_por_user_id', $user->id);
+                $query->where(function ($sub) use ($user) {
+                    $sub->where('creado_por_user_id', $user->id)
+                        ->orWhere(function ($asignadaPorCliente) use ($user) {
+                            $asignadaPorCliente
+                                ->where('responsable_user_id', $user->id)
+                                ->where('origen', 'cliente');
+                        });
+                });
             }
 
             if ($user->hasRole('cliente')) {
