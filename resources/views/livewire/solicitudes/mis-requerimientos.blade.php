@@ -135,6 +135,59 @@
                                 @endforeach
                             </div>
                         @endif
+
+                        @if ($requerimientoSeleccionado->solicitud->modo_solicitud === 'definida' && !empty($requerimientoSeleccionado->solicitud->resumen_formulario))
+                            <div class="space-y-3 rounded-lg border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
+                                <h6 class="font-semibold text-stone-700 dark:text-white">Formulario capturado</h6>
+
+                                @foreach ($requerimientoSeleccionado->solicitud->resumen_formulario as $campo)
+                                    @php
+                                        $valorCampo = $campo['value'] ?? null;
+                                        $tipoCampo = $campo['type'] ?? 'text';
+                                        $archivoFormulario = null;
+
+                                        if ($tipoCampo === 'file' && $valorCampo) {
+                                            $archivoFormulario = $requerimientoSeleccionado->solicitud->archivos->firstWhere('nombre', $valorCampo);
+                                        }
+                                    @endphp
+
+                                    <div class="rounded-lg border border-white/70 bg-white/70 p-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="text-sm font-medium text-stone-700 dark:text-white">
+                                                {{ $campo['label'] ?? ($campo['key'] ?? 'Campo') }}
+                                            </span>
+                                            @if (!empty($campo['required']))
+                                                <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                                                    Requerido
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        @if ($tipoCampo === 'checkbox')
+                                            <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                                                {{ $valorCampo ? 'Si' : 'No' }}
+                                            </div>
+                                        @elseif ($tipoCampo === 'file')
+                                            @if ($archivoFormulario)
+                                                <a href="{{ $archivoFormulario->archivo ? Storage::disk('public')->url($archivoFormulario->archivo) : $archivoFormulario->archivo_drive_url }}"
+                                                    target="_blank"
+                                                    class="mt-1 block text-sm text-amber-700 hover:underline dark:text-amber-300">
+                                                    {{ $archivoFormulario->nombre }}
+                                                </a>
+                                            @else
+                                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ $valorCampo ?: 'Sin archivo capturado.' }}
+                                                </div>
+                                            @endif
+                                        @else
+                                            <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                                                {{ filled($valorCampo) ? $valorCampo : 'Sin respuesta capturada.' }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
