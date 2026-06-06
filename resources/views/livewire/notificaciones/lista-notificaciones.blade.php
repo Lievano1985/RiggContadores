@@ -6,11 +6,74 @@
         Historial de notificaciones
     </h3>
 
+    <div class="grid grid-cols-1 gap-3 mb-4 md:grid-cols-2 xl:grid-cols-6">
+        <div>
+            <label class="block text-xs mb-1 text-stone-600 dark:text-white">Fecha desde</label>
+            <input type="date" wire:model.live="fecha_desde"
+                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+        </div>
+
+        <div>
+            <label class="block text-xs mb-1 text-stone-600 dark:text-white">Fecha hasta</label>
+            <input type="date" wire:model.live="fecha_hasta"
+                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+        </div>
+
+        <div>
+            <label class="block text-xs mb-1 text-stone-600 dark:text-white">Periodo mes</label>
+            <select wire:model.live="periodo_mes"
+                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Todos</option>
+                @foreach ($mesesManual as $num => $txt)
+                    <option value="{{ $num }}">{{ $txt }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs mb-1 text-stone-600 dark:text-white">Periodo ejercicio</label>
+            <select wire:model.live="periodo_ejercicio"
+                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Todos</option>
+                @foreach ($ejerciciosDisponibles as $anio)
+                    <option value="{{ $anio }}">{{ $anio }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs mb-1 text-stone-600 dark:text-white">Cliente</label>
+            <select wire:model.live="cliente_filtro"
+                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Todos</option>
+                @foreach ($clientesDisponibles as $clienteOption)
+                    <option value="{{ $clienteOption->id }}">
+                        {{ $clienteOption->nombre ?: $clienteOption->razon_social }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-xs mb-1 text-stone-600 dark:text-white">Obligación</label>
+            <select wire:model.live="obligacion_filtro"
+                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600 focus:border-amber-600 focus:ring focus:ring-amber-500/40 focus:outline-none">
+                <option value="">Todas</option>
+                @foreach ($obligacionesDisponibles as $obligacionOption)
+                    <option value="{{ $obligacionOption->id }}">
+                        {{ $obligacionOption->nombre }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+
     <div class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-stone-100 dark:bg-stone-900">
                 <tr>
                     <x-sortable-th field="created_at" label="Fecha" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
+                    <x-sortable-th field="cliente" label="Cliente" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
                     <x-sortable-th field="asunto" label="Asunto" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
                     <x-sortable-th field="periodo_mes" label="Periodo" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
                     <x-sortable-th field="usuario" label="Usuario" :sort-field="$sortField" :sort-direction="$sortDirection" class="px-3 py-2" />
@@ -22,6 +85,7 @@
                 @forelse ($notificaciones as $n)
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                         <td class="px-3 py-2">{{ $n->created_at->format('Y-m-d H:i') }}</td>
+                        <td class="px-3 py-2">{{ $n->cliente->nombre ?? ($n->cliente->razon_social ?? '-') }}</td>
                         <td class="px-3 py-2">{{ $n->asunto }}</td>
                         <td class="px-3 py-2">{{ $n->periodo_mes }}/{{ $n->periodo_ejercicio }}</td>
                         <td class="px-3 py-2">{{ $n->usuario->name ?? '-' }}</td>
@@ -32,7 +96,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <td colspan="6" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">
                             No hay notificaciones registradas.
                         </td>
                     </tr>
