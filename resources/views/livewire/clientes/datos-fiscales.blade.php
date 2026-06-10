@@ -237,9 +237,9 @@ Descripción: Muestra regímenes, actividades y obligaciones periódicas y únic
             </div>
         </form>
     @else
-        <x-lista-resumen titulo="Regímenes fiscales" :items="$cliente->regimenes->map(fn($r) => $r->clave_sat . ' - ' . $r->nombre)" />
+        <x-lista-resumen titulo="Regímenes fiscales" :items="$cliente->regimenes->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)->map(fn($r) => $r->clave_sat . ' - ' . $r->nombre)" />
 
-        <x-lista-resumen titulo="Actividades económicas" :items="$cliente->actividadesEconomicas->map(fn($a) => $a->clave . ' - ' . $a->nombre)" />
+        <x-lista-resumen titulo="Actividades económicas" :items="$cliente->actividadesEconomicas->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)->map(fn($a) => $a->clave . ' - ' . $a->nombre)" />
             <x-lista-resumen
             titulo="Obligaciones fiscales"
             :items="$this->getObligacionesVigentes()->map(fn($o) => [

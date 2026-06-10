@@ -1,4 +1,8 @@
 <div>
+    @php
+        $historialRegularizaciones = $this->historialRegularizaciones;
+    @endphp
+
     <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow space-y-4">
         <h2 class="text-xl font-bold text-stone-600 dark:text-white">
             Regularizar obligaciones atrasadas
@@ -135,5 +139,90 @@
                 <p><strong>Omitidas:</strong> {{ $resumen['omitidas'] ?? 0 }}</p>
             </div>
         @endif
+    </div>
+
+    <div class="mt-6 bg-white dark:bg-gray-900 p-6 rounded-lg shadow space-y-4">
+        <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-bold text-stone-600 dark:text-white">
+                Historial de regularizaciones
+            </h2>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+                {{ $historialRegularizaciones->count() }} registros
+            </span>
+        </div>
+
+        <div class="space-y-3">
+            @forelse ($historialRegularizaciones as $regularizacion)
+                <div class="border border-stone-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <h3 class="font-semibold text-stone-700 dark:text-white">
+                                {{ ucfirst(\Carbon\Carbon::create()->month($regularizacion->mes)->locale('es')->monthName) }}
+                                {{ $regularizacion->anio }}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Registrada el {{ $regularizacion->created_at?->format('d/m/Y H:i') }}
+                                @if ($regularizacion->usuario)
+                                    por {{ $regularizacion->usuario->name }}
+                                @endif
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <span class="rounded-full bg-green-100 px-2 py-1 font-semibold text-green-700">
+                                {{ $regularizacion->generadas }} generadas
+                            </span>
+                            <span class="rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-700">
+                                {{ $regularizacion->ya_existian }} ya existían
+                            </span>
+                            <span class="rounded-full bg-gray-100 px-2 py-1 font-semibold text-gray-700">
+                                {{ $regularizacion->omitidas }} omitidas
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="text-left text-xs uppercase text-gray-500 dark:text-gray-400">
+                                <tr>
+                                    <th class="py-2 pr-4">Proceso</th>
+                                    <th class="py-2 pr-4">Estatus</th>
+                                    <th class="py-2 pr-4">Vencimiento</th>
+                                    <th class="py-2 pr-4">Tareas</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stone-100 dark:divide-gray-800">
+                                @forelse ($regularizacion->obligaciones as $asignacion)
+                                    <tr>
+                                        <td class="py-2 pr-4 text-stone-700 dark:text-gray-100">
+                                            {{ $asignacion->obligacion->nombre ?? 'Proceso sin catálogo' }}
+                                        </td>
+                                        <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">
+                                            {{ str_replace('_', ' ', $asignacion->estatus) }}
+                                        </td>
+                                        <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">
+                                            {{ $asignacion->fecha_vencimiento ? \Carbon\Carbon::parse($asignacion->fecha_vencimiento)->format('d/m/Y') : '-' }}
+                                        </td>
+                                        <td class="py-2 pr-4 text-gray-600 dark:text-gray-300">
+                                            {{ $asignacion->tareasAsignadas->count() }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="py-3 text-gray-500 dark:text-gray-400">
+                                            No hay procesos vinculados a este registro.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @empty
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Aún no hay regularizaciones registradas para este cliente.
+                </p>
+            @endforelse
+        </div>
     </div>
 </div>

@@ -170,8 +170,8 @@
             $esRechazo = $obligacionModal?->estatus === 'rechazada';
         @endphp
         <div class="fixed inset-0 flex items-center justify-center bg-stone-800/70 z-50 p-4">
-            <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-lg">
-                <div class="mb-4">
+            <div class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg bg-white shadow-lg dark:bg-gray-900">
+                <div class="border-b border-gray-200 p-6 dark:border-gray-700">
                     <h3 class="text-lg font-bold text-stone-700 dark:text-white">
                         {{ $modalCliente }}
                     </h3>
@@ -182,7 +182,7 @@
                 </div>
 
 
-                <div class="space-y-4">
+                <div class="flex-1 space-y-4 overflow-y-auto p-6">
 
 
                     {{-- ============================= --}}
@@ -199,12 +199,6 @@
                                             <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($archivo->archivo) }}"
                                                 target="_blank" class="ml-2 text-blue-600 dark:text-blue-400 hover:underline">
                                                 Ver archivo
-                                            </a>
-                                        @endif
-                                        @if ($archivo->archivo_drive_url)
-                                            <a href="{{ $archivo->archivo_drive_url }}" target="_blank"
-                                                class="ml-2 text-blue-600 dark:text-blue-400 hover:underline">
-                                                Ver Drive
                                             </a>
                                         @endif
                                     </div>
@@ -294,7 +288,7 @@
                 {{-- ============================= --}}
                 {{-- BOTONES --}}
                 {{-- ============================= --}}
-                <div class="flex justify-end space-x-2 mt-6">
+                <div class="flex justify-end space-x-2 border-t border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
 
                     {{-- Cerrar --}}
                     <button wire:click="$set('openModal', false)"

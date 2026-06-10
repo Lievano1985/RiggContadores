@@ -15,6 +15,8 @@ namespace App\Livewire\Clientes;
 
 use App\Models\Cliente;
 use App\Models\Obligacion;
+use App\Models\ObligacionClienteContador;
+use App\Models\RegularizacionFiscal;
 use Livewire\Component;
 use App\Services\GeneradorObligaciones;
 use Carbon\Carbon;
@@ -134,6 +136,8 @@ class RegularizacionObligaciones extends Component
          );
      
          $this->resumen = $resultado;
+
+         $this->registrarRegularizacion($resultado);
      
          $this->dispatch('DatosFiscalesActualizados');
          $this->dispatch('obligacionActualizada');
@@ -153,6 +157,36 @@ class RegularizacionObligaciones extends Component
      
          // (opcional)
          $this->reset('resumen');
+     }
+
+     protected function registrarRegularizacion(array $resultado): void
+     {
+         $regularizacion = RegularizacionFiscal::create([
+             'cliente_id' => $this->cliente->id,
+             'user_id' => auth()->id(),
+             'anio' => $this->anio,
+             'mes' => $this->mes,
+             'generadas' => $resultado['generadas'] ?? 0,
+             'ya_existian' => $resultado['ya_existian'] ?? 0,
+             'omitidas' => $resultado['omitidas'] ?? 0,
+             'obligaciones_solicitadas' => $this->obligacionesSeleccionadas,
+             'resumen' => $resultado,
+         ]);
+
+         $idsGeneradas = $resultado['ids_generadas'] ?? [];
+         $idsYaExistian = $resultado['ya_existian_ids'] ?? [];
+
+         $idsExistentes = ObligacionClienteContador::query()
+             ->where('cliente_id', $this->cliente->id)
+             ->where('ejercicio', $this->anio)
+             ->where('mes', $this->mes)
+             ->whereIn('obligacion_id', $idsYaExistian)
+             ->pluck('id')
+             ->all();
+
+         $regularizacion->obligaciones()->syncWithoutDetaching(
+             array_values(array_unique([...$idsGeneradas, ...$idsExistentes]))
+         );
      }
      
 
@@ -177,6 +211,15 @@ class RegularizacionObligaciones extends Component
         $this->obligacionesSeleccionadas = array_values(
             array_diff($this->obligacionesSeleccionadas, [$id])
         );
+    }
+
+    public function getHistorialRegularizacionesProperty()
+    {
+        return RegularizacionFiscal::query()
+            ->where('cliente_id', $this->cliente->id)
+            ->with(['usuario', 'obligaciones.obligacion', 'obligaciones.tareasAsignadas'])
+            ->latest()
+            ->get();
     }
     
     public function render()

@@ -24,7 +24,7 @@
                 <img src="/img/logo.png" class="h-20" alt="Flowbite Logo">
             </a>
             <div class="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-                <a  href="{{route('Clientes.portal')}}"
+                <a  href="{{ route('login') }}"
                     class="text-white bg-amber-900 hover:bg-amber-800 focus:ring-4 focus:outline-none 
         focus:ring-amber-300 font-medium rounded-lg text-sm px-4 py-2 text-center dark:bg-zinc-500 
         dark:hover:bg-amber-700 dark:focus:ring-amber-800">Clientes</a>

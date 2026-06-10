@@ -253,12 +253,6 @@
                                                 Ver archivo
                                             </a>
                                         @endif
-                                        @if ($archivo->archivo_drive_url)
-                                            <a href="{{ $archivo->archivo_drive_url }}" target="_blank"
-                                                class="ml-2 text-blue-600 dark:text-blue-400 hover:underline">
-                                                Ver Drive
-                                            </a>
-                                        @endif
                                     </div>
                                 @empty
                                     <p class="text-sm text-gray-500 dark:text-gray-400">Sin archivos adjuntos.</p>

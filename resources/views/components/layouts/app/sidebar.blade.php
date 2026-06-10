@@ -126,7 +126,7 @@
 
                             <flux:navlist.group expandable
                                 :expanded="request()->routeIs('contadores.asignaciones.index', 'control.validaciones.index', 'notificaciones.clientes.index')"
-                                heading="Obligaciones" class="mt-2 w-full dark:bg-gray-700 dark:text-white">
+                                heading="Procesos" class="mt-2 w-full dark:bg-gray-700 dark:text-white">
 
                                 <flux:navlist.item icon="paper-airplane" :href="route('contadores.asignaciones.index')"
                                     :current="request()->routeIs('contadores.asignaciones.index')" wire:navigate

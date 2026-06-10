@@ -65,13 +65,25 @@
                 </div>
             
                 {{-- Archivo --}}
-                <div class="md:col-span-5">
+                <div class="relative md:col-span-5">
                     <input
                         type="file"
                         wire:model="nuevosArchivos.{{ $i }}.file"
                         class="w-full px-3 py-2 border text-sm rounded
                                dark:bg-gray-700 dark:text-white"
                     >
+
+                    <div
+                        wire:loading.flex
+                        wire:target="nuevosArchivos.{{ $i }}.file"
+                        class="absolute inset-0 z-10 items-center justify-center gap-2 rounded bg-white/85 text-sm font-medium text-stone-700 backdrop-blur-sm dark:bg-gray-900/85 dark:text-white"
+                    >
+                        <svg class="h-4 w-4 animate-spin text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        Cargando archivo...
+                    </div>
             
                     {{-- Espacio fijo para error --}}
                     <div class="min-h-[18px]">
@@ -85,8 +97,10 @@
                 <div class="flex items-start">
                     <button
                         wire:click="quitarArchivo({{ $i }})"
+                        wire:loading.attr="disabled"
+                        wire:target="nuevosArchivos.{{ $i }}.file"
                         class="bg-amber-600 text-white rounded
-                               hover:bg-amber-700 px-2 h-[38px]"
+                               hover:bg-amber-700 px-2 h-[38px] disabled:opacity-50"
                     >
                         ✕
                     </button>
@@ -96,7 +110,7 @@
             @endforeach
             
 
-            <button wire:click="agregarArchivo" class="text-sm text-amber-600 hover:underline">
+            <button wire:click="agregarArchivo" wire:loading.attr="disabled" class="text-sm text-amber-600 hover:underline disabled:opacity-50">
                 + Agregar otro archivo
             </button>
         </div>

@@ -385,6 +385,7 @@ class DatosFiscales extends Component
              // 🔹 Nos quedamos solo con UNA por obligación
              ->select('obligacion_id')
              ->groupBy('obligacion_id')
+             ->orderByRaw('(select nombre from obligaciones where obligaciones.id = obligacion_cliente_contador.obligacion_id)')
      
              ->with('obligacion')
              ->get();
