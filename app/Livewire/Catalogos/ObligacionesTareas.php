@@ -33,6 +33,14 @@ class ObligacionesTareas extends Component
 
     public ?int $obligacionSeleccionadaId = null;
     public ?int $tareaSeleccionadaId = null;
+    public bool $modalSincronizarTarea = false;
+    public bool $modalEliminarTarea = false;
+    public ?int $tareaPendienteSincronizarId = null;
+    public ?int $tareaPendienteEliminarId = null;
+    public int $sincronizarAnioInicio;
+    public int $sincronizarMesInicio;
+    public int $sincronizarAnioFin;
+    public int $sincronizarMesFin;
     public array $categorias = [
         'obligacion' => 'Obligacion',
         'proceso'    => 'Proceso',
@@ -70,6 +78,24 @@ class ObligacionesTareas extends Component
         'unica'         => 'Unica',
         'eventual'      => 'Eventual',
     ];
+
+    public function mount(): void
+    {
+        $this->inicializarRangoSincronizacion();
+    }
+
+    public function getAniosDisponiblesProperty(): array
+    {
+        return range(2010, now()->year);
+    }
+
+    protected function inicializarRangoSincronizacion(): void
+    {
+        $this->sincronizarAnioInicio = now()->year;
+        $this->sincronizarMesInicio = now()->month;
+        $this->sincronizarAnioFin = now()->year;
+        $this->sincronizarMesFin = now()->month;
+    }
 
     public function updatingPage()
     {
@@ -245,28 +271,114 @@ class ObligacionesTareas extends Component
             $tarea = TareaCatalogo::findOrFail($this->tareaSeleccionadaId);
             $tarea->update($datos);
             $mensaje = 'Tarea actualizada correctamente.';
+            $this->dispatch('notify', message: $mensaje);
         } else {
             $tarea = TareaCatalogo::create($datos);
-            $mensaje = 'Tarea creada correctamente.';
+            $this->tareaPendienteSincronizarId = $tarea->id;
+            $this->inicializarRangoSincronizacion();
+            $this->modalSincronizarTarea = true;
+            $this->dispatch('notify', message: 'Tarea creada correctamente. Elige si deseas generarla en periodos existentes.');
         }
 
-        $asignadas = app(GeneradorObligaciones::class)
-            ->sincronizarTareaPeriodoActual($tarea);
-
-        if ($asignadas > 0) {
-            $mensaje .= " Se asigno a {$asignadas} obligaciones del periodo actual.";
-        }
-
-        $this->dispatch('notify', message: $mensaje);
         $this->cerrarSidebar();
         $this->resetPage();
     }
 
     public function eliminarTarea(int $id): void
     {
-        TareaCatalogo::findOrFail($id)->delete();
-        $this->resetPage();
+        $this->tareaPendienteEliminarId = $id;
+        $this->modalEliminarTarea = true;
     }
+
+    public function cerrarModalSincronizarTarea(): void
+    {
+        $this->modalSincronizarTarea = false;
+        $this->tareaPendienteSincronizarId = null;
+        $this->inicializarRangoSincronizacion();
+    }
+
+    public function noGenerarTareaEnPeriodos(): void
+    {
+        $this->cerrarModalSincronizarTarea();
+        $this->dispatch('notify', message: 'La tarea quedo en catalogo para futuras obligaciones.');
+    }
+
+    public function generarTareaPeriodoActual(): void
+    {
+        $tarea = TareaCatalogo::findOrFail($this->tareaPendienteSincronizarId);
+
+        $asignadas = app(GeneradorObligaciones::class)->sincronizarTareaPeriodoActual($tarea);
+
+        $this->cerrarModalSincronizarTarea();
+        $this->resetPage();
+        $this->dispatch('notify', message: "Se asigno la tarea a {$asignadas} obligaciones del periodo actual.");
+    }
+
+    public function generarTareaRango(): void
+    {
+        $this->validate([
+            'sincronizarAnioInicio' => ['required', 'integer', 'min:2010', 'max:' . now()->year],
+            'sincronizarMesInicio' => ['required', 'integer', 'min:1', 'max:12'],
+            'sincronizarAnioFin' => ['required', 'integer', 'min:2010', 'max:' . now()->year],
+            'sincronizarMesFin' => ['required', 'integer', 'min:1', 'max:12'],
+        ]);
+
+        $periodoInicio = ($this->sincronizarAnioInicio * 100) + $this->sincronizarMesInicio;
+        $periodoFin = ($this->sincronizarAnioFin * 100) + $this->sincronizarMesFin;
+
+        if ($periodoInicio > $periodoFin) {
+            $this->addError('sincronizarMesInicio', 'El periodo inicial no puede ser mayor al periodo final.');
+            return;
+        }
+
+        $periodoActual = (now()->year * 100) + now()->month;
+        if ($periodoFin > $periodoActual) {
+            $this->addError('sincronizarMesFin', 'No se pueden generar tareas en periodos futuros.');
+            return;
+        }
+
+        $tarea = TareaCatalogo::findOrFail($this->tareaPendienteSincronizarId);
+
+        $asignadas = app(GeneradorObligaciones::class)->sincronizarTareaEnRango(
+            $tarea,
+            $this->sincronizarAnioInicio,
+            $this->sincronizarMesInicio,
+            $this->sincronizarAnioFin,
+            $this->sincronizarMesFin
+        );
+
+        $this->cerrarModalSincronizarTarea();
+        $this->resetPage();
+        $this->dispatch('notify', message: "Se asigno la tarea a {$asignadas} obligaciones del rango seleccionado.");
+    }
+
+    public function cancelarEliminacionTarea(): void
+    {
+        $this->modalEliminarTarea = false;
+        $this->tareaPendienteEliminarId = null;
+    }
+
+    public function quitarTareaSoloCatalogo(): void
+    {
+        $tarea = TareaCatalogo::findOrFail($this->tareaPendienteEliminarId);
+        $tarea->update(['activo' => false]);
+
+        $this->cancelarEliminacionTarea();
+        $this->resetPage();
+        $this->dispatch('notify', message: 'Tarea desactivada del catalogo. No se tocaron tareas ya asignadas.');
+    }
+
+    public function quitarTareaCatalogoYPeriodoActual(): void
+    {
+        $tarea = TareaCatalogo::findOrFail($this->tareaPendienteEliminarId);
+        $eliminadas = app(GeneradorObligaciones::class)->quitarTareaPeriodoActual($tarea);
+        $tarea->update(['activo' => false]);
+
+        $this->cancelarEliminacionTarea();
+        $this->resetPage();
+        $this->dispatch('notify', message: "Tarea desactivada del catalogo. Se quitaron {$eliminadas} tareas del periodo actual.");
+    }
+
     public function eliminarObligacion(int $obligacionId): void
     {
         $obligacion = Obligacion::with('tareasCatalogo')->findOrFail($obligacionId);
@@ -310,11 +422,12 @@ class ObligacionesTareas extends Component
                 $q->where('nombre', 'like', "%{$search}%")
                   ->orWhere('categoria', 'like', "%{$search}%")
                   ->orWhereHas('tareasCatalogo', fn ($qt) =>
-                      $qt->where('nombre', 'like', "%{$search}%")
+                      $qt->where('activo', true)
+                          ->where('nombre', 'like', "%{$search}%")
                   );
             })
-            ->withCount('tareasCatalogo')
-            ->with(['tareasCatalogo' => fn ($q) => $q->orderBy('nombre')]);
+            ->withCount(['tareasCatalogo' => fn ($q) => $q->where('activo', true)])
+            ->with(['tareasCatalogo' => fn ($q) => $q->where('activo', true)->orderBy('nombre')]);
 
         if ($this->sortField === 'tareas') {
             $query->orderBy('tareas_catalogo_count', $this->sortDirection)

@@ -69,27 +69,34 @@ class MisRequerimientos extends Component
 
     public function guardarRespuesta(): void
     {
-        $requerimiento = $this->requerimientoSeleccionado();
+        try {
+            $requerimiento = $this->requerimientoSeleccionado();
 
-        if (!$requerimiento || in_array($requerimiento->estado, ['validado', 'cancelado'], true)) {
-            return;
+            if (!$requerimiento || in_array($requerimiento->estado, ['validado', 'cancelado'], true)) {
+                return;
+            }
+
+            if (!$this->validarRespuestaRequerimiento($requerimiento)) {
+                return;
+            }
+
+            if ($requerimiento->esRequerimientoFormulario()) {
+                $this->continuarGuardadoRespuesta();
+                return;
+            }
+
+            $this->dispatch('guardar-archivos-adjuntos', origen: 'requerimientos');
+        } finally {
+            if (($requerimiento ?? null) && $requerimiento->esRequerimientoFormulario()) {
+                $this->apagarSpinner();
+            }
         }
-
-        if (!$this->validarRespuestaRequerimiento($requerimiento)) {
-            return;
-        }
-
-        if ($requerimiento->esRequerimientoFormulario()) {
-            $this->continuarGuardadoRespuesta();
-            return;
-        }
-
-        $this->dispatch('guardar-archivos-adjuntos', origen: 'requerimientos');
     }
 
     public function cancelarGuardadoRespuesta(): void
     {
         $this->dispatch('notify', message: 'Corrige los archivos antes de continuar.');
+        $this->apagarSpinner();
     }
 
     public function render()
@@ -311,13 +318,21 @@ class MisRequerimientos extends Component
             'validado_at' => null,
         ]);
 
+        $requerimiento->solicitud->refresh();
+
         SolicitudHistorialService::registrar(
             $requerimiento->solicitud,
             'requerimiento_respondido',
             'Requerimiento respondido',
             'Se envio respuesta al requerimiento "' . $requerimiento->titulo . '".',
             auth()->id(),
-            $requerimiento
+            $requerimiento,
+            [
+                'texto' => $requerimiento->respuesta_texto,
+                'formulario' => $requerimiento->esRequerimientoFormulario()
+                    ? $requerimiento->solicitud->resumen_formulario
+                    : null,
+            ]
         );
 
         SolicitudNotificacionService::notificarRespuestaEnviada($requerimiento);
@@ -325,6 +340,7 @@ class MisRequerimientos extends Component
         $this->dispatch('requerimiento-actualizado');
         $this->cerrarSidebar();
         $this->dispatch('notify', message: 'Respuesta guardada correctamente.');
+        $this->apagarSpinner();
     }
 
     private function guardarArchivosFormulario(Solicitud $solicitud): array
@@ -403,6 +419,11 @@ class MisRequerimientos extends Component
         }
 
         return $archivosGuardados;
+    }
+
+    private function apagarSpinner(): void
+    {
+        $this->js("window.dispatchEvent(new CustomEvent('spinner-off'))");
     }
 
     private function construirNombreArchivoFormulario(string $rfc, string $nombreCampo, $archivo): string

@@ -107,140 +107,185 @@
                 <button @click="$wire.cerrarSidebar()" class="text-gray-500 hover:text-black dark:hover:text-white">x</button>
             </div>
 
-            <div class="flex-1 space-y-6 overflow-y-auto p-4">
+            <div x-data="{ resumenOpen: true, contextoOpen: false, solicitadoOpen: true, respuestaOpen: true }" class="flex-1 space-y-4 overflow-y-auto p-4">
                 @if ($requerimientoSeleccionado)
-                    <div class="space-y-2 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                        <div class="font-semibold text-stone-700 dark:text-white">{{ $requerimientoSeleccionado->titulo }}</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Solicitud: {{ $requerimientoSeleccionado->solicitud->titulo ?? '-' }}</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Cliente: {{ $requerimientoSeleccionado->solicitud->cliente->nombre ?? ($requerimientoSeleccionado->solicitud->cliente->razon_social ?? '-') }}</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Responsable del caso: {{ $requerimientoSeleccionado->solicitud->responsable?->name ?? '-' }}</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Creada por: {{ $requerimientoSeleccionado->solicitud->creadoPor?->name ?? '-' }}</div>
-                    </div>
+                    @php
+                        $nombresArchivosFormulario = collect($requerimientoSeleccionado->solicitud->resumen_formulario ?? [])
+                            ->filter(fn ($campo) => ($campo['type'] ?? null) === 'file' && !empty($campo['value']))
+                            ->pluck('value')
+                            ->filter()
+                            ->values();
 
-                    <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                        <h5 class="font-semibold text-stone-700 dark:text-white">Contexto de la solicitud</h5>
-                        <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
-                            {{ $requerimientoSeleccionado->solicitud->descripcion ?: 'Sin descripcion adicional en la solicitud.' }}
-                        </p>
+                        $archivosApoyo = $requerimientoSeleccionado->solicitud->archivos
+                            ->reject(fn ($archivo) => $nombresArchivosFormulario->contains($archivo->nombre))
+                            ->values();
 
-                        @php
-                            $nombresArchivosFormulario = collect($requerimientoSeleccionado->solicitud->resumen_formulario ?? [])
-                                ->filter(fn ($campo) => ($campo['type'] ?? null) === 'file' && !empty($campo['value']))
-                                ->pluck('value')
-                                ->filter()
-                                ->values();
+                        $mostrarContextoSolicitud =
+                            filled($requerimientoSeleccionado->solicitud->descripcion)
+                            || $archivosApoyo->isNotEmpty()
+                            || ($requerimientoSeleccionado->solicitud->modo_solicitud === 'definida' && !empty($requerimientoSeleccionado->solicitud->resumen_formulario));
+                    @endphp
 
-                            $archivosApoyo = $requerimientoSeleccionado->solicitud->archivos
-                                ->reject(fn ($archivo) => $nombresArchivosFormulario->contains($archivo->nombre))
-                                ->values();
-                        @endphp
-
-                        @if ($archivosApoyo->isNotEmpty())
-                            <div class="space-y-2">
-                                <div class="text-xs font-medium text-stone-700 dark:text-white">Archivos de apoyo</div>
-                                @foreach ($archivosApoyo as $archivo)
-                                    <a href="{{ $archivo->archivo ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
-                                        target="_blank"
-                                        class="block text-sm text-amber-700 hover:underline dark:text-amber-300">
-                                        {{ $archivo->nombre }}
-                                    </a>
-                                @endforeach
+                    <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                        <button type="button" @click="resumenOpen = !resumenOpen"
+                            class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                            <div>
+                                <div class="font-semibold text-stone-700 dark:text-white">Resumen</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $requerimientoSeleccionado->titulo }}</div>
                             </div>
-                        @endif
-
-                        @if ($requerimientoSeleccionado->solicitud->modo_solicitud === 'definida' && !empty($requerimientoSeleccionado->solicitud->resumen_formulario))
-                            <div class="space-y-3 rounded-lg border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
-                                <h6 class="font-semibold text-stone-700 dark:text-white">Formulario capturado</h6>
-
-                                @foreach ($requerimientoSeleccionado->solicitud->resumen_formulario as $campo)
-                                    @php
-                                        $valorCampo = $campo['value'] ?? null;
-                                        $tipoCampo = $campo['type'] ?? 'text';
-                                        $archivoFormulario = null;
-
-                                        if ($tipoCampo === 'file' && $valorCampo) {
-                                            $archivoFormulario = $requerimientoSeleccionado->solicitud->archivos->firstWhere('nombre', $valorCampo);
-                                        }
-                                    @endphp
-
-                                    <div class="rounded-lg border border-white/70 bg-white/70 p-3 dark:border-gray-700 dark:bg-gray-900/40">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <span class="text-sm font-medium text-stone-700 dark:text-white">
-                                                {{ $campo['label'] ?? ($campo['key'] ?? 'Campo') }}
-                                            </span>
-                                            @if (!empty($campo['required']))
-                                                <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                                                    Requerido
-                                                </span>
-                                            @endif
-                                        </div>
-
-                                        @if ($tipoCampo === 'checkbox')
-                                            <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                                {{ $valorCampo ? 'Si' : 'No' }}
-                                            </div>
-                                        @elseif ($tipoCampo === 'file')
-                                            @if ($archivoFormulario)
-                                                <a href="{{ $archivoFormulario->archivo ? Storage::disk('public')->url($archivoFormulario->archivo) : $archivoFormulario->archivo_drive_url }}"
-                                                    target="_blank"
-                                                    class="mt-1 block text-sm text-amber-700 hover:underline dark:text-amber-300">
-                                                    {{ $archivoFormulario->nombre }}
-                                                </a>
-                                            @else
-                                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                                    {{ $valorCampo ?: 'Sin archivo capturado.' }}
-                                                </div>
-                                            @endif
-                                        @else
-                                            <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                                {{ filled($valorCampo) ? $valorCampo : 'Sin respuesta capturada.' }}
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
-
-                    <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                        <h5 class="font-semibold text-stone-700 dark:text-white">Lo solicitado</h5>
-                        <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimientoSeleccionado->descripcion ?: 'Sin descripcion.' }}</p>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                            Creado por {{ $requerimientoSeleccionado->creadoPor?->name ?? '-' }} el {{ $requerimientoSeleccionado->created_at?->format('d/m/Y H:i') ?? '-' }}
+                            <span class="text-xs text-gray-500" x-text="resumenOpen ? 'Ocultar' : 'Ver mas'"></span>
+                        </button>
+                        <div x-show="resumenOpen" x-transition class="space-y-2 border-t border-gray-200 p-4 dark:border-gray-700">
+                            <div class="font-semibold text-stone-700 dark:text-white">{{ $requerimientoSeleccionado->titulo }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Solicitud: {{ $requerimientoSeleccionado->solicitud->titulo ?? '-' }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Cliente: {{ $requerimientoSeleccionado->solicitud->cliente->nombre ?? ($requerimientoSeleccionado->solicitud->cliente->razon_social ?? '-') }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Responsable del caso: {{ $requerimientoSeleccionado->solicitud->responsable?->name ?? '-' }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Creada por: {{ $requerimientoSeleccionado->solicitud->creadoPor?->name ?? '-' }}</div>
                         </div>
                     </div>
 
-                    <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                        <h5 class="font-semibold text-stone-700 dark:text-white">Respuesta</h5>
-                        <textarea wire:model="respuesta_texto" rows="4"
-                            @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
-                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
-                        @error('respuesta_texto') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
+                    @if ($mostrarContextoSolicitud)
+                    <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                        <button type="button" @click="contextoOpen = !contextoOpen"
+                            class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                            <div>
+                                <div class="font-semibold text-stone-700 dark:text-white">Contexto de la solicitud</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Descripcion, archivos de apoyo y formulario capturado</div>
+                            </div>
+                            <span class="text-xs text-gray-500" x-text="contextoOpen ? 'Ocultar' : 'Ver mas'"></span>
+                        </button>
+                        <div x-show="contextoOpen" x-transition class="space-y-3 border-t border-gray-200 p-4 dark:border-gray-700">
+                            @if (filled($requerimientoSeleccionado->solicitud->descripcion))
+                            <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
+                                {{ $requerimientoSeleccionado->solicitud->descripcion }}
+                            </p>
+                            @endif
 
-                        @if ($requerimientoSeleccionado->esRequerimientoFormulario())
-                            <div class="space-y-3 rounded-lg border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
-                                <div class="flex flex-wrap items-center justify-between gap-2">
-                                    <h6 class="font-semibold text-stone-700 dark:text-white">Formulario solicitado</h6>
-                                    <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
-                                        {{ $requerimientoSeleccionado->solicitud->estado_formulario_label }}
-                                    </span>
+                            @if ($archivosApoyo->isNotEmpty())
+                                <div class="space-y-2">
+                                    <div class="text-xs font-medium text-stone-700 dark:text-white">Archivos de apoyo</div>
+                                    @foreach ($archivosApoyo as $archivo)
+                                        <a href="{{ $archivo->archivo ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
+                                            target="_blank"
+                                            class="block text-sm text-amber-700 hover:underline dark:text-amber-300">
+                                            {{ $archivo->nombre }}
+                                        </a>
+                                    @endforeach
                                 </div>
+                            @endif
 
-                                @foreach ($requerimientoSeleccionado->solicitud->campos_formulario as $campo)
-                                    @php
-                                        $campoKey = $campo['key'] ?? null;
-                                        $campoType = $campo['type'] ?? 'text';
-                                        $campoRequired = !empty($campo['required']);
-                                    @endphp
+                            @if ($requerimientoSeleccionado->solicitud->modo_solicitud === 'definida' && !empty($requerimientoSeleccionado->solicitud->resumen_formulario))
+                                <div class="space-y-3 rounded-lg border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
+                                    <h6 class="font-semibold text-stone-700 dark:text-white">Formulario capturado</h6>
 
-                                    @if ($campoKey)
-                                        <div class="space-y-1">
-                                            <label class="block text-sm font-medium text-stone-700 dark:text-white">
-                                                {{ $campo['label'] ?? $campoKey }}
-                                                @if ($campoRequired)
-                                                    <span class="text-red-500">*</span>
+                                    @foreach ($requerimientoSeleccionado->solicitud->resumen_formulario as $campo)
+                                        @php
+                                            $valorCampo = $campo['value'] ?? null;
+                                            $tipoCampo = $campo['type'] ?? 'text';
+                                            $archivoFormulario = null;
+
+                                            if ($tipoCampo === 'file' && $valorCampo) {
+                                                $archivoFormulario = $requerimientoSeleccionado->solicitud->archivos->firstWhere('nombre', $valorCampo);
+                                            }
+                                        @endphp
+
+                                        <div class="rounded-lg border border-white/70 bg-white/70 p-3 dark:border-gray-700 dark:bg-gray-900/40">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="text-sm font-medium text-stone-700 dark:text-white">
+                                                    {{ $campo['label'] ?? ($campo['key'] ?? 'Campo') }}
+                                                </span>
+                                                @if (!empty($campo['required']))
+                                                    <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                                                        Requerido
+                                                    </span>
                                                 @endif
-                                            </label>
+                                            </div>
+
+                                            @if ($tipoCampo === 'checkbox')
+                                                <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                                                    {{ $valorCampo ? 'Si' : 'No' }}
+                                                </div>
+                                            @elseif ($tipoCampo === 'file')
+                                                @if ($archivoFormulario)
+                                                    <a href="{{ $archivoFormulario->archivo ? Storage::disk('public')->url($archivoFormulario->archivo) : $archivoFormulario->archivo_drive_url }}"
+                                                        target="_blank"
+                                                        class="mt-1 block text-sm text-amber-700 hover:underline dark:text-amber-300">
+                                                        {{ $archivoFormulario->nombre }}
+                                                    </a>
+                                                @else
+                                                    <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                                        {{ $valorCampo ?: 'Sin archivo capturado.' }}
+                                                    </div>
+                                                @endif
+                                            @else
+                                                <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                                                    {{ filled($valorCampo) ? $valorCampo : 'Sin respuesta capturada.' }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                        <button type="button" @click="solicitadoOpen = !solicitadoOpen"
+                            class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                            <div>
+                                <div class="font-semibold text-stone-700 dark:text-white">Lo solicitado</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $requerimientoSeleccionado->titulo }}</div>
+                            </div>
+                            <span class="text-xs text-gray-500" x-text="solicitadoOpen ? 'Ocultar' : 'Ver mas'"></span>
+                        </button>
+                        <div x-show="solicitadoOpen" x-transition class="space-y-3 border-t border-gray-200 p-4 dark:border-gray-700">
+                            <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimientoSeleccionado->descripcion ?: 'Sin descripcion.' }}</p>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                Creado por {{ $requerimientoSeleccionado->creadoPor?->name ?? '-' }} el {{ $requerimientoSeleccionado->created_at?->format('d/m/Y H:i') ?? '-' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                        <button type="button" @click="respuestaOpen = !respuestaOpen"
+                            class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                            <div>
+                                <div class="font-semibold text-stone-700 dark:text-white">Respuesta</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Captura texto, formulario y archivos si aplica</div>
+                            </div>
+                            <span class="text-xs text-gray-500" x-text="respuestaOpen ? 'Ocultar' : 'Ver mas'"></span>
+                        </button>
+                        <div x-show="respuestaOpen" x-transition class="space-y-3 border-t border-gray-200 p-4 dark:border-gray-700">
+                            <textarea wire:model="respuesta_texto" rows="4"
+                                @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
+                            @error('respuesta_texto') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
+
+                            @if ($requerimientoSeleccionado->esRequerimientoFormulario())
+                                <div class="space-y-3 rounded-lg border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h6 class="font-semibold text-stone-700 dark:text-white">Formulario solicitado</h6>
+                                        <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                            {{ $requerimientoSeleccionado->solicitud->estado_formulario_label }}
+                                        </span>
+                                    </div>
+
+                                    @foreach ($requerimientoSeleccionado->solicitud->campos_formulario as $campo)
+                                        @php
+                                            $campoKey = $campo['key'] ?? null;
+                                            $campoType = $campo['type'] ?? 'text';
+                                            $campoRequired = !empty($campo['required']);
+                                        @endphp
+
+                                        @if ($campoKey)
+                                            <div class="space-y-1">
+                                                <label class="block text-sm font-medium text-stone-700 dark:text-white">
+                                                    {{ $campo['label'] ?? $campoKey }}
+                                                    @if ($campoRequired)
+                                                        <span class="text-red-500">*</span>
+                                                    @endif
+                                                </label>
 
                                             @if ($campoType === 'textarea')
                                                 <textarea wire:model.defer="formulario_respuesta.{{ $campoKey }}" rows="3"
@@ -305,57 +350,58 @@
                                                     placeholder="{{ $campo['placeholder'] ?? '' }}">
                                             @endif
 
-                                            @if (!empty($campo['help']) && $campoType !== 'checkbox')
-                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $campo['help'] }}</div>
-                                            @endif
+                                                @if (!empty($campo['help']) && $campoType !== 'checkbox')
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $campo['help'] }}</div>
+                                                @endif
 
-                                            @error('formulario_respuesta.' . $campoKey)
-                                                <div class="text-xs text-red-500">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                    @endif
-                                @endforeach
+                                                @error('formulario_respuesta.' . $campoKey)
+                                                    <div class="text-xs text-red-500">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            @if ($requerimientoSeleccionado->estado === 'rechazado' && $requerimientoSeleccionado->comentario_validacion)
+                                <div class="space-y-2 rounded-lg border border-red-200 p-3 dark:border-red-800">
+                                    <div class="text-sm font-medium text-red-700 dark:text-red-300">Respuesta rechazada</div>
+                                    <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimientoSeleccionado->comentario_validacion }}</p>
+                                </div>
+                            @endif
+
+                            @if (!$requerimientoSeleccionado->esRequerimientoFormulario())
+                                <div class="rounded-lg border border-dashed border-gray-300 p-3 dark:border-gray-700">
+                                    <div class="mb-2 text-sm font-medium text-stone-700 dark:text-white">Documentos de respuesta</div>
+                                    <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                                        Adjunta documentos si aplica, aunque solo respondas con texto.
+                                    </p>
+                                    @livewire('shared.archivos-adjuntos-crud', ['modelo' => $requerimientoSeleccionado], key('mis-req-archivos-' . $requerimientoSeleccionado->id))
+                                </div>
+                            @endif
+
+                            @if (!$requerimientoSeleccionado->esRequerimientoFormulario() && $requerimientoSeleccionado->archivos->isNotEmpty())
+                                <div class="space-y-2">
+                                    @foreach ($requerimientoSeleccionado->archivos as $archivo)
+                                        <a href="{{ $archivo->archivo ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
+                                            target="_blank"
+                                            class="block text-sm text-amber-700 hover:underline dark:text-amber-300">
+                                            {{ $archivo->nombre }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            <div class="flex justify-end">
+                                <button wire:click="guardarRespuesta"
+                                    @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
+                                    wire:loading.attr="disabled"
+                                    wire:target="guardarRespuesta"
+                                    @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
+                                    class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700 disabled:opacity-60">
+                                    Guardar respuesta
+                                </button>
                             </div>
-                        @endif
-
-                        @if ($requerimientoSeleccionado->estado === 'rechazado' && $requerimientoSeleccionado->comentario_validacion)
-                            <div class="space-y-2 rounded-lg border border-red-200 p-3 dark:border-red-800">
-                                <div class="text-sm font-medium text-red-700 dark:text-red-300">Respuesta rechazada</div>
-                                <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">{{ $requerimientoSeleccionado->comentario_validacion }}</p>
-                            </div>
-                        @endif
-
-                        @if (!$requerimientoSeleccionado->esRequerimientoFormulario())
-                            <div class="rounded-lg border border-dashed border-gray-300 p-3 dark:border-gray-700">
-                                <div class="mb-2 text-sm font-medium text-stone-700 dark:text-white">Documentos de respuesta</div>
-                                <p class="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                                    Adjunta documentos si aplica, aunque solo respondas con texto.
-                                </p>
-                                @livewire('shared.archivos-adjuntos-crud', ['modelo' => $requerimientoSeleccionado], key('mis-req-archivos-' . $requerimientoSeleccionado->id))
-                            </div>
-                        @endif
-
-                        @if (!$requerimientoSeleccionado->esRequerimientoFormulario() && $requerimientoSeleccionado->archivos->isNotEmpty())
-                            <div class="space-y-2">
-                                @foreach ($requerimientoSeleccionado->archivos as $archivo)
-                                    <a href="{{ $archivo->archivo ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
-                                        target="_blank"
-                                        class="block text-sm text-amber-700 hover:underline dark:text-amber-300">
-                                        {{ $archivo->nombre }}
-                                    </a>
-                                @endforeach
-                            </div>
-                        @endif
-
-                        <div class="flex justify-end">
-                            <button wire:click="guardarRespuesta"
-                                @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
-                                wire:loading.attr="disabled"
-                                wire:target="guardarRespuesta"
-                                @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
-                                class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700 disabled:opacity-60">
-                                Guardar respuesta
-                            </button>
                         </div>
                     </div>
                 @else

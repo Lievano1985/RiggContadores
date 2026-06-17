@@ -1,5 +1,3 @@
-@php use Illuminate\Support\Facades\Storage; @endphp
-
 <div x-data="{ sidebar: @entangle('sidebarVisible'), detalleSidebar: @entangle('detalleSidebarVisible') }" class="space-y-4 rounded-lg bg-white p-6 text-gray-900 shadow dark:bg-gray-900 dark:text-white">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class="text-xl font-bold text-stone-600 dark:text-white">Mis solicitudes</h2>
@@ -327,7 +325,7 @@
                                     <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         @if (filled($campo['value']))
                                             @if (($campo['type'] ?? null) === 'file' && $archivoFormulario)
-                                                <a href="{{ $archivoFormulario->archivo ? Storage::disk('public')->url($archivoFormulario->archivo) : $archivoFormulario->archivo_drive_url }}"
+                                                <a href="{{ $archivoFormulario->archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($archivoFormulario->archivo) : $archivoFormulario->archivo_drive_url }}"
                                                     target="_blank"
                                                     class="text-amber-600 hover:underline">
                                                     {{ $archivoFormulario->nombre }}
@@ -387,7 +385,7 @@
                                 <div class="mt-4 space-y-2">
                                     <div class="text-sm font-medium text-stone-700 dark:text-white">Archivos del resultado</div>
                                     @foreach ($solicitudDetalle->resultadoRequerimiento->archivos as $archivo)
-                                        <a href="{{ $archivo->archivo ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
+                                        <a href="{{ $archivo->archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
                                             target="_blank"
                                             class="block rounded border border-emerald-100 px-3 py-2 text-sm text-amber-600 hover:underline dark:border-emerald-900/30">
                                             {{ $archivo->nombre }}

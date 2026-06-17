@@ -179,9 +179,7 @@
                                                             <x-action-icon icon="edit" label="Editar tarea" variant="primary"
                                                                 wire:click="abrirEditarTarea({{ $tarea->id }})" />
                                                             <x-action-icon icon="trash" label="Eliminar tarea" variant="danger"
-                                                                wire:click="eliminarTarea({{ $tarea->id }})"
-                                                                onclick="return confirm('?Eliminar esta tarea?')"
-                                                            />
+                                                                wire:click="eliminarTarea({{ $tarea->id }})" />
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -391,4 +389,136 @@
             </div>
         </div>
     </div>
+
+    @if ($modalSincronizarTarea)
+        @php
+            $tareaPendiente = $tareaPendienteSincronizarId
+                ? \App\Models\TareaCatalogo::with('obligacion')->find($tareaPendienteSincronizarId)
+                : null;
+        @endphp
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="w-full max-w-xl rounded-lg bg-white shadow-xl dark:bg-gray-900">
+                <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-stone-700 dark:text-white">
+                        Generar tarea en periodos existentes
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {{ $tareaPendiente?->nombre }} - {{ $tareaPendiente?->obligacion?->nombre }}
+                    </p>
+                </div>
+
+                <div class="space-y-5 px-5 py-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-300">
+                        La tarea ya quedo en el catalogo. Elige si deseas crearla tambien en obligaciones que ya existen.
+                    </p>
+
+                    <div class="rounded border border-gray-200 p-4 dark:border-gray-700">
+                        <h4 class="text-sm font-semibold text-stone-700 dark:text-white">Rango de periodos</h4>
+                        <div class="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400">Desde</label>
+                                <div class="mt-1 grid grid-cols-2 gap-2">
+                                    <select wire:model="sincronizarMesInicio"
+                                        class="w-full rounded border px-2 py-2 text-sm dark:bg-gray-700 dark:text-white">
+                                        @foreach (range(1, 12) as $mes)
+                                            <option value="{{ $mes }}">{{ $mes }}</option>
+                                        @endforeach
+                                    </select>
+                                    <select wire:model="sincronizarAnioInicio"
+                                        class="w-full rounded border px-2 py-2 text-sm dark:bg-gray-700 dark:text-white">
+                                        @foreach ($this->aniosDisponibles as $anio)
+                                            <option value="{{ $anio }}">{{ $anio }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400">Hasta</label>
+                                <div class="mt-1 grid grid-cols-2 gap-2">
+                                    <select wire:model="sincronizarMesFin"
+                                        class="w-full rounded border px-2 py-2 text-sm dark:bg-gray-700 dark:text-white">
+                                        @foreach (range(1, 12) as $mes)
+                                            <option value="{{ $mes }}">{{ $mes }}</option>
+                                        @endforeach
+                                    </select>
+                                    <select wire:model="sincronizarAnioFin"
+                                        class="w-full rounded border px-2 py-2 text-sm dark:bg-gray-700 dark:text-white">
+                                        @foreach ($this->aniosDisponibles as $anio)
+                                            <option value="{{ $anio }}">{{ $anio }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        @error('sincronizarMesInicio')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        @error('sincronizarMesFin')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap justify-end gap-2 border-t border-gray-200 px-5 py-4 dark:border-gray-700">
+                    <button wire:click="noGenerarTareaEnPeriodos"
+                        class="rounded bg-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-white">
+                        No generar ahora
+                    </button>
+                    <button wire:click="generarTareaPeriodoActual"
+                        class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+                        Solo periodo actual
+                    </button>
+                    <button wire:click="generarTareaRango"
+                        class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+                        Generar rango
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($modalEliminarTarea)
+        @php
+            $tareaEliminar = $tareaPendienteEliminarId
+                ? \App\Models\TareaCatalogo::with('obligacion')->find($tareaPendienteEliminarId)
+                : null;
+        @endphp
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div class="w-full max-w-lg rounded-lg bg-white shadow-xl dark:bg-gray-900">
+                <div class="border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-stone-700 dark:text-white">
+                        Quitar tarea del catalogo
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {{ $tareaEliminar?->nombre }} - {{ $tareaEliminar?->obligacion?->nombre }}
+                    </p>
+                </div>
+
+                <div class="space-y-3 px-5 py-4 text-sm text-gray-600 dark:text-gray-300">
+                    <p>
+                        La tarea se desactivara del catalogo para que no se use en futuras obligaciones.
+                    </p>
+                    <p>
+                        Tambien puedes quitar las tareas ya generadas solo del periodo actual. No se tocaran periodos anteriores.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap justify-end gap-2 border-t border-gray-200 px-5 py-4 dark:border-gray-700">
+                    <button wire:click="cancelarEliminacionTarea"
+                        class="rounded bg-gray-200 px-4 py-2 text-sm text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-white">
+                        Cancelar
+                    </button>
+                    <button wire:click="quitarTareaSoloCatalogo"
+                        class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+                        Solo quitar del catalogo
+                    </button>
+                    <button wire:click="quitarTareaCatalogoYPeriodoActual"
+                        class="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">
+                        Quitar catalogo y periodo actual
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

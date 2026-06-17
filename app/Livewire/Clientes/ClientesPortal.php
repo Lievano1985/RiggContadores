@@ -116,7 +116,7 @@ class ClientesPortal extends Component
 
         $datosFormulario = $this->normalizarFormulario($tipo->configuracion_formulario ?? []);
 
-        DB::transaction(function () use ($user, $cliente, $tipo, $datosFormulario) {
+        $resultadoOperacion = DB::transaction(function () use ($user, $cliente, $tipo, $datosFormulario) {
             if ($this->editandoSolicitud && $this->solicitud_id_form) {
                 $solicitud = Solicitud::query()
                     ->where('cliente_id', $cliente->id)
@@ -172,7 +172,11 @@ class ClientesPortal extends Component
 
                 $this->cerrarSidebar();
                 $this->dispatch('notify', message: 'Solicitud actualizada correctamente.');
-                return;
+                return [
+                    'modo' => 'update',
+                    'solicitud' => $solicitud,
+                    'resultadoRequerimiento' => null,
+                ];
             }
 
             $solicitud = Solicitud::create([
@@ -232,14 +236,33 @@ class ClientesPortal extends Component
                     $resultadoRequerimiento
                 );
 
-                SolicitudNotificacionService::notificarRequerimientoCreado($resultadoRequerimiento);
             }
-
-            SolicitudNotificacionService::notificarSolicitudCreada($solicitud);
 
             $this->cerrarSidebar();
             $this->dispatch('notify', message: 'Solicitud enviada correctamente.');
+            return [
+                'modo' => 'create',
+                'solicitud' => $solicitud,
+                'resultadoRequerimiento' => $resultadoRequerimiento,
+            ];
         });
+
+        if (($resultadoOperacion['modo'] ?? null) === 'create') {
+            $solicitudCreada = $resultadoOperacion['solicitud'] ?? null;
+            $resultadoRequerimiento = $resultadoOperacion['resultadoRequerimiento'] ?? null;
+
+            rescue(function () use ($resultadoRequerimiento) {
+                if ($resultadoRequerimiento) {
+                    SolicitudNotificacionService::notificarRequerimientoCreado($resultadoRequerimiento);
+                }
+            }, report: true);
+
+            rescue(function () use ($solicitudCreada) {
+                if ($solicitudCreada) {
+                    SolicitudNotificacionService::notificarSolicitudCreada($solicitudCreada);
+                }
+            }, report: true);
+        }
     }
 
     public function editarSolicitud(int $solicitudId): void

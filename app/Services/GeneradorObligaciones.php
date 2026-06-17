@@ -227,17 +227,35 @@ class GeneradorObligaciones
      */
     public function sincronizarTareaPeriodoActual(TareaCatalogo $tarea, ?Carbon $fechaReferencia = null): int
     {
+        $ref = $fechaReferencia?->copy()->startOfMonth() ?? now()->copy()->startOfMonth();
+
+        return $this->sincronizarTareaEnRango(
+            $tarea,
+            (int) $ref->year,
+            (int) $ref->month,
+            (int) $ref->year,
+            (int) $ref->month
+        );
+    }
+
+    public function sincronizarTareaEnRango(
+        TareaCatalogo $tarea,
+        int $anioInicio,
+        int $mesInicio,
+        int $anioFin,
+        int $mesFin
+    ): int {
         if (! $tarea->obligacion_id || ! $tarea->activo) {
             return 0;
         }
 
-        $ref = $fechaReferencia?->copy()->startOfMonth() ?? now()->copy()->startOfMonth();
         $asignadas = 0;
+        $periodoInicio = ($anioInicio * 100) + $mesInicio;
+        $periodoFin = ($anioFin * 100) + $mesFin;
 
         ObligacionClienteContador::query()
             ->where('obligacion_id', $tarea->obligacion_id)
-            ->where('ejercicio', (int) $ref->year)
-            ->where('mes', (int) $ref->month)
+            ->whereRaw('(ejercicio * 100 + mes) between ? and ?', [$periodoInicio, $periodoFin])
             ->where('is_activa', true)
             ->chunkById(200, function ($obligaciones) use ($tarea, &$asignadas) {
                 foreach ($obligaciones as $occ) {
@@ -260,12 +278,46 @@ class GeneradorObligaciones
                     );
 
                     if ($asignacion->wasRecentlyCreated) {
+                        if (in_array($occ->estatus, [
+                            'realizada',
+                            'enviada_cliente',
+                            'respuesta_cliente',
+                            'respuesta_revisada',
+                            'finalizado',
+                        ], true)) {
+                            $occ->update([
+                                'estatus' => 'reabierta',
+                                'fecha_termino' => null,
+                                'fecha_finalizado' => null,
+                            ]);
+                        }
+
                         $asignadas++;
                     }
                 }
             });
 
         return $asignadas;
+    }
+
+    public function quitarTareaPeriodoActual(TareaCatalogo $tarea, ?Carbon $fechaReferencia = null): int
+    {
+        $ref = $fechaReferencia?->copy()->startOfMonth() ?? now()->copy()->startOfMonth();
+        $eliminadas = 0;
+
+        TareaAsignada::query()
+            ->where('tarea_catalogo_id', $tarea->id)
+            ->where('ejercicio', (int) $ref->year)
+            ->where('mes', (int) $ref->month)
+            ->chunkById(200, function ($tareas) use (&$eliminadas) {
+                foreach ($tareas as $tareaAsignada) {
+                    $tareaAsignada->archivos()->delete();
+                    $tareaAsignada->delete();
+                    $eliminadas++;
+                }
+            });
+
+        return $eliminadas;
     }
 
     /**
