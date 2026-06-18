@@ -471,235 +471,327 @@
 
             <div class="flex-1 space-y-4 overflow-y-auto p-4">
                 @if ($solicitudDetalle)
-                    <div class="rounded-lg border border-stone-200 bg-stone-50/80 p-4 text-sm dark:border-stone-700 dark:bg-stone-800/60">
-                        <div><span class="font-medium">Cliente:</span> {{ $solicitudDetalle->cliente->nombre ?? ($solicitudDetalle->cliente->razon_social ?? '-') }}</div>
-                        <div><span class="font-medium">Origen:</span> {{ ucfirst($solicitudDetalle->origen) }}</div>
-                        <div><span class="font-medium">Creada por:</span> {{ $solicitudDetalle->creadoPor?->name ?? '-' }}</div>
-                        @if ($solicitudDetalle->responsable?->name)
-                            <div><span class="font-medium">Responsable:</span> {{ $solicitudDetalle->responsable->name }}</div>
-                        @endif
-                        @if (filled($solicitudDetalle->fecha_vencimiento))
-                            <div><span class="font-medium">Vencimiento:</span> {{ $solicitudDetalle->fecha_vencimiento?->format('d/m/Y') }}</div>
-                        @endif
-                        @if (filled($solicitudDetalle->descripcion))
-                            <div class="mt-3 whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $solicitudDetalle->descripcion }}</div>
-                        @endif
+                    <div x-data="{ open: true }"
+                        class="overflow-visible rounded-xl border border-stone-200 bg-stone-50/80 shadow-sm dark:border-stone-700 dark:bg-stone-800/60">
+                        <div @click="open = !open"
+                            class="flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-stone-100/80 dark:hover:bg-stone-700/40">
+                            <div class="min-w-0">
+                                <h5 class="font-semibold text-stone-700 dark:text-white">Detalles de la solicitud</h5>
+                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Cliente, origen, responsable y descripcion general
+                                </div>
+                            </div>
+                            <button type="button" @click.stop="open = !open" class="inline-flex items-center gap-1 text-xs font-medium text-stone-600 dark:text-stone-300">
+                                <span x-show="!open">Ver mas</span>
+                                <span x-show="open">Ocultar</span>
+                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.512a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
 
-                        <div class="mt-4 flex flex-wrap justify-end gap-2">
-                            @if (!in_array($solicitudDetalle->estado, ['cerrada', 'cancelada']) && ($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()))
-                                <button type="button"
-                                    wire:click="confirmarCierreSolicitud({{ $solicitudDetalle->id }})"
-                                    class="inline-flex items-center rounded bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700">
-                                    Cerrar solicitud
-                                </button>
+                        <div x-show="open" x-transition class="space-y-3 border-t border-stone-200 px-4 py-4 text-sm dark:border-stone-700">
+                            <div><span class="font-medium">Cliente:</span> {{ $solicitudDetalle->cliente->nombre ?? ($solicitudDetalle->cliente->razon_social ?? '-') }}</div>
+                            <div><span class="font-medium">Origen:</span> {{ ucfirst($solicitudDetalle->origen) }}</div>
+                            <div><span class="font-medium">Creada por:</span> {{ $solicitudDetalle->creadoPor?->name ?? '-' }}</div>
+                            @if ($solicitudDetalle->responsable?->name)
+                                <div><span class="font-medium">Responsable:</span> {{ $solicitudDetalle->responsable->name }}</div>
                             @endif
+                            @if (filled($solicitudDetalle->fecha_vencimiento))
+                                <div><span class="font-medium">Vencimiento:</span> {{ $solicitudDetalle->fecha_vencimiento?->format('d/m/Y') }}</div>
+                            @endif
+                            @if (filled($solicitudDetalle->descripcion))
+                                <div class="whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $solicitudDetalle->descripcion }}</div>
+                            @endif
+
+                            <div class="mt-4 flex flex-wrap justify-end gap-2">
+                                @if (!in_array($solicitudDetalle->estado, ['cerrada', 'cancelada']) && ($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()))
+                                    <button type="button"
+                                        wire:click="confirmarCierreSolicitud({{ $solicitudDetalle->id }})"
+                                        class="inline-flex items-center rounded bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700">
+                                        Cerrar solicitud
+                                    </button>
+                                @endif
+                            </div>
                         </div>
                     </div>
 
-                    <div class="rounded-lg border border-violet-200 bg-violet-50/60 p-4 dark:border-violet-900/60 dark:bg-violet-950/20">
-                        <div class="mb-3 flex items-center justify-between gap-3">
-                            <h5 class="font-semibold text-stone-700 dark:text-white">Requerimientos</h5>
-                            @if (($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()) && $solicitudDetalle->modo_solicitud !== 'definida')
-                                <button wire:click="abrirFormularioRequerimiento"
-                                    class="rounded bg-amber-600 px-3 py-2 text-xs text-white hover:bg-amber-700">
-                                    + Nuevo requerimiento
-                                </button>
-                            @endif
-                        </div>
-
-                        @if ($requerimientoFormVisible)
-                            <div class="mb-4 rounded-lg border border-white/70 bg-white/80 p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900/50">
-                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div>
-                                        <label class="mb-1 block text-sm font-medium">Dirigido a</label>
-                                        <select wire:model.live="requerimiento_destinatario_tipo"
-                                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                            <option value="cliente">Cliente</option>
-                                            <option value="interno">Usuario interno</option>
-                                        </select>
-                                    </div>
-                                    @if ($requerimiento_destinatario_tipo === 'interno')
-                                        <div>
-                                            <label class="mb-1 block text-sm font-medium">Usuario interno</label>
-                                            <select wire:model="requerimiento_destinatario_user_id"
-                                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                                <option value="">Seleccione...</option>
-                                                @foreach ($usuariosInternosRequerimiento as $usuarioInterno)
-                                                    <option value="{{ $usuarioInterno->id }}">{{ $usuarioInterno->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    @endif
-                                    <div class="md:col-span-2">
-                                        <label class="mb-1 block text-sm font-medium">Titulo</label>
-                                        <input type="text" wire:model="requerimiento_titulo"
-                                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <label class="mb-1 block text-sm font-medium">Descripcion</label>
-                                        <textarea wire:model="requerimiento_descripcion" rows="3"
-                                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
-                                    </div>
-                                    <div>
-                                        <label class="mb-1 block text-sm font-medium">Fecha limite</label>
-                                        <input type="date" wire:model="requerimiento_fecha_limite"
-                                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                                    </div>
-                                </div>
-                                <div class="mt-4 flex justify-end gap-2">
-                                    <button wire:click="cerrarFormularioRequerimiento"
-                                        class="rounded border px-4 py-2 text-sm dark:border-gray-600 dark:text-white">
-                                        Cancelar
-                                    </button>
-                                    <button wire:click="guardarRequerimiento"
-                                        @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
-                                        wire:loading.attr="disabled"
-                                        wire:target="guardarRequerimiento"
-                                        class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
-                                        {{ $editandoRequerimiento ? 'Actualizar requerimiento' : 'Guardar requerimiento' }}
-                                    </button>
+                    <div x-data="{ open: true }"
+                        class="overflow-visible rounded-xl border border-violet-200 bg-violet-50/60 shadow-sm dark:border-violet-900/60 dark:bg-violet-950/20">
+                        <div @click="open = !open"
+                            class="flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-violet-100/70 dark:hover:bg-violet-900/20">
+                            <div class="min-w-0">
+                                <h5 class="font-semibold text-stone-700 dark:text-white">Requerimientos</h5>
+                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $solicitudDetalle->requerimientos->reject(fn ($requerimiento) => $solicitudDetalle->usaFormularioComoCierre() && $requerimiento->tipo === 'resultado')->count() }} elemento(s)
                                 </div>
                             </div>
-                        @endif
+                            <div class="flex items-center gap-2" @click.stop>
+                                @if (($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()) && $solicitudDetalle->modo_solicitud !== 'definida')
+                                    <button wire:click="abrirFormularioRequerimiento"
+                                        class="rounded bg-amber-600 px-3 py-2 text-xs text-white hover:bg-amber-700">
+                                        + Nuevo requerimiento
+                                    </button>
+                                @endif
+                                <button type="button" @click="open = !open" class="inline-flex items-center gap-1 text-xs font-medium text-stone-600 dark:text-stone-300">
+                                    <span x-show="!open">Ver mas</span>
+                                    <span x-show="open">Ocultar</span>
+                                    <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.512a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
 
-                        <div class="space-y-3">
-                            @forelse ($solicitudDetalle->requerimientos as $requerimiento)
-                                @continue($solicitudDetalle->usaFormularioComoCierre() && $requerimiento->tipo === 'resultado')
-                                <div class="rounded-lg border border-stone-200 bg-white/80 p-4 dark:border-stone-700 dark:bg-stone-900/50">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <div class="font-semibold text-stone-700 dark:text-white">{{ $requerimiento->titulo }}</div>
-                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                {{ ucfirst($requerimiento->destinatario_tipo) }}
-                                                @if ($requerimiento->destinatario_tipo === 'interno')
-                                                    - {{ $requerimiento->destinatario?->name ?? 'Sin usuario' }}
+                        <div x-show="open" x-transition class="space-y-3 border-t border-violet-200 px-4 py-4 dark:border-violet-900/60">
+                            @if ($requerimientoFormVisible)
+                                <div class="mb-4 rounded-lg border border-white/70 bg-white/80 p-4 shadow-sm dark:border-stone-700 dark:bg-stone-900/50">
+                                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div>
+                                            <label class="mb-1 block text-sm font-medium">Dirigido a</label>
+                                            <select wire:model.live="requerimiento_destinatario_tipo"
+                                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                                <option value="cliente">Cliente</option>
+                                                <option value="interno">Usuario interno</option>
+                                            </select>
+                                        </div>
+                                        @if ($requerimiento_destinatario_tipo === 'interno')
+                                            <div>
+                                                <label class="mb-1 block text-sm font-medium">Usuario interno</label>
+                                                <select wire:model="requerimiento_destinatario_user_id"
+                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                                    <option value="">Seleccione...</option>
+                                                    @foreach ($usuariosInternosRequerimiento as $usuarioInterno)
+                                                        <option value="{{ $usuarioInterno->id }}">{{ $usuarioInterno->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        @endif
+                                        <div class="md:col-span-2">
+                                            <label class="mb-1 block text-sm font-medium">Titulo</label>
+                                            <input type="text" wire:model="requerimiento_titulo"
+                                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="mb-1 block text-sm font-medium">Descripcion</label>
+                                            <textarea wire:model="requerimiento_descripcion" rows="3"
+                                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="mb-1 block text-sm font-medium">Fecha limite</label>
+                                            <input type="date" wire:model="requerimiento_fecha_limite"
+                                                class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 flex justify-end gap-2">
+                                        <button wire:click="cerrarFormularioRequerimiento"
+                                            class="rounded border px-4 py-2 text-sm dark:border-gray-600 dark:text-white">
+                                            Cancelar
+                                        </button>
+                                        <button wire:click="guardarRequerimiento"
+                                            @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
+                                            wire:loading.attr="disabled"
+                                            wire:target="guardarRequerimiento"
+                                            class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+                                            {{ $editandoRequerimiento ? 'Actualizar requerimiento' : 'Guardar requerimiento' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="space-y-3">
+                                @forelse ($solicitudDetalle->requerimientos as $requerimiento)
+                                    @continue($solicitudDetalle->usaFormularioComoCierre() && $requerimiento->tipo === 'resultado')
+                                    <div class="rounded-lg border border-stone-200 bg-white/80 p-4 dark:border-stone-700 dark:bg-stone-900/50">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <div class="font-semibold text-stone-700 dark:text-white">{{ $requerimiento->titulo }}</div>
+                                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                    {{ ucfirst($requerimiento->destinatario_tipo) }}
+                                                    @if ($requerimiento->destinatario_tipo === 'interno')
+                                                        - {{ $requerimiento->destinatario?->name ?? 'Sin usuario' }}
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="text-right text-xs text-gray-500 dark:text-gray-400">
+                                                <div>{{ str_replace('_', ' ', $requerimiento->estado) }}</div>
+                                                @if ($requerimiento->fecha_limite)
+                                                    <div>{{ $requerimiento->fecha_limite->format('d/m/Y') }}</div>
                                                 @endif
                                             </div>
                                         </div>
-                                        <div class="text-right text-xs text-gray-500 dark:text-gray-400">
-                                            <div>{{ str_replace('_', ' ', $requerimiento->estado) }}</div>
-                                            @if ($requerimiento->fecha_limite)
-                                                <div>{{ $requerimiento->fecha_limite->format('d/m/Y') }}</div>
-                                            @endif
-                                        </div>
-                                    </div>
 
-                                    @if ($requerimiento->descripcion)
-                                        <div class="mt-3 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
-                                            {{ $requerimiento->descripcion }}
-                                        </div>
-                                    @endif
-
-                                    @if ($requerimiento->respuesta_texto)
-                                        <div class="mt-3 rounded border border-emerald-200 bg-emerald-50/70 p-3 text-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
-                                            <div class="font-medium text-emerald-700 dark:text-emerald-300">Respuesta</div>
-                                            <div class="mt-1 whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $requerimiento->respuesta_texto }}</div>
-                                            @if ($requerimiento->respondido_at)
-                                                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                                    Respondido por {{ $requerimiento->respondidoPor?->name ?? '-' }} el {{ $requerimiento->respondido_at?->format('d/m/Y H:i') ?? '-' }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @endif
-
-                                    @if ($requerimiento->estado === 'rechazado' && $requerimiento->comentario_validacion)
-                                        <div class="mt-3 rounded border border-rose-200 bg-rose-50/70 p-3 text-sm dark:border-rose-900/40 dark:bg-rose-950/20">
-                                            <div class="font-medium text-rose-700 dark:text-rose-300">Respuesta rechazada</div>
-                                            <div class="mt-1 whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $requerimiento->comentario_validacion }}</div>
-                                        </div>
-                                    @endif
-
-                                    @if (($mostrarRechazoRequerimiento[$requerimiento->id] ?? false) === true)
-                                        <div class="mt-3 space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                                            <div>
-                                                <label class="mb-1 block text-sm font-medium">Motivo del rechazo</label>
-                                                <textarea wire:model="comentarioRechazoRequerimiento.{{ $requerimiento->id }}" rows="3"
-                                                    class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
-                                                @error('comentarioRechazoRequerimiento.' . $requerimiento->id) <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
+                                        @if ($requerimiento->descripcion)
+                                            <div class="mt-3 whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">
+                                                {{ $requerimiento->descripcion }}
                                             </div>
-                                            <div class="flex justify-end gap-2">
+                                        @endif
+
+                                        @if ($requerimiento->respuesta_texto)
+                                            <div class="mt-3 rounded border border-emerald-200 bg-emerald-50/70 p-3 text-sm dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                                                <div class="font-medium text-emerald-700 dark:text-emerald-300">Respuesta</div>
+                                                <div class="mt-1 whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $requerimiento->respuesta_texto }}</div>
+                                                @if ($requerimiento->respondido_at)
+                                                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                                        Respondido por {{ $requerimiento->respondidoPor?->name ?? '-' }} el {{ $requerimiento->respondido_at?->format('d/m/Y H:i') ?? '-' }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endif
+
+                                        @if ($requerimiento->estado === 'rechazado' && $requerimiento->comentario_validacion)
+                                            <div class="mt-3 rounded border border-rose-200 bg-rose-50/70 p-3 text-sm dark:border-rose-900/40 dark:bg-rose-950/20">
+                                                <div class="font-medium text-rose-700 dark:text-rose-300">Respuesta rechazada</div>
+                                                <div class="mt-1 whitespace-pre-line text-gray-700 dark:text-gray-300">{{ $requerimiento->comentario_validacion }}</div>
+                                            </div>
+                                        @endif
+
+                                        @if (($mostrarRechazoRequerimiento[$requerimiento->id] ?? false) === true)
+                                            <div class="mt-3 space-y-3 rounded-lg border border-gray-200 p-4 dark:border-gray-700">
+                                                <div>
+                                                    <label class="mb-1 block text-sm font-medium">Motivo del rechazo</label>
+                                                    <textarea wire:model="comentarioRechazoRequerimiento.{{ $requerimiento->id }}" rows="3"
+                                                        class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white"></textarea>
+                                                    @error('comentarioRechazoRequerimiento.' . $requerimiento->id) <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
+                                                </div>
+                                                <div class="flex justify-end gap-2">
+                                                    <button type="button"
+                                                        wire:click="cancelarRechazoRespuesta({{ $requerimiento->id }})"
+                                                        class="rounded border px-4 py-2 text-sm dark:border-gray-600 dark:text-white">
+                                                        Cancelar
+                                                    </button>
+                                                    <button type="button"
+                                                        wire:click="rechazarRespuestaRequerimiento({{ $requerimiento->id }})"
+                                                        class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+                                                        Rechazar respuesta
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        @endif
+
+                                        <div class="mt-3 flex justify-end gap-2">
+                                            @if (($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()) && $requerimiento->tipo !== 'resultado')
                                                 <button type="button"
-                                                    wire:click="cancelarRechazoRespuesta({{ $requerimiento->id }})"
-                                                    class="rounded border px-4 py-2 text-sm dark:border-gray-600 dark:text-white">
-                                                    Cancelar
+                                                    wire:click.stop="editarRequerimiento({{ $requerimiento->id }})"
+                                                    class="inline-flex items-center rounded bg-slate-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-slate-700">
+                                                    Editar
                                                 </button>
                                                 <button type="button"
-                                                    wire:click="rechazarRespuestaRequerimiento({{ $requerimiento->id }})"
-                                                    class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
+                                                    wire:click.stop="confirmarEliminarRequerimiento({{ $requerimiento->id }})"
+                                                    class="inline-flex items-center rounded bg-rose-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-rose-700">
+                                                    Eliminar
+                                                </button>
+                                            @endif
+
+                                            @if (
+                                                $requerimiento->estado === 'respondido' &&
+                                                (
+                                                    ($requerimiento->tipo !== 'resultado' && $requerimiento->creado_por_user_id === auth()->id()) ||
+                                                    ($requerimiento->tipo === 'resultado' && $solicitudDetalle->creado_por_user_id === auth()->id())
+                                                )
+                                            )
+                                                <button type="button"
+                                                    wire:click="validarRespuestaRequerimiento({{ $requerimiento->id }})"
+                                                    class="inline-flex items-center rounded bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
+                                                    Validar respuesta
+                                                </button>
+                                                <button type="button"
+                                                    wire:click="mostrarRechazoRespuesta({{ $requerimiento->id }})"
+                                                    class="inline-flex items-center rounded bg-amber-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-amber-700">
                                                     Rechazar respuesta
                                                 </button>
-                                            </div>
+                                            @endif
                                         </div>
-                                    @endif
 
-                                    <div class="mt-3 flex justify-end gap-2">
-                                        @if (($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()) && $requerimiento->tipo !== 'resultado')
-                                            <button type="button"
-                                                wire:click.stop="editarRequerimiento({{ $requerimiento->id }})"
-                                                class="inline-flex items-center rounded bg-slate-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-slate-700">
-                                                Editar
-                                            </button>
-                                            <button type="button"
-                                                wire:click.stop="confirmarEliminarRequerimiento({{ $requerimiento->id }})"
-                                                class="inline-flex items-center rounded bg-rose-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-rose-700">
-                                                Eliminar
-                                            </button>
-                                        @endif
-
-                                        @if (
-                                            $requerimiento->estado === 'respondido' &&
-                                            (
-                                                ($requerimiento->tipo !== 'resultado' && $requerimiento->creado_por_user_id === auth()->id()) ||
-                                                ($requerimiento->tipo === 'resultado' && $solicitudDetalle->creado_por_user_id === auth()->id())
-                                            )
-                                        )
-                                            <button type="button"
-                                                wire:click="validarRespuestaRequerimiento({{ $requerimiento->id }})"
-                                                class="inline-flex items-center rounded bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
-                                                Validar respuesta
-                                            </button>
-                                            <button type="button"
-                                                wire:click="mostrarRechazoRespuesta({{ $requerimiento->id }})"
-                                                class="inline-flex items-center rounded bg-amber-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-amber-700">
-                                                Rechazar respuesta
-                                            </button>
-                                        @endif
+                                        <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                            Creado por {{ $requerimiento->creadoPor?->name ?? '-' }} el {{ $requerimiento->created_at?->format('d/m/Y H:i') ?? '-' }}
+                                        </div>
                                     </div>
-
-                                    <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                                        Creado por {{ $requerimiento->creadoPor?->name ?? '-' }} el {{ $requerimiento->created_at?->format('d/m/Y H:i') ?? '-' }}
-                                    </div>
-                                </div>
-                            @empty
-                                <p class="text-sm text-gray-500 dark:text-gray-400">
-                                    Aun no hay requerimientos registrados en esta solicitud.
-                                </p>
-                            @endforelse
+                                @empty
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        Aun no hay requerimientos registrados en esta solicitud.
+                                    </p>
+                                @endforelse
+                            </div>
                         </div>
                     </div>
 
-                    <div class="rounded-lg border border-gray-200 p-4 space-y-3 dark:border-gray-700">
-                        <h5 class="font-semibold text-stone-700 dark:text-white">Historial</h5>
-                        <div class="space-y-2 text-sm">
-                            <div class="flex items-start gap-3">
-                                <div class="mt-1 h-2.5 w-2.5 rounded-full bg-amber-500"></div>
-                                <div>
-                                    <div class="font-medium text-gray-900 dark:text-white">Solicitud creada</div>
-                                    <div class="text-gray-500 dark:text-gray-400">
-                                        {{ $solicitudDetalle->created_at?->format('d/m/Y H:i') ?? '-' }}
-                                        por {{ $solicitudDetalle->creadoPor?->name ?? 'usuario no disponible' }}
-                                    </div>
+                    <div x-data="{ open: false }"
+                        class="overflow-visible rounded-xl border border-emerald-200 bg-emerald-50/70 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/20">
+                        <div @click="open = !open"
+                            class="flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-emerald-100/70 dark:hover:bg-emerald-900/20">
+                            <div class="min-w-0">
+                                <h5 class="font-semibold text-stone-700 dark:text-white">Historial</h5>
+                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $solicitudDetalle->historial->count() }} movimiento(s) registrados
                                 </div>
                             </div>
+                            <button type="button" @click.stop="open = !open" class="inline-flex items-center gap-1 text-xs font-medium text-stone-600 dark:text-stone-300">
+                                <span x-show="!open">Ver mas</span>
+                                <span x-show="open">Ocultar</span>
+                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.512a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
 
-                            <div class="flex items-start gap-3">
-                                <div class="mt-1 h-2.5 w-2.5 rounded-full bg-stone-400"></div>
-                                <div>
-                                    <div class="font-medium text-gray-900 dark:text-white">Responsable asignado</div>
-                                    <div class="text-gray-500 dark:text-gray-400">
-                                        {{ $solicitudDetalle->responsable?->name ?? '-' }}
+                        <div x-show="open" x-transition class="border-t border-emerald-200 px-4 py-4 dark:border-emerald-900/60">
+                            <div class="space-y-3 text-sm">
+                                @forelse ($solicitudDetalle->historial as $evento)
+                                    @php
+                                        $eventoColor = match ($evento->tipo) {
+                                            'solicitud_creada', 'requerimiento_creado', 'resultado_generado' => 'bg-sky-500',
+                                            'solicitud_actualizada', 'requerimiento_actualizado' => 'bg-amber-500',
+                                            'requerimiento_respondido', 'resultado_entregado' => 'bg-violet-500',
+                                            'requerimiento_validado', 'resultado_validado', 'solicitud_cerrada' => 'bg-emerald-500',
+                                            'requerimiento_rechazado', 'resultado_rechazado', 'solicitud_cancelada', 'requerimiento_eliminado' => 'bg-rose-500',
+                                            default => 'bg-stone-400',
+                                        };
+                                        $detalleEvento = match ($evento->tipo) {
+                                            'solicitud_creada',
+                                            'solicitud_actualizada',
+                                            'solicitud_cerrada',
+                                            'solicitud_cancelada' => $solicitudDetalle->titulo,
+                                            'resultado_entregado',
+                                            'resultado_validado',
+                                            'resultado_rechazado' => 'Resultado esperado',
+                                            'resultado_generado' => 'Asignado a ' . (
+                                                $evento->requerimiento?->destinatario_tipo === 'cliente'
+                                                    ? 'Cliente'
+                                                    : ($evento->requerimiento?->destinatario?->name ?? 'Sin asignar')
+                                            ),
+                                            'requerimiento_creado',
+                                            'requerimiento_actualizado',
+                                            'requerimiento_respondido',
+                                            'requerimiento_validado',
+                                            'requerimiento_rechazado',
+                                            'requerimiento_eliminado' => $evento->requerimiento?->titulo,
+                                            default => $evento->descripcion,
+                                        };
+                                    @endphp
+                                    <div class="flex items-start gap-3">
+                                        <div class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{ $eventoColor }}"></div>
+                                        <div class="min-w-0">
+                                            <div class="font-medium text-gray-900 dark:text-white">{{ $evento->titulo }}</div>
+                                            @if (filled($detalleEvento))
+                                                <div class="mt-0.5 whitespace-pre-line text-gray-600 dark:text-gray-300">{{ $detalleEvento }}</div>
+                                            @elseif ($evento->descripcion)
+                                                <div class="mt-0.5 whitespace-pre-line text-gray-600 dark:text-gray-300">{{ $evento->descripcion }}</div>
+                                            @endif
+                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                {{ $evento->created_at?->format('d/m/Y H:i') ?? '-' }}
+                                                · {{ $evento->user?->name ?? 'Sistema' }}
+                                                @if ($evento->requerimiento)
+                                                    · {{ $evento->requerimiento->tipo === 'resultado' ? 'Resultado esperado' : 'Req. #' . $evento->requerimiento->id }}
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                @empty
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        Aun no hay movimientos registrados para esta solicitud.
+                                    </p>
+                                @endforelse
                             </div>
                         </div>
                     </div>
