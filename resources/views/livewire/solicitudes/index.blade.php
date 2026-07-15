@@ -506,11 +506,8 @@
 
                             <div class="mt-4 flex flex-wrap justify-end gap-2">
                                 @if (!in_array($solicitudDetalle->estado, ['cerrada', 'cancelada']) && ($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()))
-                                    <button type="button"
-                                        wire:click="confirmarCierreSolicitud({{ $solicitudDetalle->id }})"
-                                        class="inline-flex items-center rounded bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700">
-                                        Cerrar solicitud
-                                    </button>
+                                    <x-action-icon icon="check" label="Cerrar solicitud" variant="success"
+                                        wire:click="confirmarCierreSolicitud({{ $solicitudDetalle->id }})" />
                                 @endif
                             </div>
                         </div>
@@ -528,10 +525,8 @@
                             </div>
                             <div class="flex items-center gap-2" @click.stop>
                                 @if (($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()) && $solicitudDetalle->modo_solicitud !== 'definida')
-                                    <button wire:click="abrirFormularioRequerimiento"
-                                        class="rounded bg-amber-600 px-3 py-2 text-xs text-white hover:bg-amber-700">
-                                        + Nuevo requerimiento
-                                    </button>
+                                    <x-action-icon icon="plus" label="Nuevo requerimiento" variant="warning"
+                                        wire:click="abrirFormularioRequerimiento" />
                                 @endif
                                 <button type="button" @click="open = !open" class="inline-flex items-center gap-1 text-xs font-medium text-stone-600 dark:text-stone-300">
                                     <span x-show="!open">Ver mas</span>
@@ -671,16 +666,10 @@
 
                                         <div class="mt-3 flex justify-end gap-2">
                                             @if (($usuarioEsAdminOSupervisor || $solicitudDetalle->creado_por_user_id === auth()->id()) && $requerimiento->tipo !== 'resultado')
-                                                <button type="button"
-                                                    wire:click.stop="editarRequerimiento({{ $requerimiento->id }})"
-                                                    class="inline-flex items-center rounded bg-slate-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-slate-700">
-                                                    Editar
-                                                </button>
-                                                <button type="button"
-                                                    wire:click.stop="confirmarEliminarRequerimiento({{ $requerimiento->id }})"
-                                                    class="inline-flex items-center rounded bg-rose-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-rose-700">
-                                                    Eliminar
-                                                </button>
+                                                <x-action-icon icon="edit" label="Editar" variant="primary"
+                                                    wire:click.stop="editarRequerimiento({{ $requerimiento->id }})" />
+                                                <x-action-icon icon="trash" label="Eliminar" variant="danger"
+                                                    wire:click.stop="confirmarEliminarRequerimiento({{ $requerimiento->id }})" />
                                             @endif
 
                                             @if (
@@ -690,16 +679,10 @@
                                                     ($requerimiento->tipo === 'resultado' && $solicitudDetalle->creado_por_user_id === auth()->id())
                                                 )
                                             )
-                                                <button type="button"
-                                                    wire:click="validarRespuestaRequerimiento({{ $requerimiento->id }})"
-                                                    class="inline-flex items-center rounded bg-emerald-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
-                                                    Validar respuesta
-                                                </button>
-                                                <button type="button"
-                                                    wire:click="mostrarRechazoRespuesta({{ $requerimiento->id }})"
-                                                    class="inline-flex items-center rounded bg-amber-600 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-amber-700">
-                                                    Rechazar respuesta
-                                                </button>
+                                                <x-action-icon icon="check" label="Validar respuesta" variant="success"
+                                                    wire:click="validarRespuestaRequerimiento({{ $requerimiento->id }})" />
+                                                <x-action-icon icon="arrow-uturn-left" label="Rechazar respuesta" variant="warning"
+                                                    wire:click="mostrarRechazoRespuesta({{ $requerimiento->id }})" />
                                             @endif
                                         </div>
 
