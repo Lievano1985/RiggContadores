@@ -3,6 +3,7 @@
 namespace App\Services\Dashboard;
 
 use App\Models\Cliente;
+use App\Models\NotificacionCliente;
 use App\Models\ObligacionClienteContador;
 use App\Models\TareaAsignada;
 use App\Models\User;
@@ -17,6 +18,7 @@ class OperationalDashboardBuilder
         $ejercicio = (int) ($filters['ejercicio'] ?? $hoy->year);
         $mes = (int) ($filters['mes'] ?? $hoy->month);
         $contadorId = ! empty($filters['contador_id']) ? (int) $filters['contador_id'] : null;
+        $clienteEnvioId = ! empty($filters['cliente_envio_id']) ? (int) $filters['cliente_envio_id'] : null;
         $inicioPeriodo = Carbon::create($ejercicio, $mes, 1)->startOfMonth();
         $finPeriodo = $inicioPeriodo->copy()->endOfMonth();
         $estatusCerrados = [
@@ -530,17 +532,77 @@ class OperationalDashboardBuilder
             ->values()
             ->all();
 
-        $enviadasLista = (clone $enviosRealizadosBase)
-            ->orderByDesc('updated_at')
+        $enviadasListaCount = (clone $enviosRealizadosBase)
+            ->count();
+
+        $enviosRealizadosAgrupadosBase = NotificacionCliente::query()
+            ->when($user->despacho_id, function ($q) use ($user) {
+                $q->whereHas('cliente', function ($sq) use ($user) {
+                    $sq->where('despacho_id', $user->despacho_id);
+                });
+            })
+            ->where('periodo_ejercicio', $ejercicio)
+            ->where('periodo_mes', $mes)
+            ->when($contadorId, function ($q) use ($contadorId) {
+                $q->whereHas('obligaciones', function ($sq) use ($contadorId) {
+                    $sq->where('contador_id', $contadorId);
+                });
+            });
+
+        $clientesFiltroEnvios = [];
+        $clienteIdsEnvios = (clone $enviosRealizadosAgrupadosBase)
+            ->distinct()
+            ->pluck('cliente_id')
+            ->filter()
+            ->values()
+            ->all();
+
+        if (! empty($clienteIdsEnvios)) {
+            $clientesFiltroEnvios = Cliente::query()
+                ->whereIn('id', $clienteIdsEnvios)
+                ->orderBy('nombre')
+                ->get(['id', 'nombre', 'razon_social'])
+                ->map(fn (Cliente $cliente) => [
+                    'id' => $cliente->id,
+                    'nombre' => $cliente->nombre ?: ($cliente->razon_social ?: 'Sin cliente'),
+                ])
+                ->values()
+                ->all();
+        }
+
+        $enviadasLista = (clone $enviosRealizadosAgrupadosBase)
+            ->when($clienteEnvioId, fn ($q) => $q->where('cliente_id', $clienteEnvioId))
+            ->with([
+                'cliente:id,nombre,razon_social',
+                'usuario:id,name',
+                'obligaciones' => fn ($q) => $q->with(['obligacion:id,nombre', 'contador:id,name']),
+            ])
+            ->orderByDesc('created_at')
             ->limit(10)
             ->get()
-            ->map(fn (ObligacionClienteContador $obligacion) => [
-                'cliente' => $obligacion->cliente?->nombre ?: ($obligacion->cliente?->razon_social ?: 'Sin cliente'),
-                'obligacion' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
-                'contador' => $obligacion->contador?->name ?: 'Sin contador',
-                'fecha_vencimiento' => optional($obligacion->fecha_vencimiento)?->format('Y-m-d'),
-                'estatus' => $obligacion->estatus ?: 'Sin estatus',
-            ])
+            ->map(function (NotificacionCliente $notificacion) {
+                $obligaciones = $notificacion->obligaciones
+                    ->map(fn (ObligacionClienteContador $obligacion) => [
+                        'id' => $obligacion->id,
+                        'nombre' => $obligacion->obligacion?->nombre ?: 'Sin obligacion',
+                        'contador' => $obligacion->contador?->name ?: 'Sin contador',
+                    ])
+                    ->sortBy('nombre')
+                    ->values()
+                    ->all();
+
+                return [
+                    'id' => $notificacion->id,
+                    'cliente_id' => $notificacion->cliente_id,
+                    'cliente' => $notificacion->cliente?->nombre ?: ($notificacion->cliente?->razon_social ?: 'Sin cliente'),
+                    'usuario' => $notificacion->usuario?->name ?: 'Sistema',
+                    'asunto' => $notificacion->asunto,
+                    'fecha_envio' => optional($notificacion->created_at)?->format('Y-m-d H:i'),
+                    'periodo' => Carbon::create($notificacion->periodo_ejercicio, $notificacion->periodo_mes, 1)->translatedFormat('F Y'),
+                    'cantidad_obligaciones' => count($obligaciones),
+                    'obligaciones' => $obligaciones,
+                ];
+            })
             ->values()
             ->all();
 
@@ -669,13 +731,14 @@ class OperationalDashboardBuilder
             'envios' => [
                 'kpis' => [
                     'listos_para_enviar' => (clone $enviosListosBase)->count(),
-                    'enviadas' => (clone $enviosRealizadosBase)->count(),
+                    'enviadas' => $enviadasListaCount,
                     'faltantes_envio' => (clone $enviosListosBase)->count(),
                     'respuestas_pendientes' => (clone $respuestasPendientesBase)->count(),
                     'respuestas_revisadas' => (clone $respuestasRevisadasBase)->count(),
                 ],
                 'pendientes_envio' => $pendientesEnvio,
                 'enviadas_lista' => $enviadasLista,
+                'clientes_filtro' => $clientesFiltroEnvios,
                 'respuestas_pendientes_lista' => $respuestasPendientes,
                 'respuestas_revisadas_lista' => $respuestasRevisadasLista,
             ],

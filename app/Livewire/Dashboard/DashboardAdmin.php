@@ -12,6 +12,7 @@ class DashboardAdmin extends Component
     public string $filtroEjercicio = '';
     public string $filtroMes = '';
     public string $filtroContador = '';
+    public string $filtroClienteEnvios = '';
 
     public function mount(OperationalDashboardBuilder $builder): void
     {
@@ -35,12 +36,18 @@ class DashboardAdmin extends Component
         $this->refreshDashboardData($builder);
     }
 
+    public function updatedFiltroClienteEnvios(OperationalDashboardBuilder $builder): void
+    {
+        $this->refreshDashboardData($builder);
+    }
+
     protected function refreshDashboardData(OperationalDashboardBuilder $builder): void
     {
         $this->dashboard = $builder->build(Auth::user(), 'Administrador', [
             'ejercicio' => $this->filtroEjercicio,
             'mes' => $this->filtroMes,
             'contador_id' => $this->filtroContador,
+            'cliente_envio_id' => $this->filtroClienteEnvios,
         ]);
     }
 

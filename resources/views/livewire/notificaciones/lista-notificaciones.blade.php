@@ -126,6 +126,11 @@
                         <p><strong>Asunto:</strong> {{ $notificacionSeleccionada->asunto }}</p>
 
                         <p class="mt-2">
+                            <strong>Fecha de envio:</strong>
+                            {{ $notificacionSeleccionada->created_at?->format('d/m/Y H:i') ?? '-' }}
+                        </p>
+
+                        <p class="mt-2">
                             <strong>Mensaje:</strong><br>
                             {{ $notificacionSeleccionada->mensaje }}
                         </p>
