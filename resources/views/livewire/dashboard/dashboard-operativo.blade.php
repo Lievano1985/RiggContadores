@@ -968,7 +968,7 @@
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ listos: 'Obligaciones listas para enviar', enviadas: 'Envíos realizados', faltantes: 'Faltantes de envío', respuestas_pendientes: 'Respuestas pendientes', respuestas_revisadas: 'Respuestas revisadas' }[enviosModal]"></h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ listos: 'Detalle de obligaciones ya finalizadas y listas para envío.', enviadas: 'Últimos 10 envíos realizados al cliente, agrupados por envío.', faltantes: 'Detalle de obligaciones pendientes de envío.', respuestas_pendientes: 'Detalle de respuestas del cliente pendientes de revisión.', respuestas_revisadas: 'Detalle de respuestas del cliente ya revisadas.' }[enviosModal]"></p>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ listos: 'Detalle de obligaciones ya finalizadas y listas para envío.', enviadas: 'Envíos realizados al cliente, agrupados por envío.', faltantes: 'Detalle de obligaciones pendientes de envío.', respuestas_pendientes: 'Detalle de respuestas del cliente pendientes de revisión.', respuestas_revisadas: 'Detalle de respuestas del cliente ya revisadas.' }[enviosModal]"></p>
                 </div>
 
                 <button

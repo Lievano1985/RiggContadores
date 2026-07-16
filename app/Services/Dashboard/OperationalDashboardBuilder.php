@@ -578,7 +578,6 @@ class OperationalDashboardBuilder
                 'obligaciones' => fn ($q) => $q->with(['obligacion:id,nombre', 'contador:id,name']),
             ])
             ->orderByDesc('created_at')
-            ->limit(10)
             ->get()
             ->map(function (NotificacionCliente $notificacion) {
                 $obligaciones = $notificacion->obligaciones
