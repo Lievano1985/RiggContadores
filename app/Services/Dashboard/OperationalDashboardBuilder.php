@@ -501,8 +501,8 @@ class OperationalDashboardBuilder
             ->whereHas('obligacion', function ($q) {
                 $q->where('requiere_envio_cliente', true);
             })
-            ->whereYear('fecha_vencimiento', $ejercicio)
-            ->whereMonth('fecha_vencimiento', $mes)
+            ->where('ejercicio', $ejercicio)
+            ->where('mes', $mes)
             ->when($contadorId, fn ($q) => $q->where('contador_id', $contadorId))
             ->with(['cliente:id,nombre,razon_social', 'obligacion:id,nombre', 'contador:id,name']);
 
@@ -532,17 +532,16 @@ class OperationalDashboardBuilder
             ->values()
             ->all();
 
-        $enviadasListaCount = (clone $enviosRealizadosBase)
-            ->count();
+        $periodoAnteriorEnvio = Carbon::create($ejercicio, $mes, 1)->subMonthNoOverflow();
 
-        $enviosRealizadosAgrupadosBase = NotificacionCliente::query()
+        $enviosMesBase = NotificacionCliente::query()
             ->when($user->despacho_id, function ($q) use ($user) {
                 $q->whereHas('cliente', function ($sq) use ($user) {
                     $sq->where('despacho_id', $user->despacho_id);
                 });
             })
-            ->where('periodo_ejercicio', $ejercicio)
-            ->where('periodo_mes', $mes)
+            ->whereYear('created_at', $ejercicio)
+            ->whereMonth('created_at', $mes)
             ->when($contadorId, function ($q) use ($contadorId) {
                 $q->whereHas('obligaciones', function ($sq) use ($contadorId) {
                     $sq->where('contador_id', $contadorId);
@@ -550,7 +549,7 @@ class OperationalDashboardBuilder
             });
 
         $clientesFiltroEnvios = [];
-        $clienteIdsEnvios = (clone $enviosRealizadosAgrupadosBase)
+        $clienteIdsEnvios = (clone $enviosMesBase)
             ->distinct()
             ->pluck('cliente_id')
             ->filter()
@@ -570,16 +569,24 @@ class OperationalDashboardBuilder
                 ->all();
         }
 
-        $enviadasLista = (clone $enviosRealizadosAgrupadosBase)
-            ->when($clienteEnvioId, fn ($q) => $q->where('cliente_id', $clienteEnvioId))
-            ->with([
-                'cliente:id,nombre,razon_social',
-                'usuario:id,name',
-                'obligaciones' => fn ($q) => $q->with(['obligacion:id,nombre', 'contador:id,name']),
-            ])
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(function (NotificacionCliente $notificacion) {
+        $mapearEnvios = function ($query, ?int $periodoFiltroEjercicio = null, ?int $periodoFiltroMes = null) use ($clienteEnvioId, $contadorId) {
+            return (clone $query)
+                ->when($clienteEnvioId, fn ($q) => $q->where('cliente_id', $clienteEnvioId))
+                ->with([
+                    'cliente:id,nombre,razon_social',
+                    'usuario:id,name',
+                    'obligaciones' => function ($q) use ($contadorId, $periodoFiltroEjercicio, $periodoFiltroMes) {
+                        $q->when($contadorId, fn ($sq) => $sq->where('contador_id', $contadorId))
+                            ->when(
+                                $periodoFiltroEjercicio !== null && $periodoFiltroMes !== null,
+                                fn ($sq) => $sq->where('ejercicio', $periodoFiltroEjercicio)->where('mes', $periodoFiltroMes)
+                            )
+                            ->with(['obligacion:id,nombre', 'contador:id,name']);
+                    },
+                ])
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(function (NotificacionCliente $notificacion) {
                 $obligaciones = $notificacion->obligaciones
                     ->map(fn (ObligacionClienteContador $obligacion) => [
                         'id' => $obligacion->id,
@@ -604,6 +611,19 @@ class OperationalDashboardBuilder
             })
             ->values()
             ->all();
+        };
+
+        $enviosPeriodoAnteriorBase = (clone $enviosMesBase)
+            ->where('periodo_ejercicio', $periodoAnteriorEnvio->year)
+            ->where('periodo_mes', $periodoAnteriorEnvio->month);
+
+        $enviosPeriodoActualBase = (clone $enviosMesBase)
+            ->where('periodo_ejercicio', $ejercicio)
+            ->where('periodo_mes', $mes);
+
+        $enviadasLista = $mapearEnvios($enviosMesBase);
+        $enviadasPeriodoAnteriorLista = $mapearEnvios($enviosPeriodoAnteriorBase, $periodoAnteriorEnvio->year, $periodoAnteriorEnvio->month);
+        $enviadasPeriodoActualLista = $mapearEnvios($enviosPeriodoActualBase, $ejercicio, $mes);
 
         $respuestasPendientes = (clone $respuestasPendientesBase)
             ->orderByDesc('updated_at')
@@ -730,13 +750,16 @@ class OperationalDashboardBuilder
             'envios' => [
                 'kpis' => [
                     'listos_para_enviar' => (clone $enviosListosBase)->count(),
-                    'enviadas' => $enviadasListaCount,
-                    'faltantes_envio' => (clone $enviosListosBase)->count(),
+                    'enviadas' => (clone $enviosMesBase)->count(),
+                    'enviadas_periodo_anterior' => (clone $enviosPeriodoAnteriorBase)->count(),
+                    'enviadas_periodo_actual' => (clone $enviosPeriodoActualBase)->count(),
                     'respuestas_pendientes' => (clone $respuestasPendientesBase)->count(),
                     'respuestas_revisadas' => (clone $respuestasRevisadasBase)->count(),
                 ],
                 'pendientes_envio' => $pendientesEnvio,
                 'enviadas_lista' => $enviadasLista,
+                'enviadas_periodo_anterior_lista' => $enviadasPeriodoAnteriorLista,
+                'enviadas_periodo_actual_lista' => $enviadasPeriodoActualLista,
                 'clientes_filtro' => $clientesFiltroEnvios,
                 'respuestas_pendientes_lista' => $respuestasPendientes,
                 'respuestas_revisadas_lista' => $respuestasRevisadasLista,

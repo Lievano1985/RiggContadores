@@ -5,7 +5,7 @@
     $validacionesBase = $validacionesPendientes + $validacionesAtendidas;
     $validacionesPorcentaje = $validacionesBase > 0 ? (int) round(($validacionesAtendidas / $validacionesBase) * 100) : 0;
     $enviosRealizados = (int) ($dashboard['envios']['kpis']['enviadas'] ?? 0);
-    $enviosPendientes = (int) ($dashboard['envios']['kpis']['faltantes_envio'] ?? 0);
+    $enviosPendientes = (int) ($dashboard['envios']['kpis']['listos_para_enviar'] ?? 0);
     $enviosBase = $enviosRealizados + $enviosPendientes;
     $enviosPorcentaje = $enviosBase > 0 ? (int) round(($enviosRealizados / $enviosBase) * 100) : 0;
     $solicitudesPorcentaje = 0;
@@ -908,7 +908,7 @@
 
             <div class="space-y-4">
             <h3 class="text-base font-semibold text-stone-600 dark:text-white">Indicadores</h3>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <button
                     type="button"
                     @click="enviosModal = 'listos'"
@@ -920,15 +920,22 @@
                     type="button"
                     @click="enviosModal = 'enviadas'"
                     class="cursor-pointer rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-sky-900/50 dark:from-sky-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Enviadas</p>
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Envíos del mes</p>
                     <p class="mt-2 text-2xl font-semibold text-sky-600">{{ $dashboard['envios']['kpis']['enviadas'] }}</p>
                 </button>
                 <button
                     type="button"
-                    @click="enviosModal = 'faltantes'"
-                    class="cursor-pointer rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-amber-900/50 dark:from-amber-950/40 dark:to-gray-800">
-                    <p class="text-xs uppercase tracking-wide text-gray-500">Faltantes de envío</p>
-                    <p class="mt-2 text-2xl font-semibold text-amber-600">{{ $dashboard['envios']['kpis']['faltantes_envio'] }}</p>
+                    @click="enviosModal = 'enviadas_periodo_anterior'"
+                    class="cursor-pointer rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-indigo-900/50 dark:from-indigo-950/40 dark:to-gray-800">
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Período anterior</p>
+                    <p class="mt-2 text-2xl font-semibold text-indigo-600">{{ $dashboard['envios']['kpis']['enviadas_periodo_anterior'] }}</p>
+                </button>
+                <button
+                    type="button"
+                    @click="enviosModal = 'enviadas_periodo_actual'"
+                    class="cursor-pointer rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-4 text-left transition hover:border-amber-600 dark:border-violet-900/50 dark:from-violet-950/40 dark:to-gray-800">
+                    <p class="text-xs uppercase tracking-wide text-gray-500">Período actual</p>
+                    <p class="mt-2 text-2xl font-semibold text-violet-600">{{ $dashboard['envios']['kpis']['enviadas_periodo_actual'] }}</p>
                 </button>
                 <button
                     type="button"
@@ -967,8 +974,8 @@
         >
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ listos: 'Obligaciones listas para enviar', enviadas: 'Envíos realizados', faltantes: 'Faltantes de envío', respuestas_pendientes: 'Respuestas pendientes', respuestas_revisadas: 'Respuestas revisadas' }[enviosModal]"></h3>
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ listos: 'Detalle de obligaciones ya finalizadas y listas para envío.', enviadas: 'Envíos realizados al cliente, agrupados por envío.', faltantes: 'Detalle de obligaciones pendientes de envío.', respuestas_pendientes: 'Detalle de respuestas del cliente pendientes de revisión.', respuestas_revisadas: 'Detalle de respuestas del cliente ya revisadas.' }[enviosModal]"></p>
+                    <h3 class="text-xl font-semibold text-stone-600 dark:text-white" x-text="{ listos: 'Obligaciones listas para enviar', enviadas: 'Envíos del mes', enviadas_periodo_anterior: 'Envíos del período anterior', enviadas_periodo_actual: 'Envíos del período actual', respuestas_pendientes: 'Respuestas pendientes', respuestas_revisadas: 'Respuestas revisadas' }[enviosModal]"></h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" x-text="{ listos: 'Detalle de obligaciones ya finalizadas y listas para envío.', enviadas: 'Detalle de todos los envíos realizados en el mes seleccionado.', enviadas_periodo_anterior: 'Detalle de envíos hechos en el mes seleccionado que corresponden al período anterior.', enviadas_periodo_actual: 'Detalle de envíos hechos en el mes seleccionado que corresponden al período actual.', respuestas_pendientes: 'Detalle de respuestas del cliente pendientes de revisión.', respuestas_revisadas: 'Detalle de respuestas del cliente ya revisadas.' }[enviosModal]"></p>
                 </div>
 
                 <button
@@ -980,7 +987,7 @@
                 </button>
             </div>
 
-            <div x-show="['listos','faltantes'].includes(enviosModal)" class="mt-5 max-h-[32rem] space-y-2 overflow-y-auto pr-1">
+            <div x-show="enviosModal === 'listos'" class="mt-5 max-h-[32rem] space-y-2 overflow-y-auto pr-1">
                 @forelse($dashboard['envios']['pendientes_envio'] as $item)
                     <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-900/50 dark:bg-amber-900/20">
                         <p class="font-medium text-stone-700 dark:text-white">{{ $item['cliente'] }}</p>
@@ -994,7 +1001,7 @@
                 @endforelse
             </div>
 
-            <div x-show="enviosModal === 'enviadas'" class="mt-5 space-y-4">
+            <div x-show="['enviadas','enviadas_periodo_anterior','enviadas_periodo_actual'].includes(enviosModal)" class="mt-5 space-y-4">
                 <div class="max-w-sm">
                     <label for="dashboard-envios-cliente" class="mb-1 block text-sm font-medium text-stone-600 dark:text-white">
                         Filtrar por cliente
@@ -1011,7 +1018,7 @@
                     </select>
                 </div>
 
-                <div class="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
+                <div x-show="enviosModal === 'enviadas'" class="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
                     @forelse($dashboard['envios']['enviadas_lista'] as $item)
                         <div class="rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm dark:border-sky-900/50 dark:bg-sky-900/20">
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -1049,7 +1056,93 @@
                         </div>
                     @empty
                         <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ $filtroClienteEnvios !== '' ? 'No hay envíos para el cliente seleccionado.' : 'Sin envíos registrados en el periodo seleccionado.' }}
+                            {{ $filtroClienteEnvios !== '' ? 'No hay envíos para el cliente seleccionado.' : 'Sin envíos registrados en el mes seleccionado.' }}
+                        </p>
+                    @endforelse
+                </div>
+
+                <div x-show="enviosModal === 'enviadas_periodo_anterior'" class="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
+                    @forelse($dashboard['envios']['enviadas_periodo_anterior_lista'] as $item)
+                        <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm dark:border-indigo-900/50 dark:bg-indigo-900/20">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <p class="font-medium text-stone-700 dark:text-white">{{ $item['cliente'] }}</p>
+                                    <p class="mt-1 text-indigo-700 dark:text-indigo-300">
+                                        <span class="font-semibold">Asunto:</span> {{ $item['asunto'] }}
+                                    </p>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 sm:text-right">
+                                    <p><span class="font-semibold">Fecha de envio:</span> {{ $item['fecha_envio'] }}</p>
+                                    <p><span class="font-semibold">Periodo:</span> {{ $item['periodo'] }}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <span>Enviado por: {{ $item['usuario'] }}</span>
+                                <span>|</span>
+                                <span>{{ $item['cantidad_obligaciones'] }} obligaci{{ $item['cantidad_obligaciones'] === 1 ? 'ón' : 'ones' }}</span>
+                            </div>
+
+                            <div class="mt-3 rounded-lg border border-indigo-100 bg-white/80 p-3 dark:border-indigo-900/40 dark:bg-gray-900/30">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                                    Obligaciones enviadas
+                                </p>
+                                <ul class="mt-2 space-y-2">
+                                    @foreach ($item['obligaciones'] as $obligacion)
+                                        <li class="rounded-md border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-sm text-stone-700 dark:border-indigo-900/30 dark:bg-indigo-950/20 dark:text-white">
+                                            <span class="font-medium">{{ $obligacion['nombre'] }}</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400"> | {{ $obligacion['contador'] }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ $filtroClienteEnvios !== '' ? 'No hay envíos del período anterior para el cliente seleccionado.' : 'Sin envíos del período anterior en el mes seleccionado.' }}
+                        </p>
+                    @endforelse
+                </div>
+
+                <div x-show="enviosModal === 'enviadas_periodo_actual'" class="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
+                    @forelse($dashboard['envios']['enviadas_periodo_actual_lista'] as $item)
+                        <div class="rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm dark:border-sky-900/50 dark:bg-sky-900/20">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <p class="font-medium text-stone-700 dark:text-white">{{ $item['cliente'] }}</p>
+                                    <p class="mt-1 text-sky-700 dark:text-sky-300">
+                                        <span class="font-semibold">Asunto:</span> {{ $item['asunto'] }}
+                                    </p>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 sm:text-right">
+                                    <p><span class="font-semibold">Fecha de envio:</span> {{ $item['fecha_envio'] }}</p>
+                                    <p><span class="font-semibold">Periodo:</span> {{ $item['periodo'] }}</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <span>Enviado por: {{ $item['usuario'] }}</span>
+                                <span>|</span>
+                                <span>{{ $item['cantidad_obligaciones'] }} obligaci{{ $item['cantidad_obligaciones'] === 1 ? 'ón' : 'ones' }}</span>
+                            </div>
+
+                            <div class="mt-3 rounded-lg border border-sky-100 bg-white/80 p-3 dark:border-sky-900/40 dark:bg-gray-900/30">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                                    Obligaciones enviadas
+                                </p>
+                                <ul class="mt-2 space-y-2">
+                                    @foreach ($item['obligaciones'] as $obligacion)
+                                        <li class="rounded-md border border-sky-100 bg-sky-50/70 px-3 py-2 text-sm text-stone-700 dark:border-sky-900/30 dark:bg-sky-950/20 dark:text-white">
+                                            <span class="font-medium">{{ $obligacion['nombre'] }}</span>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400"> | {{ $obligacion['contador'] }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ $filtroClienteEnvios !== '' ? 'No hay envíos del período actual para el cliente seleccionado.' : 'Sin envíos del período actual en el mes seleccionado.' }}
                         </p>
                     @endforelse
                 </div>
