@@ -15,6 +15,7 @@
 namespace App\Services;
 
 use App\Models\Cliente;
+use App\Models\ClienteTareaConfiguracion;
 use App\Models\Obligacion;
 use App\Models\ObligacionClienteContador;
 use App\Models\TareaAsignada;
@@ -179,11 +180,15 @@ class GeneradorObligaciones
     /**
      * Crea tareas para la OCC desde el catálogo activo.
      */
-    protected function crearTareasPara(ObligacionClienteContador $occ, ?Carbon $fechaVenc): void
+    public function crearTareasPara(ObligacionClienteContador $occ, ?Carbon $fechaVenc): void
     {
         $tareas = TareaCatalogo::query()
             ->where('obligacion_id', $occ->obligacion_id)
             ->where('activo', true)
+            ->whereDoesntHave('configuracionesClientes', function ($query) use ($occ) {
+                $query->where('cliente_id', $occ->cliente_id)
+                    ->where('activa', false);
+            })
             ->get();
 
         foreach ($tareas as $t) {
@@ -259,6 +264,16 @@ class GeneradorObligaciones
             ->where('is_activa', true)
             ->chunkById(200, function ($obligaciones) use ($tarea, &$asignadas) {
                 foreach ($obligaciones as $occ) {
+                    $tareaInactivaParaCliente = ClienteTareaConfiguracion::query()
+                        ->where('cliente_id', $occ->cliente_id)
+                        ->where('tarea_catalogo_id', $tarea->id)
+                        ->where('activa', false)
+                        ->exists();
+
+                    if ($tareaInactivaParaCliente) {
+                        continue;
+                    }
+
                     $asignacion = TareaAsignada::firstOrCreate(
                         [
                             'cliente_id'                     => $occ->cliente_id,

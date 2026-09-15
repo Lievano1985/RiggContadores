@@ -24,6 +24,7 @@ use App\Models\{
     TareaCatalogo,
     TareaAsignada
 };
+use App\Services\GeneradorObligaciones;
 
 class DatosFiscales extends Component
 {
@@ -235,26 +236,7 @@ class DatosFiscales extends Component
                 ]
             );
 
-            $tareas = TareaCatalogo::where('obligacion_id', $id)
-                ->where('activo', true)
-                ->get();
-
-            foreach ($tareas as $t) {
-                TareaAsignada::updateOrCreate(
-                    [
-                        'cliente_id' => $this->cliente->id,
-                        'tarea_catalogo_id' => $t->id,
-                        'obligacion_cliente_contador_id' => $asignacion->id,
-                        'ejercicio' => $anio,
-                        'mes' => $mes,
-                    ],
-                    [
-                        'fecha_asignacion' => now(),
-                        'fecha_limite'     => $fechaVenc?->toDateString(),
-                        'estatus'          => 'asignada',
-                    ]
-                );
-            }
+            app(GeneradorObligaciones::class)->crearTareasPara($asignacion, $fechaVenc);
         }
     }
 
@@ -280,26 +262,7 @@ class DatosFiscales extends Component
                 ]
             );
 
-            $tareas = TareaCatalogo::where('obligacion_id', $id)
-                ->where('activo', true)
-                ->get();
-
-            foreach ($tareas as $t) {
-                TareaAsignada::updateOrCreate(
-                    [
-                        'cliente_id' => $this->cliente->id,
-                        'tarea_catalogo_id' => $t->id,
-                        'obligacion_cliente_contador_id' => $asignacion->id,
-                        'ejercicio' => $anio,
-                        'mes' => $mes,
-                    ],
-                    [
-                        'fecha_asignacion' => now(),
-                        'fecha_limite' => null,
-                        'estatus' => 'asignada',
-                    ]
-                );
-            }
+            app(GeneradorObligaciones::class)->crearTareasPara($asignacion, null);
         }
     }
 

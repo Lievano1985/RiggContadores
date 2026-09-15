@@ -7,6 +7,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\TareaAsignada;
 use App\Models\TareaCatalogo;
+use App\Models\ClienteTareaConfiguracion;
 use App\Models\User;
 use App\Models\CarpetaDrive;
 use App\Models\ObligacionClienteContador;
@@ -50,6 +51,9 @@ class TareasAsignadasCrud extends Component
     public array $periodicidadesDisponibles = [];
     public $buscarTarea = '';
     public bool $modoAutomatico = true;
+    public bool $panelConfiguracionTareasVisible = false;
+    public string $filtroConfiguracionTareas = 'activas';
+    public array $configuracionTareasSeleccionadas = [];
 
     // === Reglas de validación base ===
     protected $rules = [
@@ -220,6 +224,115 @@ class TareasAsignadasCrud extends Component
         return $query->paginate($this->perPageValue($query, 10));
     }
 
+    public function abrirConfiguracionTareas(): void
+    {
+        $this->filtroConfiguracionTareas = 'activas';
+        $tareasInactivas = $this->idsTareasInactivasCliente();
+        $tareasActivas = array_values(array_diff(
+            $this->idsTareasConfigurablesCliente(),
+            $tareasInactivas
+        ));
+        $this->configuracionTareasSeleccionadas = array_fill_keys($tareasActivas, true);
+        $this->panelConfiguracionTareasVisible = true;
+    }
+
+    public function cerrarConfiguracionTareas(): void
+    {
+        $this->panelConfiguracionTareasVisible = false;
+        $this->filtroConfiguracionTareas = 'activas';
+        $this->configuracionTareasSeleccionadas = [];
+    }
+
+    public function guardarConfiguracionTareas(): void
+    {
+        $tareasConfigurables = $this->idsTareasConfigurablesCliente();
+
+        DB::transaction(function () use ($tareasConfigurables) {
+            foreach ($tareasConfigurables as $tareaCatalogoId) {
+                ClienteTareaConfiguracion::updateOrCreate(
+                    [
+                        'cliente_id' => $this->cliente->id,
+                        'tarea_catalogo_id' => $tareaCatalogoId,
+                    ],
+                    [
+                        'activa' => ! empty($this->configuracionTareasSeleccionadas[$tareaCatalogoId]),
+                    ]
+                );
+            }
+        });
+
+        $this->cargarTareasDisponibles();
+        $this->verificarTareasCompletadas();
+        $this->cerrarConfiguracionTareas();
+        $this->dispatch('notify', message: 'Configuración de tareas guardada para las próximas generaciones del cliente.');
+    }
+
+    public function getObligacionesConfigurablesProperty()
+    {
+        $tareasInactivas = array_flip($this->idsTareasInactivasCliente());
+
+        return ObligacionClienteContador::query()
+            ->where('cliente_id', $this->cliente->id)
+            ->where('is_activa', true)
+            ->with(['obligacion.tareasCatalogo' => fn ($query) => $query->where('activo', true)->orderBy('nombre')])
+            ->get()
+            ->unique('obligacion_id')
+            ->map(function (ObligacionClienteContador $asignacion) use ($tareasInactivas) {
+                $tareasCatalogo = $asignacion->obligacion?->tareasCatalogo ?? collect();
+
+                $tareas = $tareasCatalogo
+                    ->map(function (TareaCatalogo $tarea) use ($tareasInactivas) {
+                        $activa = $this->panelConfiguracionTareasVisible
+                            ? ! empty($this->configuracionTareasSeleccionadas[$tarea->id])
+                            : ! isset($tareasInactivas[$tarea->id]);
+
+                        return [
+                            'id' => $tarea->id,
+                            'nombre' => $tarea->nombre,
+                            'descripcion' => $tarea->descripcion,
+                            'activa' => $activa,
+                        ];
+                    })
+                    ->filter(function (array $tarea) {
+                        return $this->filtroConfiguracionTareas === 'todas'
+                            || ($this->filtroConfiguracionTareas === 'activas' && $tarea['activa'])
+                            || ($this->filtroConfiguracionTareas === 'inactivas' && ! $tarea['activa']);
+                    })
+                    ->values();
+
+                return [
+                    'id' => $asignacion->obligacion_id,
+                    'nombre' => $asignacion->obligacion?->nombre ?? 'Sin obligación',
+                    'tareas' => $tareas,
+                ];
+            })
+            ->filter(fn (array $obligacion) => $obligacion['tareas']->isNotEmpty())
+            ->values();
+    }
+
+    private function idsTareasInactivasCliente(): array
+    {
+        return ClienteTareaConfiguracion::query()
+            ->where('cliente_id', $this->cliente->id)
+            ->where('activa', false)
+            ->pluck('tarea_catalogo_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    private function idsTareasConfigurablesCliente(): array
+    {
+        return TareaCatalogo::query()
+            ->where('activo', true)
+            ->whereHas('obligacion.obligacionesAsignadas', function ($query) {
+                $query->where('cliente_id', $this->cliente->id)
+                    ->where('is_activa', true);
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
     private function cargarPeriodicidadesDisponibles(): void
     {
         $this->periodicidadesDisponibles = Obligacion::query()
@@ -293,6 +406,7 @@ class TareasAsignadasCrud extends Component
 
             'contadores' => User::role(['contador','supervisor'])->get(),
             'obligacionesAsignadas' => (function () {
+                $tareasInactivas = $this->idsTareasInactivasCliente();
                 $base = ObligacionClienteContador::with(['obligacion'])
                     ->where('cliente_id', $this->cliente->id)
                     ->get()
@@ -303,6 +417,8 @@ class TareasAsignadasCrud extends Component
                             ->toArray();
 
                         $tareasCatalogo = TareaCatalogo::where('obligacion_id', $pivot->obligacion_id)
+                            ->where('activo', true)
+                            ->when(!empty($tareasInactivas), fn ($query) => $query->whereNotIn('id', $tareasInactivas))
                             ->pluck('id')
                             ->toArray();
 
@@ -344,10 +460,13 @@ class TareasAsignadasCrud extends Component
         }
 
         $catalogo = collect();
+        $tareasInactivas = $this->idsTareasInactivasCliente();
 
         if ($this->obligacion_id === "sin") {
             $catalogo = TareaCatalogo::query()
                 ->whereNull('obligacion_id')
+                ->where('activo', true)
+                ->when(!empty($tareasInactivas), fn ($query) => $query->whereNotIn('id', $tareasInactivas))
                 ->when(!empty($excluir), fn($q) => $q->whereNotIn('id', $excluir))
                 ->orderBy('nombre')
                 ->get();
@@ -356,6 +475,8 @@ class TareasAsignadasCrud extends Component
             if ($pivot) {
                 $catalogo = TareaCatalogo::query()
                     ->where('obligacion_id', $pivot->obligacion_id)
+                    ->where('activo', true)
+                    ->when(!empty($tareasInactivas), fn ($query) => $query->whereNotIn('id', $tareasInactivas))
                     ->when(!empty($excluir), fn($q) => $q->whereNotIn('id', $excluir))
                     ->orderBy('nombre')
                     ->get();
@@ -503,6 +624,7 @@ class TareasAsignadasCrud extends Component
 
         $tareasCatalogoPorObligacion = TareaCatalogo::where('activo', true)
             ->whereIn('obligacion_id', $obligacionesAsignadas)
+            ->when(!empty($this->idsTareasInactivasCliente()), fn ($query) => $query->whereNotIn('id', $this->idsTareasInactivasCliente()))
             ->get()
             ->groupBy('obligacion_id');
 

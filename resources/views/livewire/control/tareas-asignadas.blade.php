@@ -1,7 +1,10 @@
 <div class="p-6 bg-white dark:bg-gray-900 rounded-lg shadow">
     <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-bold text-stone-600 dark:text-white">Tareas Asignadas</h2>
-       
+        <button type="button" wire:click="abrirConfiguracionTareas"
+            class="px-4 py-2 text-sm font-semibold text-white bg-amber-600 rounded hover:bg-amber-700">
+            Configurar tareas
+        </button>
     </div>
     <div class="flex flex-wrap gap-4 items-center mb-4">
         <div>
@@ -302,6 +305,78 @@
                 </form>
             </div>
         </div>
+    @endif
+
+    {{-- Panel de configuración por cliente para futuras generaciones --}}
+    @if ($panelConfiguracionTareasVisible)
+        <div class="fixed inset-0 z-50 bg-stone-900/40" wire:click="cerrarConfiguracionTareas"></div>
+        <aside class="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col bg-white shadow-2xl dark:bg-gray-900"
+            role="dialog" aria-modal="true" aria-label="Configurar tareas del cliente">
+            <div class="flex items-center justify-between border-b border-gray-200 p-5 dark:border-gray-700">
+                <div>
+                    <h3 class="text-lg font-semibold text-stone-700 dark:text-white">Configurar tareas</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Define las tareas que se crearán para {{ $cliente->nombre ?? $cliente->razon_social }} en próximos periodos.
+                    </p>
+                </div>
+                <button type="button" wire:click="cerrarConfiguracionTareas" class="text-2xl leading-none text-gray-500 hover:text-gray-800 dark:hover:text-white" aria-label="Cerrar">&times;</button>
+            </div>
+
+            <div class="border-b border-gray-200 p-5 dark:border-gray-700">
+                <label class="block text-sm font-semibold text-stone-600 dark:text-white">Mostrar</label>
+                <select wire:model.live="filtroConfiguracionTareas"
+                    class="mt-1 w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                    <option value="activas">Tareas activas</option>
+                    <option value="inactivas">Tareas inactivas</option>
+                    <option value="todas">Todas las tareas</option>
+                </select>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5">
+                <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
+                    Desactivar una tarea no borra ni modifica tareas existentes; solo evita su generación futura para este cliente.
+                </p>
+
+                <div class="space-y-3">
+                    @forelse ($this->obligacionesConfigurables as $obligacion)
+                        <details class="rounded border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                            <summary class="cursor-pointer px-4 py-3 font-semibold text-stone-700 dark:text-white">
+                                {{ $obligacion['nombre'] }}
+                                <span class="ml-1 text-sm font-normal text-gray-500">({{ $obligacion['tareas']->count() }})</span>
+                            </summary>
+                            <div class="divide-y divide-gray-100 border-t border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+                                @foreach ($obligacion['tareas'] as $tarea)
+                                    <label class="flex cursor-pointer items-start gap-3 px-4 py-3 hover:bg-stone-50 dark:hover:bg-gray-700">
+                                        <input type="checkbox" class="mt-1 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                                            wire:model.defer="configuracionTareasSeleccionadas.{{ $tarea['id'] }}">
+                                        <span>
+                                            <span class="block text-sm font-medium text-stone-700 dark:text-white">{{ $tarea['nombre'] }}</span>
+                                            @if ($tarea['descripcion'])
+                                                <span class="block text-xs text-gray-500 dark:text-gray-400">{{ $tarea['descripcion'] }}</span>
+                                            @endif
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </details>
+                    @empty
+                        <p class="rounded border border-dashed border-gray-300 p-4 text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+                            No hay tareas {{ $filtroConfiguracionTareas === 'inactivas' ? 'inactivas' : 'activas' }} para las obligaciones vigentes de este cliente.
+                        </p>
+                    @endforelse
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 border-t border-gray-200 p-5 dark:border-gray-700">
+                <button type="button" wire:click="cerrarConfiguracionTareas"
+                    class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
+                    Cancelar
+                </button>
+                <button type="button" wire:click="guardarConfiguracionTareas"
+                    class="rounded bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+                    Guardar configuración
+                </button>
+            </div>
+        </aside>
     @endif
 
 </div>

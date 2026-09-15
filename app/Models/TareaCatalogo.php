@@ -25,5 +25,10 @@ class TareaCatalogo extends Model
     {
         return $this->belongsTo(Obligacion::class);
     }
+
+    public function configuracionesClientes(): HasMany
+    {
+        return $this->hasMany(ClienteTareaConfiguracion::class, 'tarea_catalogo_id');
+    }
     
 }

@@ -103,6 +103,11 @@ class Cliente extends Model
         return $this->hasMany(TareaAsignada::class);
     }
 
+    public function configuracionesTareas(): HasMany
+    {
+        return $this->hasMany(ClienteTareaConfiguracion::class);
+    }
+
     public function solicitudes()
     {
         return $this->hasMany(Solicitud::class);
