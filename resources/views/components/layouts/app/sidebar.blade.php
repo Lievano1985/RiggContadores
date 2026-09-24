@@ -142,7 +142,7 @@
                                     </flux:navlist.item>
                                 @endhasanyrole
 
-                                @hasanyrole('admin_despacho')
+                                @hasanyrole('admin_despacho|contador')
                                     <flux:navlist.item icon="envelope-open" :href="route('notificaciones.clientes.index')"
                                         :current="request()->routeIs('notificaciones.clientes.index')" wire:navigate
                                         class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">

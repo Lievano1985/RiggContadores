@@ -42,6 +42,9 @@ class ListaClientes extends Component
     {
         $clientes = Cliente::with('despacho')
             ->whereHas('obligacionesAsignadas')
+            ->when(!auth()->user()->hasRole('super_admin'), function ($q) {
+                $q->where('despacho_id', auth()->user()->despacho_id);
+            })
             ->when($this->buscar, function ($q) {
                 $q->where(function ($sub) {
                     $sub->where('nombre', 'like', '%' . $this->buscar . '%')

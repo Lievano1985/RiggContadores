@@ -21,12 +21,15 @@
         </div>
 
         {{-- Tabs --}}
+        @php($puedeCrearNotificacion = auth()->user()->hasAnyRole(['super_admin', 'admin_despacho', 'supervisor']))
         <div x-data="{
-            tab: 'nueva',
+            puedeCrearNotificacion: @js($puedeCrearNotificacion),
+            tab: @js($puedeCrearNotificacion ? 'nueva' : 'historial'),
             getInitial() {
                 const s = new URLSearchParams(window.location.search).get('tab');
                 const h = (window.location.hash || '').replace('#', '');
-                return s || h || 'nueva';
+                const tabSolicitada = s || h;
+                return this.puedeCrearNotificacion && tabSolicitada === 'nueva' ? 'nueva' : 'historial';
             },
             setUrl(v) {
                 const url = new URL(window.location);
@@ -54,11 +57,14 @@
         }" x-init="focusables = Array.from($el.querySelectorAll('[role=tab]'));" class="space-y-4">
             {{-- Header de tabs --}}
             <nav class="flex space-x-4 border-b pb-2" role="tablist" aria-label="Expediente del cliente">
+                @if($puedeCrearNotificacion)
                 <button role="tab" :aria-selected="tab === 'nueva'" :tabindex="tab === 'nueva' ? 0 : -1"
                     @click="tab = 'nueva'" @keydown.arrow-right.prevent="move(1)" @keydown.arrow-left.prevent="move(-1)"
                     :class="tab === 'nueva' ? 'font-bold border-b-2 border-amber-800' : ''"
                     class="pb-1 focus:outline-none ">
                     Nueva Notificación </button>
+
+                @endif
 
                 <button role="tab" :aria-selected="tab === 'historial'" :tabindex="tab === 'historial' ? 0 : -1"
                     @click="tab = 'historial'" @keydown.arrow-right.prevent="move(1)"
@@ -77,9 +83,11 @@
                 @livewire('notificaciones.lista-notificaciones', ['cliente' => $cliente], key('historial-' . $cliente->id))
             </section>
 
+            @if($puedeCrearNotificacion)
             <section x-show="tab === 'nueva'" x-cloak x-transition.opacity role="tabpanel" aria-labelledby="tab-nueva">
                 @livewire('notificaciones.crear-notificacion', ['cliente' => $cliente], key('nueva-' . $cliente->id))
             </section>
+            @endif
 
         
         </div>
@@ -87,5 +95,3 @@
 
 
 </x-layouts.app>
-
-

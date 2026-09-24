@@ -66,6 +66,8 @@ class CrearNotificacion extends Component
 
     public function mount($cliente)
     {
+        abort_unless($this->usuarioPuedeCrearNotificaciones(), 403);
+
         $this->cliente = $cliente;
         /* 
         $this->periodo_mes = now()->month;
@@ -191,6 +193,8 @@ class CrearNotificacion extends Component
 
     public function guardar()
     {
+        abort_unless($this->usuarioPuedeCrearNotificaciones(), 403);
+
 
         $this->validate([
             'asunto' => 'required',
@@ -333,6 +337,11 @@ class CrearNotificacion extends Component
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function usuarioPuedeCrearNotificaciones(): bool
+    {
+        return auth()->user()?->hasAnyRole(['super_admin', 'admin_despacho', 'supervisor']) ?? false;
     }
 
     private function cargarArchivosDisponibles(): void

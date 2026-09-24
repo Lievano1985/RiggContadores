@@ -102,18 +102,24 @@ Route::middleware(['auth', 'role:admin_despacho|super_admin|supervisor'])->group
         ->name('Usuarios.index');
 
 
-    /* ===== Notificaciones ===== */
-    Route::get('/notificaciones/clientes', ListaClientes::class)
-        ->name('notificaciones.clientes.index');
-
-    Route::get('/notificaciones/{cliente}', [ClienteNotificacionController::class, 'show'])
-        ->name('clientes.notificaciones.show');
-
     Route::get('/solicitudes', SolicitudesIndex::class)
         ->name('solicitudes.index');
 
     Route::get('/solicitudes/nueva', SolicitudesIndex::class)
         ->name('solicitudes.create');
+});
+
+
+/* ==========================================================
+|  NOTIFICACIONES A CLIENTES
+==========================================================*/
+Route::middleware(['auth', 'role:admin_despacho|super_admin|supervisor|contador'])->group(function () {
+
+    Route::get('/notificaciones/clientes', ListaClientes::class)
+        ->name('notificaciones.clientes.index');
+
+    Route::get('/notificaciones/{cliente}', [ClienteNotificacionController::class, 'show'])
+        ->name('clientes.notificaciones.show');
 });
 
 

@@ -53,7 +53,8 @@ class ListaNotificaciones extends Component
     public function abrirSidebar($id)
     {
         $this->notificacionSeleccionada =
-            NotificacionCliente::with(['usuario','obligaciones','archivos'])
+            $this->notificacionesVisibles()
+                ->with(['usuario','obligaciones','archivos'])
                 ->findOrFail($id);
     
         $this->sidebarVisible = true;
@@ -71,7 +72,7 @@ class ListaNotificaciones extends Component
         $ejercicios = $this->ejerciciosDisponibles();
         $obligaciones = $this->obligacionesDisponibles();
 
-        $query = NotificacionCliente::query()
+        $query = $this->notificacionesVisibles()
             ->with(['usuario', 'cliente'])
             ->when($this->cliente_filtro !== '', fn ($q) => $q->where('cliente_id', $this->cliente_filtro))
             ->when($this->fecha_desde !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->fecha_desde))
@@ -141,7 +142,7 @@ class ListaNotificaciones extends Component
 
     private function ejerciciosDisponibles(): array
     {
-        return NotificacionCliente::query()
+        return $this->notificacionesVisibles()
             ->when($this->cliente_filtro !== '', fn ($q) => $q->where('cliente_id', $this->cliente_filtro))
             ->whereNotNull('periodo_ejercicio')
             ->pluck('periodo_ejercicio')
@@ -153,7 +154,7 @@ class ListaNotificaciones extends Component
 
     private function obligacionesDisponibles()
     {
-        $idsNotificaciones = NotificacionCliente::query()
+        $idsNotificaciones = $this->notificacionesVisibles()
             ->select('id')
             ->when($this->cliente_filtro !== '', fn ($q) => $q->where('cliente_id', $this->cliente_filtro))
             ->when($this->fecha_desde !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->fecha_desde))
@@ -183,5 +184,15 @@ class ListaNotificaciones extends Component
             ->unique('id')
             ->sortBy('nombre')
             ->values();
+    }
+
+    private function notificacionesVisibles()
+    {
+        return NotificacionCliente::query()
+            ->when(!auth()->user()->hasRole('super_admin'), function ($q) {
+                $q->whereHas('cliente', function ($clienteQuery) {
+                    $clienteQuery->where('despacho_id', auth()->user()->despacho_id);
+                });
+            });
     }
 }
