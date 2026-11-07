@@ -149,6 +149,15 @@ class DriveService
         }
     }
 
+    public function eliminarArchivo(string $id): void
+    {
+        try {
+            $this->googleService->files->delete($id, ['supportsAllDrives' => true]);
+        } catch (\Exception $error) {
+            Log::warning('No se pudo limpiar un archivo de Drive tras un error de carga.', ['exception' => $error]);
+        }
+    }
+
     public function subirArchivo(string $nombre, mixed $contenido, string $parentId, string $mimeType = 'application/octet-stream'): ?string
     {
         try {

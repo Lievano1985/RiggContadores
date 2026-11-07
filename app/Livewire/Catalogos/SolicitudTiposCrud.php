@@ -213,7 +213,7 @@ class SolicitudTiposCrud extends Component
         $this->validate([
             'campoForm.label' => ['required', 'string', 'max:255'],
             'campoForm.key' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9_]+$/'],
-            'campoForm.type' => ['required', Rule::in(['text', 'textarea', 'number', 'date', 'select', 'checkbox', 'file'])],
+            'campoForm.type' => ['required', Rule::in(['text', 'textarea', 'number', 'date', 'select', 'multiselect', 'checkbox', 'file'])],
             'campoForm.required' => ['boolean'],
             'campoForm.placeholder' => ['nullable', 'string', 'max:255'],
             'campoForm.help' => ['nullable', 'string', 'max:500'],
@@ -247,7 +247,7 @@ class SolicitudTiposCrud extends Component
             $campo['help'] = trim($this->campoForm['help']);
         }
 
-        if ($this->campoForm['type'] === 'select') {
+        if (in_array($this->campoForm['type'], ['select', 'multiselect'], true)) {
             $options = collect(preg_split('/\r\n|\r|\n/', (string) $this->campoForm['options_text']))
                 ->map(fn ($item) => trim((string) $item))
                 ->filter()
@@ -255,7 +255,7 @@ class SolicitudTiposCrud extends Component
                 ->all();
 
             if (empty($options)) {
-                $this->addError('campoForm.options_text', 'El campo select debe tener opciones.');
+                $this->addError('campoForm.options_text', 'Agrega al menos una opción para este campo.');
                 return;
             }
 

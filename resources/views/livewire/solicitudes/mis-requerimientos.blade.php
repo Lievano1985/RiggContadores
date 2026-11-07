@@ -171,7 +171,7 @@
                                                 </div>
                                             @else
                                                 <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                                    {{ filled($valorCampo) ? $valorCampo : 'Sin respuesta capturada.' }}
+                                                    {{ filled($valorCampo) ? (is_array($valorCampo) ? implode(', ', $valorCampo) : $valorCampo) : 'Sin respuesta capturada.' }}
                                                 </div>
                                             @endif
                                         </div>
@@ -235,6 +235,16 @@
                                                         <option value="{{ $option }}">{{ $option }}</option>
                                                     @endforeach
                                                 </select>
+                                            @elseif ($campoType === 'multiselect')
+                                                <div class="space-y-1">
+                                                    @foreach ($campo['options'] ?? [] as $opcion)
+                                                        <label class="flex items-center gap-2 text-sm">
+                                                            <input type="checkbox" wire:model="formulario_respuesta.{{ $campoKey }}" value="{{ $opcion }}"
+                                                                @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))>
+                                                            <span>{{ $opcion }}</span>
+                                                        </label>
+                                                    @endforeach
+                                                </div>
                                             @elseif ($campoType === 'checkbox')
                                                 <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                                     <input type="checkbox" wire:model.defer="formulario_respuesta.{{ $campoKey }}"
@@ -252,16 +262,32 @@
                                                     class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                                                     placeholder="{{ $campo['placeholder'] ?? '' }}">
                                             @elseif ($campoType === 'file')
-                                                <input type="file" wire:model="formulario_respuesta.{{ $campoKey }}"
+                                                <input type="file" multiple wire:model="formulario_respuesta.{{ $campoKey }}"
                                                     @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
                                                     @if (!empty($campo['accept'])) accept="{{ $campo['accept'] }}" @endif
                                                     class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
                                                 <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                    Tamano maximo sugerido: 20 MB.
+                                                    Puedes seleccionar varios archivos. Máximo 20 MB por archivo.
                                                     @if (!empty($campo['accept']))
                                                         Tipos sugeridos: {{ $campo['accept'] }}
                                                     @endif
                                                 </div>
+                                                @foreach ((array) ($formulario_respuesta[$campoKey] ?? []) as $archivoPendiente)
+                                                    @continue(!($archivoPendiente instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile))
+                                                    @php($claveArchivo = sha1($archivoPendiente->getFilename()))
+                                                    <div wire:key="nombre-formulario-{{ $campoKey }}-{{ $claveArchivo }}">
+                                                        <label for="nombre-formulario-{{ $campoKey }}-{{ $claveArchivo }}" class="block text-xs text-gray-600 dark:text-gray-300">
+                                                            Renombrar {{ $archivoPendiente->getClientOriginalName() }} (opcional)
+                                                        </label>
+                                                        <input id="nombre-formulario-{{ $campoKey }}-{{ $claveArchivo }}" type="text" maxlength="150"
+                                                            wire:model="nombresArchivosFormulario.{{ $claveArchivo }}"
+                                                            placeholder="{{ $archivoPendiente->getClientOriginalName() }}"
+                                                            class="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                                        @error('nombresArchivosFormulario.' . $claveArchivo)
+                                                            <div class="text-xs text-red-500">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
+                                                @endforeach
                                             @else
                                                 <input type="text" wire:model.defer="formulario_respuesta.{{ $campoKey }}"
                                                     @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
@@ -273,6 +299,9 @@
                                                     <div class="text-xs text-gray-500 dark:text-gray-400">{{ $campo['help'] }}</div>
                                                 @endif
 
+                                                @error('formulario_respuesta.' . $campoKey . '.*')
+                                                    <div class="text-xs text-red-500">{{ $message }}</div>
+                                                @enderror
                                                 @error('formulario_respuesta.' . $campoKey)
                                                     <div class="text-xs text-red-500">{{ $message }}</div>
                                                 @enderror
@@ -303,7 +332,6 @@
                                 <button wire:click="guardarRespuesta"
                                     @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
                                     wire:loading.attr="disabled"
-                                    wire:target="guardarRespuesta"
                                     @disabled(in_array($requerimientoSeleccionado->estado, ['validado', 'cancelado']))
                                     class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700 disabled:opacity-60">
                                     Guardar respuesta

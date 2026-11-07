@@ -313,23 +313,22 @@
                         <h5 class="mb-3 font-semibold text-stone-700 dark:text-white">Formulario enviado</h5>
                         <div class="space-y-2">
                             @forelse ($solicitudDetalle->resumen_formulario as $campo)
-                                @php
-                                    $archivoFormulario = null;
-
-                                    if (($campo['type'] ?? null) === 'file' && filled($campo['value'])) {
-                                        $archivoFormulario = $solicitudDetalle->archivos->firstWhere('nombre', $campo['value']);
-                                    }
-                                @endphp
                                 <div class="rounded border border-sky-100 px-3 py-2 text-sm dark:border-sky-900/30">
                                     <div class="font-medium text-stone-700 dark:text-white">{{ $campo['label'] }}</div>
                                     <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                         @if (filled($campo['value']))
-                                            @if (($campo['type'] ?? null) === 'file' && $archivoFormulario)
-                                                <a href="{{ $archivoFormulario->archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($archivoFormulario->archivo) : $archivoFormulario->archivo_drive_url }}"
-                                                    target="_blank"
-                                                    class="text-amber-600 hover:underline">
-                                                    {{ $archivoFormulario->nombre }}
-                                                </a>
+                                            @if (($campo['type'] ?? null) === 'file')
+                                                @foreach ((array) $campo['value'] as $nombreArchivo)
+                                                    @php
+                                                        $archivo = $solicitudDetalle->archivos->firstWhere('nombre', $nombreArchivo);
+                                                        $url = $archivo?->archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($archivo->archivo) : $archivo?->archivo_drive_url;
+                                                    @endphp
+                                                    @if ($url)
+                                                        <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" class="block text-amber-600 hover:underline">{{ $nombreArchivo }}</a>
+                                                    @else
+                                                        <div>{{ $nombreArchivo }}</div>
+                                                    @endif
+                                                @endforeach
                                             @else
                                                 {{ is_array($campo['value']) ? implode(', ', $campo['value']) : $campo['value'] }}
                                             @endif

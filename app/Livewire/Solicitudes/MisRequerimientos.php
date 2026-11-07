@@ -3,13 +3,12 @@
 namespace App\Livewire\Solicitudes;
 
 use App\Livewire\Shared\HasPerPage;
-use App\Models\CarpetaDrive;
 use App\Models\Solicitud;
 use App\Models\SolicitudRequerimiento;
-use App\Services\DriveService;
+use App\Services\SolicitudArchivosFormulario;
 use App\Services\SolicitudHistorialService;
 use App\Services\SolicitudNotificacionService;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -24,6 +23,7 @@ class MisRequerimientos extends Component
     public ?int $requerimientoIdSeleccionado = null;
     public string $respuesta_texto = '';
     public array $formulario_respuesta = [];
+    public array $nombresArchivosFormulario = [];
 
     protected $paginationTheme = 'tailwind';
     protected $listeners = [
@@ -55,6 +55,7 @@ class MisRequerimientos extends Component
 
         $this->requerimientoIdSeleccionado = $requerimiento->id;
         $this->respuesta_texto = $requerimiento->respuesta_texto ?? '';
+        $this->nombresArchivosFormulario = [];
         $this->formulario_respuesta = $this->mapearFormularioRespuesta($requerimiento);
         $this->sidebarVisible = true;
     }
@@ -65,6 +66,7 @@ class MisRequerimientos extends Component
         $this->requerimientoIdSeleccionado = null;
         $this->respuesta_texto = '';
         $this->formulario_respuesta = [];
+        $this->nombresArchivosFormulario = [];
     }
 
     public function guardarRespuesta(): void
@@ -189,14 +191,21 @@ class MisRequerimientos extends Component
                 $ruleKey = "formulario_respuesta.$key";
                 $yaTieneArchivo = $type === 'file' && !empty($datosActuales[$key] ?? null);
 
+                if ($type === 'file') {
+                    $rules["$ruleKey.*"] = ['required', 'file', 'max:20480'];
+                }
+
+                if ($type === 'multiselect') {
+                    $rules["$ruleKey.*"] = ['required', 'string', 'distinct', Rule::in($campo['options'] ?? [])];
+                }
+
                 $rules[$ruleKey] = match ($type) {
                     'checkbox' => $required ? ['accepted'] : ['nullable', 'boolean'],
                     'number' => $required ? ['required', 'numeric'] : ['nullable', 'numeric'],
                     'date' => $required ? ['required', 'date'] : ['nullable', 'date'],
                     'select', 'text', 'textarea' => $required ? ['required'] : ['nullable'],
-                    'file' => ($required && !$yaTieneArchivo)
-                        ? ['required', 'file', 'max:20480']
-                        : ['nullable', 'file', 'max:20480'],
+                    'multiselect' => $required ? ['required', 'array', 'min:1'] : ['nullable', 'array'],
+                    'file' => $required && !$yaTieneArchivo ? ['required', 'array', 'min:1'] : ['nullable', 'array'],
                     default => ['nullable'],
                 };
             }
@@ -207,6 +216,7 @@ class MisRequerimientos extends Component
 
             $this->validate([
                 'respuesta_texto' => ['nullable', 'string'],
+                'nombresArchivosFormulario.*' => ['nullable', 'string', 'max:150'],
             ]);
 
             return true;
@@ -244,8 +254,8 @@ class MisRequerimientos extends Component
             }
 
             $respuesta[$key] = ($campo['type'] ?? 'text') === 'file'
-                ? null
-                : ($datos[$key] ?? null);
+                ? []
+                : (($campo['type'] ?? null) === 'multiselect' ? (array) ($datos[$key] ?? []) : ($datos[$key] ?? null));
         }
 
         return $respuesta;
@@ -271,9 +281,8 @@ class MisRequerimientos extends Component
             $normalizado[$key] = match ($type) {
                 'checkbox' => (bool) $value,
                 'number' => $value === null || $value === '' ? null : (is_numeric($value) ? $value + 0 : $value),
-                'file' => is_object($value) && method_exists($value, 'getClientOriginalName')
-                    ? $value->getClientOriginalName()
-                    : ($datosActuales[$key] ?? null),
+                'multiselect' => array_values((array) $value),
+                'file' => $datosActuales[$key] ?? null,
                 default => $value === '' ? null : $value,
             };
         }
@@ -295,7 +304,7 @@ class MisRequerimientos extends Component
 
         if ($requerimiento->esRequerimientoFormulario()) {
             $datosFormulario = $this->formularioRespuestaNormalizada($requerimiento);
-            $archivosFormulario = $this->guardarArchivosFormulario($requerimiento->solicitud);
+            $archivosFormulario = app(SolicitudArchivosFormulario::class)->guardar($requerimiento->solicitud, $this->formulario_respuesta, 'formulario_respuesta', $this->nombresArchivosFormulario);
 
             if (!empty($archivosFormulario)) {
                 $datosFormulario = array_replace($datosFormulario, $archivosFormulario);
@@ -349,98 +358,9 @@ class MisRequerimientos extends Component
         $this->apagarSpinner();
     }
 
-    private function guardarArchivosFormulario(Solicitud $solicitud): array
-    {
-        $archivosGuardados = [];
-        $cliente = $solicitud->cliente;
-        $despacho = $cliente?->despacho;
-        $datosActuales = is_array($solicitud->datos_formulario) ? $solicitud->datos_formulario : [];
-
-        if (!$cliente || !$despacho) {
-            return $archivosGuardados;
-        }
-
-        foreach ($solicitud->campos_formulario as $campo) {
-            $key = $campo['key'] ?? null;
-            $type = $campo['type'] ?? 'text';
-
-            if (!$key || $type !== 'file') {
-                continue;
-            }
-
-            $archivo = $this->formulario_respuesta[$key] ?? null;
-
-            if (!$archivo || !is_object($archivo) || !method_exists($archivo, 'getClientOriginalName')) {
-                continue;
-            }
-
-            $nombreAnterior = $datosActuales[$key] ?? null;
-            if ($nombreAnterior) {
-                $archivoAnterior = $solicitud->archivos()->where('nombre', $nombreAnterior)->first();
-
-                if ($archivoAnterior) {
-                    if ($archivoAnterior->archivo) {
-                        Storage::disk('public')->delete($archivoAnterior->archivo);
-                    }
-
-                    $archivoAnterior->delete();
-                }
-            }
-
-            $nombreFinal = $this->construirNombreArchivoFormulario($cliente->rfc, $campo['label'] ?? $key, $archivo);
-            $rutaStorage = null;
-            $urlDrive = null;
-
-            if (in_array($despacho->politica_almacenamiento, ['storage_only', 'both'])) {
-                $rutaStorage = $archivo->storeAs('adjuntos', $nombreFinal, 'public');
-            }
-
-            if (in_array($despacho->politica_almacenamiento, ['drive_only', 'both'])) {
-                $folderId = null;
-
-                if ($solicitud->carpeta_drive_id) {
-                    $folderId = CarpetaDrive::find($solicitud->carpeta_drive_id)?->drive_folder_id;
-                }
-
-                if ($folderId) {
-                    $drive = app(DriveService::class);
-                    $res = $drive->subirArchivo(
-                        $nombreFinal,
-                        $archivo,
-                        $folderId,
-                        $archivo->getMimeType()
-                    );
-
-                    $urlDrive = is_array($res) ? ($res['webViewLink'] ?? null) : $res;
-                }
-            }
-
-            $solicitud->archivos()->create([
-                'nombre' => $nombreFinal,
-                'archivo' => $rutaStorage,
-                'archivo_drive_url' => $urlDrive,
-            ]);
-
-            $archivosGuardados[$key] = $nombreFinal;
-        }
-
-        return $archivosGuardados;
-    }
-
     private function apagarSpinner(): void
     {
         $this->js("window.dispatchEvent(new CustomEvent('spinner-off'))");
     }
 
-    private function construirNombreArchivoFormulario(string $rfc, string $nombreCampo, $archivo): string
-    {
-        $extension = strtolower($archivo->getClientOriginalExtension());
-        $mes = now()->format('m');
-        $anio = now()->format('y');
-        $segundos = now()->format('s');
-        $rfcNormalizado = \Str::upper($rfc);
-        $nombreNormalizado = \Str::slug($nombreCampo, '-');
-
-        return "{$anio}-{$mes}-{$rfcNormalizado}-{$nombreNormalizado}-{$segundos}.{$extension}";
-    }
 }

@@ -2,7 +2,7 @@
     $eventos = $solicitud->historial;
     $respuestas = ['requerimiento_respondido', 'resultado_entregado'];
     $archivosFormulario = collect($solicitud->resumen_formulario)
-        ->where('type', 'file')->pluck('value')->filter();
+        ->where('type', 'file')->pluck('value')->flatten()->filter();
     $archivosPorEvento = [];
 
     $agruparArchivo = function ($archivo, $eventosRelacionados, $titulo, $eliminable = false) use (&$archivosPorEvento) {
@@ -18,7 +18,7 @@
         if ($archivosFormulario->containsStrict($archivo->nombre)) {
             $respuestasFormulario = $eventos->whereIn('tipo', $respuestas)->filter(
                 fn ($evento) => collect($evento->datos['formulario'] ?? [])
-                    ->where('type', 'file')->pluck('value')->containsStrict($archivo->nombre)
+                    ->where('type', 'file')->pluck('value')->flatten()->containsStrict($archivo->nombre)
             );
             $agruparArchivo($archivo, $respuestasFormulario, 'Archivo de resultado');
         } else {
@@ -123,7 +123,7 @@
                                         @foreach ($camposRespondidos as $campo)
                                             <div>
                                                 <dt class="text-xs font-medium text-gray-600 dark:text-gray-300">{{ $campo['label'] ?? $campo['key'] ?? 'Campo' }}</dt>
-                                                <dd class="whitespace-pre-line break-words text-sm text-gray-900 dark:text-white">{{ ($campo['type'] ?? null) === 'checkbox' ? ($campo['value'] ? 'Sí' : 'No') : $campo['value'] }}</dd>
+                                                <dd class="whitespace-pre-line break-words text-sm text-gray-900 dark:text-white">{{ ($campo['type'] ?? null) === 'checkbox' ? ($campo['value'] ? 'Sí' : 'No') : (is_array($campo['value']) ? implode(', ', $campo['value']) : $campo['value']) }}</dd>
                                             </div>
                                         @endforeach
                                     </dl>

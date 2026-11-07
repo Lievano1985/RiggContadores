@@ -10,6 +10,7 @@ use App\Models\Solicitud;
 use App\Models\SolicitudRequerimiento;
 use App\Models\SolicitudTipo;
 use App\Models\User;
+use App\Services\SolicitudArchivosFormulario;
 use App\Services\SolicitudHistorialService;
 use App\Services\SolicitudNotificacionService;
 use Illuminate\Validation\Rule;
@@ -778,7 +779,7 @@ class Index extends Component
             $this->validarFormularioResultado($requerimiento->solicitud);
 
             $datosFormulario = $this->normalizarFormularioResultado($requerimiento->solicitud);
-            $archivosFormulario = $this->guardarArchivosFormularioResultado($requerimiento->solicitud);
+            $archivosFormulario = app(SolicitudArchivosFormulario::class)->guardar($requerimiento->solicitud, $this->formularioResultado, 'formularioResultado');
 
             if (!empty($archivosFormulario)) {
                 $datosFormulario = array_replace($datosFormulario, $archivosFormulario);
@@ -1701,7 +1702,7 @@ class Index extends Component
             }
 
             $nombre = trim($adjunto['nombre'] ?? '');
-            $nombreFinal = $this->construirNombreArchivoSolicitud($cliente->rfc, $nombre, $archivo, $consecutivo + 1);
+            $nombreFinal = SolicitudArchivosFormulario::nombreArchivo($cliente->rfc, $nombre, $archivo, $consecutivo + 1);
             $rutaStorage = null;
             $urlDrive = null;
 
@@ -1743,23 +1744,6 @@ class Index extends Component
         }
 
         return $archivosFallidos;
-    }
-
-    private function construirNombreArchivoSolicitud(string $rfc, string $nombre, $archivo, int $consecutivo): string
-    {
-        $extension = strtolower($archivo->getClientOriginalExtension());
-        $nombreOriginal = pathinfo($archivo->getClientOriginalName(), PATHINFO_FILENAME);
-        if ($extension !== '' && str_ends_with(strtolower($nombre), ".{$extension}")) {
-            $nombre = substr($nombre, 0, -strlen($extension) - 1);
-        }
-
-        $rfcNormalizado = mb_strtoupper(trim($rfc));
-        $nombreBase = $nombre !== '' ? $nombre : $nombreOriginal;
-        $nombreNormalizado = preg_replace('~[<>:"/\\\\|?*\x00-\x1F]~u', '-', $nombreBase);
-        $nombreNormalizado = mb_strcut(rtrim($nombreNormalizado, ' .'), 0, 150) ?: 'archivo';
-        $sufijo = preg_match('/^[a-z0-9]{1,16}$/', $extension) ? ".{$extension}" : '';
-
-        return "{$rfcNormalizado}-{$nombreNormalizado}-{$consecutivo}{$sufijo}";
     }
 
     private function usuarioEsAdminOSupervisor(): bool
@@ -1845,8 +1829,8 @@ class Index extends Component
             }
 
             $respuesta[$key] = ($campo['type'] ?? 'text') === 'file'
-                ? null
-                : ($datos[$key] ?? null);
+                ? []
+                : (($campo['type'] ?? null) === 'multiselect' ? (array) ($datos[$key] ?? []) : ($datos[$key] ?? null));
         }
 
         return $respuesta;
@@ -1869,14 +1853,21 @@ class Index extends Component
             $ruleKey = "formularioResultado.$key";
             $yaTieneArchivo = $type === 'file' && !empty($datosActuales[$key] ?? null);
 
+            if ($type === 'file') {
+                $rules["$ruleKey.*"] = ['required', 'file', 'max:20480'];
+            }
+
+            if ($type === 'multiselect') {
+                $rules["$ruleKey.*"] = ['required', 'string', 'distinct', Rule::in($campo['options'] ?? [])];
+            }
+
             $rules[$ruleKey] = match ($type) {
                 'checkbox' => $required ? ['accepted'] : ['nullable', 'boolean'],
                 'number' => $required ? ['required', 'numeric'] : ['nullable', 'numeric'],
                 'date' => $required ? ['required', 'date'] : ['nullable', 'date'],
                 'select', 'text', 'textarea' => $required ? ['required'] : ['nullable'],
-                'file' => ($required && !$yaTieneArchivo)
-                    ? ['required', 'file', 'max:20480']
-                    : ['nullable', 'file', 'max:20480'],
+                'multiselect' => $required ? ['required', 'array', 'min:1'] : ['nullable', 'array'],
+                'file' => $required && !$yaTieneArchivo ? ['required', 'array', 'min:1'] : ['nullable', 'array'],
                 default => ['nullable'],
             };
         }
@@ -1904,93 +1895,13 @@ class Index extends Component
             $normalizado[$key] = match ($type) {
                 'checkbox' => (bool) $value,
                 'number' => $value === null || $value === '' ? null : (is_numeric($value) ? $value + 0 : $value),
-                'file' => is_object($value) && method_exists($value, 'getClientOriginalName')
-                    ? $value->getClientOriginalName()
-                    : ($datosActuales[$key] ?? null),
+                'multiselect' => array_values((array) $value),
+                'file' => $datosActuales[$key] ?? null,
                 default => $value === '' ? null : $value,
             };
         }
 
         return $normalizado;
-    }
-
-    private function guardarArchivosFormularioResultado(Solicitud $solicitud): array
-    {
-        $archivosGuardados = [];
-        $cliente = $solicitud->cliente;
-        $despacho = $cliente?->despacho;
-        $datosActuales = is_array($solicitud->datos_formulario) ? $solicitud->datos_formulario : [];
-
-        if (!$cliente || !$despacho) {
-            return $archivosGuardados;
-        }
-
-        foreach ($solicitud->campos_formulario as $campo) {
-            $key = $campo['key'] ?? null;
-            $type = $campo['type'] ?? 'text';
-
-            if (!$key || $type !== 'file') {
-                continue;
-            }
-
-            $archivo = $this->formularioResultado[$key] ?? null;
-
-            if (!$archivo || !is_object($archivo) || !method_exists($archivo, 'getClientOriginalName')) {
-                continue;
-            }
-
-            $nombreAnterior = $datosActuales[$key] ?? null;
-            if ($nombreAnterior) {
-                $archivoAnterior = $solicitud->archivos()->where('nombre', $nombreAnterior)->first();
-
-                if ($archivoAnterior) {
-                    if ($archivoAnterior->archivo) {
-                        \Illuminate\Support\Facades\Storage::disk('public')->delete($archivoAnterior->archivo);
-                    }
-
-                    $archivoAnterior->delete();
-                }
-            }
-
-            $extension = strtolower($archivo->getClientOriginalExtension());
-            $mes = now()->format('m');
-            $anio = now()->format('y');
-            $segundos = now()->format('s');
-            $rfcNormalizado = \Str::upper($cliente->rfc);
-            $nombreNormalizado = \Str::slug($campo['label'] ?? $key, '-');
-            $nombreFinal = "{$anio}-{$mes}-{$rfcNormalizado}-{$nombreNormalizado}-{$segundos}.{$extension}";
-
-            $rutaStorage = null;
-            $urlDrive = null;
-
-            if (in_array($despacho->politica_almacenamiento, ['storage_only', 'both'])) {
-                $rutaStorage = $archivo->storeAs('adjuntos', $nombreFinal, 'public');
-            }
-
-            if (in_array($despacho->politica_almacenamiento, ['drive_only', 'both'])) {
-                $folderId = null;
-
-                if ($solicitud->carpeta_drive_id) {
-                    $folderId = \App\Models\CarpetaDrive::find($solicitud->carpeta_drive_id)?->drive_folder_id;
-                }
-
-                if ($folderId) {
-                    $drive = app(\App\Services\DriveService::class);
-                    $res = $drive->subirArchivo($nombreFinal, $archivo, $folderId, $archivo->getMimeType());
-                    $urlDrive = is_array($res) ? ($res['webViewLink'] ?? null) : $res;
-                }
-            }
-
-            $solicitud->archivos()->create([
-                'nombre' => $nombreFinal,
-                'archivo' => $rutaStorage,
-                'archivo_drive_url' => $urlDrive,
-            ]);
-
-            $archivosGuardados[$key] = $nombreFinal;
-        }
-
-        return $archivosGuardados;
     }
 
     private function scopeSolicitudesUsuario(User $user): \Closure

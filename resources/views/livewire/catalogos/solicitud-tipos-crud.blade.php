@@ -256,7 +256,8 @@
                                 <option value="textarea">Textarea</option>
                                 <option value="number">Number</option>
                                 <option value="date">Date</option>
-                                <option value="select">Select</option>
+                                <option value="select">Selección única</option>
+                                <option value="multiselect">Selección múltiple</option>
                                 <option value="checkbox">Checkbox</option>
                                 <option value="file">File</option>
                             </select>
@@ -290,7 +291,7 @@
                         </div>
                     </div>
 
-                    @if (($campoForm['type'] ?? 'text') === 'select')
+                    @if (in_array($campoForm['type'] ?? 'text', ['select', 'multiselect'], true))
                         <div>
                             <label class="block text-sm font-medium mb-1">Opciones</label>
                             <textarea wire:model.defer="campoForm.options_text" rows="4"
@@ -359,8 +360,8 @@
                                     <textarea rows="3" disabled
                                         placeholder="{{ $campo['placeholder'] ?? '' }}"
                                         class="w-full px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600"></textarea>
-                                @elseif (($campo['type'] ?? 'text') === 'select')
-                                    <select disabled
+                                @elseif (in_array($campo['type'] ?? 'text', ['select', 'multiselect'], true))
+                                    <select disabled @if (($campo['type'] ?? null) === 'multiselect') multiple @endif
                                         class="w-full px-3 py-2 border rounded-md bg-gray-50 dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600">
                                         <option>Seleccione...</option>
                                         @foreach (($campo['options'] ?? []) as $option)
