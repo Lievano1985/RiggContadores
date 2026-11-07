@@ -156,6 +156,12 @@ class MisRequerimientos extends Component
                 'solicitud.archivos',
                 'solicitud.responsable',
                 'solicitud.creadoPor',
+                'solicitud.historial' => fn ($historial) => $historial->where(function ($eventos) {
+                    $eventos->whereNull('solicitud_requerimiento_id')
+                        ->orWhere('solicitud_requerimiento_id', $this->requerimientoIdSeleccionado);
+                }),
+                'solicitud.historial.user',
+                'solicitud.historial.requerimiento.destinatario',
                 'creadoPor',
                 'respondidoPor',
                 'archivos',

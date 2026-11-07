@@ -21,6 +21,7 @@ class ArchivosAdjuntosCrud extends Component
 
     public Model $modelo;
     public array $nuevosArchivos = [];
+    public bool $mostrarArchivosGuardados = true;
     public ?string $origen = null;
 
     protected function rules()
@@ -90,6 +91,7 @@ class ArchivosAdjuntosCrud extends Component
         );
     }
 
+    #[On('eliminar-adjunto-del-historial')]
     public function eliminarArchivo(int $archivoId): void
     {
         $archivo = $this->modelo->archivos()->findOrFail($archivoId);
@@ -228,7 +230,7 @@ class ArchivosAdjuntosCrud extends Component
     public function render()
     {
         return view('livewire.shared.archivos-adjuntos-crud', [
-            'archivos' => $this->modelo->archivos()->latest()->get(),
+            'archivos' => $this->mostrarArchivosGuardados ? $this->modelo->archivos()->latest()->get() : collect(),
         ]);
     }
 }

@@ -366,18 +366,6 @@
                         </div>
                         @error('solicitud_archivos_form.*') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
 
-                        @if ($editandoSolicitud && $solicitudEditandoActual && $solicitudEditandoActual->archivos->isNotEmpty())
-                            <div class="mt-3 space-y-2">
-                                <div class="text-xs font-medium text-stone-700 dark:text-white">Archivos actuales</div>
-                                @foreach ($solicitudEditandoActual->archivos as $archivo)
-                                    <a href="{{ $archivo->archivo ? \Illuminate\Support\Facades\Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
-                                        target="_blank"
-                                        class="block text-sm text-amber-600 hover:underline dark:text-amber-300">
-                                        {{ $archivo->nombre }}
-                                    </a>
-                                @endforeach
-                            </div>
-                        @endif
                     </div>
 
                     <div>
@@ -699,85 +687,7 @@
                         </div>
                     </div>
 
-                    <div x-data="{ open: false }"
-                        class="overflow-visible rounded-xl border border-emerald-200 bg-emerald-50/70 shadow-sm dark:border-emerald-900/60 dark:bg-emerald-950/20">
-                        <div @click="open = !open"
-                            class="flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-emerald-100/70 dark:hover:bg-emerald-900/20">
-                            <div class="min-w-0">
-                                <h5 class="font-semibold text-stone-700 dark:text-white">Historial</h5>
-                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $solicitudDetalle->historial->count() }} movimiento(s) registrados
-                                </div>
-                            </div>
-                            <button type="button" @click.stop="open = !open" class="inline-flex items-center gap-1 text-xs font-medium text-stone-600 dark:text-stone-300">
-                                <span x-show="!open">Ver mas</span>
-                                <span x-show="open">Ocultar</span>
-                                <svg class="h-4 w-4 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.512a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div x-show="open" x-transition class="border-t border-emerald-200 px-4 py-4 dark:border-emerald-900/60">
-                            <div class="space-y-3 text-sm">
-                                @forelse ($solicitudDetalle->historial as $evento)
-                                    @php
-                                        $eventoColor = match ($evento->tipo) {
-                                            'solicitud_creada', 'requerimiento_creado', 'resultado_generado' => 'bg-sky-500',
-                                            'solicitud_actualizada', 'requerimiento_actualizado' => 'bg-amber-500',
-                                            'requerimiento_respondido', 'resultado_entregado' => 'bg-violet-500',
-                                            'requerimiento_validado', 'resultado_validado', 'solicitud_cerrada' => 'bg-emerald-500',
-                                            'requerimiento_rechazado', 'resultado_rechazado', 'solicitud_cancelada', 'requerimiento_eliminado' => 'bg-rose-500',
-                                            default => 'bg-stone-400',
-                                        };
-                                        $detalleEvento = match ($evento->tipo) {
-                                            'solicitud_creada',
-                                            'solicitud_actualizada',
-                                            'solicitud_cerrada',
-                                            'solicitud_cancelada' => $solicitudDetalle->titulo,
-                                            'resultado_entregado',
-                                            'resultado_validado',
-                                            'resultado_rechazado' => 'Resultado esperado',
-                                            'resultado_generado' => 'Asignado a ' . (
-                                                $evento->requerimiento?->destinatario_tipo === 'cliente'
-                                                    ? 'Cliente'
-                                                    : ($evento->requerimiento?->destinatario?->name ?? 'Sin asignar')
-                                            ),
-                                            'requerimiento_creado',
-                                            'requerimiento_actualizado',
-                                            'requerimiento_respondido',
-                                            'requerimiento_validado',
-                                            'requerimiento_rechazado',
-                                            'requerimiento_eliminado' => $evento->requerimiento?->titulo,
-                                            default => $evento->descripcion,
-                                        };
-                                    @endphp
-                                    <div class="flex items-start gap-3">
-                                        <div class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{ $eventoColor }}"></div>
-                                        <div class="min-w-0">
-                                            <div class="font-medium text-gray-900 dark:text-white">{{ $evento->titulo }}</div>
-                                            @if (filled($detalleEvento))
-                                                <div class="mt-0.5 whitespace-pre-line text-gray-600 dark:text-gray-300">{{ $detalleEvento }}</div>
-                                            @elseif ($evento->descripcion)
-                                                <div class="mt-0.5 whitespace-pre-line text-gray-600 dark:text-gray-300">{{ $evento->descripcion }}</div>
-                                            @endif
-                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                {{ $evento->created_at?->format('d/m/Y H:i') ?? '-' }}
-                                                · {{ $evento->user?->name ?? 'Sistema' }}
-                                                @if ($evento->requerimiento)
-                                                    · {{ $evento->requerimiento->tipo === 'resultado' ? 'Resultado esperado' : 'Req. #' . $evento->requerimiento->id }}
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                @empty
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        Aun no hay movimientos registrados para esta solicitud.
-                                    </p>
-                                @endforelse
-                            </div>
-                        </div>
-                    </div>
+                    @include('livewire.solicitudes.historial', ['solicitud' => $solicitudDetalle, 'requerimientos' => $solicitudDetalle->requerimientos])
                 @else
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         No se pudo cargar el detalle de la solicitud.

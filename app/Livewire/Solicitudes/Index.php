@@ -1190,7 +1190,6 @@ class Index extends Component
             'responsableClienteSeleccionado' => $this->clienteSeleccionadoResponsable(),
             'tipoSeleccionado' => $this->tipoSeleccionado(),
             'solicitudDetalle' => $this->solicitudDetalle(),
-            'solicitudEditandoActual' => $this->solicitudEditandoActual(),
             'usuariosInternosRequerimiento' => $this->usuariosInternosRequerimiento(),
             'tituloModulo' => $this->vistaSolicitudes === 'asignadas' ? 'Solicitudes asignadas' : 'Solicitudes',
             'puedeCrearSolicitud' => $this->usuarioPuedeCrearSolicitud(),
@@ -1378,17 +1377,6 @@ class Index extends Component
             ->where('titulo', $titulo)
             ->first();
 
-        if ($existente) {
-            $existente->update([
-                'destinatario_tipo' => $destinatarioTipo,
-                'destinatario_user_id' => $destinatarioUserId,
-                'descripcion' => $descripcion,
-                'fecha_limite' => $this->fechaResultadoResuelta(),
-            ]);
-
-            return;
-        }
-
         $campos = $solicitud->campos_formulario;
         $listaCampos = collect($campos)
             ->map(function (array $campo) {
@@ -1413,6 +1401,17 @@ class Index extends Component
         $destinatarioUserId = $destinatarioTipo === 'interno'
             ? $solicitud->responsable_user_id
             : null;
+
+        if ($existente) {
+            $existente->update([
+                'destinatario_tipo' => $destinatarioTipo,
+                'destinatario_user_id' => $destinatarioUserId,
+                'descripcion' => $descripcion,
+                'fecha_limite' => $this->fechaResultadoResuelta(),
+            ]);
+
+            return;
+        }
 
         $requerimiento = SolicitudRequerimiento::create([
             'solicitud_id' => $solicitud->id,
@@ -1542,8 +1541,6 @@ class Index extends Component
                 'resultadoRequerimiento',
                 'historial.user',
                 'historial.requerimiento.destinatario',
-                'historial.requerimiento.respondidoPor',
-                'historial.requerimiento.archivos',
                 'requerimientos.creadoPor',
                 'requerimientos.destinatario',
                 'requerimientos.respondidoPor',
@@ -1652,17 +1649,6 @@ class Index extends Component
     private function usuarioPuedeCambiarResponsableAsignadoSolicitud(): bool
     {
         return auth()->check() && auth()->user()->hasAnyRole(['admin_despacho', 'supervisor', 'super_admin']);
-    }
-
-    private function solicitudEditandoActual(): ?Solicitud
-    {
-        if (!$this->editandoSolicitud || !$this->solicitudEditandoId) {
-            return null;
-        }
-
-        return Solicitud::query()
-            ->with('archivos')
-            ->find($this->solicitudEditandoId);
     }
 
     private function guardarArchivosSolicitud(Solicitud $solicitud): void

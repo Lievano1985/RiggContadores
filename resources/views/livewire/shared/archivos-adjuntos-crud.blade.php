@@ -1,41 +1,42 @@
 <div>
     <div class="space-y-4">
 
-        {{-- Archivos existentes --}}
-        <div>
-            <h4 class="font-semibold text-sm text-stone-600 dark:text-white mb-2">
-                Archivos adjuntos
-            </h4>
+        @if ($mostrarArchivosGuardados)
+            <div>
+                <h4 class="font-semibold text-sm text-stone-600 dark:text-white mb-2">
+                    Archivos adjuntos
+                </h4>
 
-            @forelse ($archivos as $a)
-                <div
-                    class="flex items-center justify-between
-                           bg-gray-100 dark:bg-gray-800
-                           px-3 py-2 rounded mb-2">
-                    <div class="text-sm">
-                        📎 {{ $a->nombre }}
+                @forelse ($archivos as $a)
+                    <div
+                        class="flex items-center justify-between
+                               bg-gray-100 dark:bg-gray-800
+                               px-3 py-2 rounded mb-2">
+                        <div class="text-sm">
+                            📎 {{ $a->nombre }}
+                        </div>
+
+                        <div class="flex items-center space-x-3 text-sm">
+
+                            @if ($a->archivo)
+                                <a href="{{ Storage::disk('public')->url($a->archivo) }}" target="_blank"
+                                    class="text-blue-600 hover:underline">
+                                    Ver
+                                </a>
+                            @endif
+
+                            <button wire:click="eliminarArchivo({{ $a->id }})" class="text-amber-700 hover:underline">
+                                Eliminar
+                            </button>
+                        </div>
                     </div>
-
-                    <div class="flex items-center space-x-3 text-sm">
-
-                        @if ($a->archivo)
-                            <a href="{{ Storage::disk('public')->url($a->archivo) }}" target="_blank"
-                                class="text-blue-600 hover:underline">
-                                Ver
-                            </a>
-                        @endif
-
-                        <button wire:click="eliminarArchivo({{ $a->id }})" class="text-amber-700 hover:underline">
-                            Eliminar
-                        </button>
-                    </div>
-                </div>
-            @empty
-                <p class="text-sm text-gray-500">
-                    No hay archivos adjuntos.
-                </p>
-            @endforelse
-        </div>
+                @empty
+                    <p class="text-sm text-gray-500">
+                        No hay archivos adjuntos.
+                    </p>
+                @endforelse
+            </div>
+        @endif
 
         {{-- Nuevos archivos --}}
         <div>
