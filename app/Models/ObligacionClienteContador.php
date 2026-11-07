@@ -114,6 +114,11 @@ class ObligacionClienteContador extends Model
         return $this->hasMany(TareaAsignada::class, 'obligacion_cliente_contador_id');
     }
 
+    public function tareasActivas(): HasMany
+    {
+        return $this->tareasAsignadas()->activasParaCliente();
+    }
+
     public function obligacionPadre(): BelongsTo
     {
         return $this->belongsTo(self::class, 'obligacion_padre_id');

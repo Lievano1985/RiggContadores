@@ -166,8 +166,8 @@
 
                     @php
                         $open = $expandida[$oc->id] ?? false;
-                        $totalTareas = $oc->tareasAsignadas->count();
-                        $revisadas = $oc->tareasAsignadas->where('estatus', 'revisada')->count();
+                        $totalTareas = $oc->tareasActivas->count();
+                        $revisadas = $oc->tareasActivas->where('estatus', 'revisada')->count();
                     @endphp
 
                     <tr wire:key="obligacion-{{ $oc->id }}" class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
@@ -212,13 +212,13 @@
                     @if ($open)
                         <tr wire:key="tareas-{{ $oc->id }}" class="bg-gray-50 dark:bg-gray-800/40">
                             <td colspan="9" class="px-6 pb-4 pt-2">
-                                @if ($oc->tareasAsignadas->isEmpty())
+                                @if ($oc->tareasActivas->isEmpty())
                                     <p class="text-sm italic text-gray-500 dark:text-gray-400">
                                         Esta obligacion no tiene tareas ligadas.
                                     </p>
                                 @else
                                     <ul class="list-disc ml-4 text-gray-700 dark:text-gray-300 text-sm space-y-1">
-                                        @foreach ($oc->tareasAsignadas->sortBy(fn($t) => $t->tareaCatalogo->nombre ?? '') as $tarea)
+                                        @foreach ($oc->tareasActivas->sortBy(fn($t) => $t->tareaCatalogo->nombre ?? '') as $tarea)
                                             <li>
                                                 {{ $tarea->tareaCatalogo->nombre ?? 'Sin nombre' }}
                                                 -
@@ -328,8 +328,8 @@
 
                         {{-- FINALIZAR OBLIGACION --}}
                         @php
-                            $tareasTotal = $obligacionSeleccionada->tareasAsignadas->count();
-                            $tareasNoRevisadas = $obligacionSeleccionada->tareasAsignadas
+                            $tareasTotal = $obligacionSeleccionada->tareasActivas->count();
+                            $tareasNoRevisadas = $obligacionSeleccionada->tareasActivas
                                 ->where('estatus', '!=', 'revisada')
                                 ->count();
                             $puedeFinalizar =
@@ -349,7 +349,7 @@
                                     Finalizar obligacion
                                 </button>
                                 <p class="text-xs text-gray-500 mt-2">
-                                    * Para finalizar: obligacion en <strong>realizada</strong> y todas las tareas en
+                                    * Para finalizar: obligacion en <strong>realizada</strong> y todas las tareas activas en
                                     <strong>revisada</strong> (o sin tareas).
                                 </p>
                             @endif
@@ -360,12 +360,12 @@
                     <div class="space-y-4">
                         <h4 class="font-semibold">Tareas asignadas</h4>
 
-                        @if ($obligacionSeleccionada->tareasAsignadas->isEmpty())
+                        @if ($obligacionSeleccionada->tareasActivas->isEmpty())
                             <p class="text-sm italic text-gray-500 dark:text-gray-400">
                                 Esta obligacion no tiene tareas ligadas.
                             </p>
                         @else
-                            @foreach ($obligacionSeleccionada->tareasAsignadas as $tarea)
+                            @foreach ($obligacionSeleccionada->tareasActivas as $tarea)
                                 <div wire:key="tarea-card-{{ $tarea->id }}"
                                     class="border p-4 rounded dark:border-gray-700">
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
 use App\Models\ArchivoAdjunto;
@@ -34,6 +35,19 @@ class TareaAsignada extends Model
         'comentario',
         'tiempo_estimado',
     ];
+
+    public function scopeActivasParaCliente(Builder $query): Builder
+    {
+        return $query
+            ->whereHas('tareaCatalogo', fn ($catalogo) => $catalogo->where('activo', true))
+            ->whereNotExists(function ($configuracion) {
+                $configuracion->selectRaw('1')
+                    ->from('cliente_tarea_configuraciones')
+                    ->whereColumn('cliente_tarea_configuraciones.cliente_id', 'tareas_asignadas.cliente_id')
+                    ->whereColumn('cliente_tarea_configuraciones.tarea_catalogo_id', 'tareas_asignadas.tarea_catalogo_id')
+                    ->where('cliente_tarea_configuraciones.activa', false);
+            });
+    }
 
     public function cliente(): BelongsTo
     {

@@ -12,7 +12,7 @@
  *    - Rechazar tarea: -> rechazada y regresa obligacion a en_progreso
  * - Finalizar obligacion SOLO si:
  *    - obligacion estatus = realizada
- *    - y (no tiene tareas) o (todas las tareas estatus = revisada)
+ *    - y (no tiene tareas) o (todas las tareas activas estatus = revisada)
  */
 
 namespace App\Livewire\Control;
@@ -274,7 +274,7 @@ class ValidacionesIndex extends Component
         $this->comentarioRechazoTarea = [];
         $this->mostrarRechazoTarea = [];
 
-        $registro = ObligacionClienteContador::with('tareasAsignadas')->find($id);
+        $registro = ObligacionClienteContador::with('tareasActivas')->find($id);
 
         if (! $registro) {
             return;
@@ -282,7 +282,7 @@ class ValidacionesIndex extends Component
 
         $this->comentarioRechazoObligacion = $registro->comentario ?? '';
 
-        foreach ($registro->tareasAsignadas as $tarea) {
+        foreach ($registro->tareasActivas as $tarea) {
             $this->comentarioRechazoTarea[$tarea->id] = $tarea->comentario ?? '';
 
             if ($tarea->estatus === 'rechazada') {
@@ -382,7 +382,7 @@ class ValidacionesIndex extends Component
             return;
         }
 
-        $registro = ObligacionClienteContador::with(['tareasAsignadas'])
+        $registro = ObligacionClienteContador::with(['tareasActivas'])
             ->find($this->obligacionIdSeleccionada);
 
         if (! $registro) {
@@ -395,7 +395,7 @@ class ValidacionesIndex extends Component
             return;
         }
 
-        $tareas = $registro->tareasAsignadas;
+        $tareas = $registro->tareasActivas;
 
         if ($tareas->count() > 0) {
             $pendientes = $tareas->where('estatus', '!=', 'revisada')->count();
@@ -425,9 +425,9 @@ class ValidacionesIndex extends Component
                 'contador',
                 'obligacion',
                 'archivos',
-                'tareasAsignadas.archivos',
-                'tareasAsignadas.tareaCatalogo',
-                'tareasAsignadas.contador',
+                'tareasActivas.archivos',
+                'tareasActivas.tareaCatalogo',
+                'tareasActivas.contador',
             ]);
 
         $user = auth()->user();
@@ -523,9 +523,9 @@ class ValidacionesIndex extends Component
                 'contador',
                 'obligacion',
                 'archivos',
-                'tareasAsignadas.archivos',
-                'tareasAsignadas.tareaCatalogo',
-                'tareasAsignadas.contador',
+                'tareasActivas.archivos',
+                'tareasActivas.tareaCatalogo',
+                'tareasActivas.contador',
             ])->find($this->obligacionIdSeleccionada)
             : null;
 

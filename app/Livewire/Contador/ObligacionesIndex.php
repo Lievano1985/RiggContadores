@@ -489,6 +489,7 @@ public ?string $modalObligacion = null;
     private function hayTareasPendientes(int $id): bool
     {
         return TareaAsignada::where('obligacion_cliente_contador_id', $id)
+            ->activasParaCliente()
             ->whereNotIn('estatus', ['realizada', 'revisada', 'cerrada'])
             ->exists();
     }
