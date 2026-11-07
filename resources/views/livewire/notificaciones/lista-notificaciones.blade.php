@@ -87,7 +87,7 @@
                         <td class="px-3 py-2">{{ $n->created_at->format('Y-m-d H:i') }}</td>
                         <td class="px-3 py-2">{{ $n->cliente->nombre ?? ($n->cliente->razon_social ?? '-') }}</td>
                         <td class="px-3 py-2">{{ $n->asunto }}</td>
-                        <td class="px-3 py-2">{{ $n->periodo_mes }}/{{ $n->periodo_ejercicio }}</td>
+                        <td class="px-3 py-2">{{ $n->periodo_mes && $n->periodo_ejercicio ? $n->periodo_mes . '/' . $n->periodo_ejercicio : ($n->solicitud ? 'Solicitud' : '—') }}</td>
                         <td class="px-3 py-2">{{ $n->usuario->name ?? '-' }}</td>
                         <td class="px-3 py-2 text-right">
                             <x-action-icon icon="eye" label="Ver detalle" variant="primary"
@@ -137,7 +137,7 @@
 
                         <p class="mt-2">
                             <strong>Periodo:</strong>
-                            {{ $notificacionSeleccionada->periodo_mes }}/{{ $notificacionSeleccionada->periodo_ejercicio }}
+                            {{ $notificacionSeleccionada->periodo_mes && $notificacionSeleccionada->periodo_ejercicio ? $notificacionSeleccionada->periodo_mes . '/' . $notificacionSeleccionada->periodo_ejercicio : 'Sin periodo' }}
                         </p>
 
                         <p class="mt-2">
@@ -152,6 +152,10 @@
                     </div>
 
                     <div class="border border-gray-200 dark:border-gray-700 p-4 rounded">
+                        @if ($notificacionSeleccionada->solicitud)
+                            <h4 class="font-semibold mb-2 text-stone-600 dark:text-white">Solicitud</h4>
+                            <p class="text-sm">{{ $notificacionSeleccionada->solicitud->titulo }} · #{{ $notificacionSeleccionada->solicitud->id }}</p>
+                        @else
                         <h4 class="font-semibold mb-2 text-stone-600 dark:text-white">Obligaciones</h4>
 
                         @forelse($notificacionSeleccionada->obligaciones as $ob)
@@ -161,13 +165,14 @@
                         @empty
                             <p class="text-sm text-gray-500 dark:text-gray-400">Sin obligaciones</p>
                         @endforelse
+                        @endif
                     </div>
 
                     <div class="border border-gray-200 dark:border-gray-700 p-4 rounded">
                         <h4 class="font-semibold mb-2 text-stone-600 dark:text-white">Archivos enviados</h4>
 
                         @forelse($notificacionSeleccionada->archivos as $archivo)
-                            <a href="{{ Storage::disk('public')->url($archivo->archivo) }}"
+                            <a href="{{ $archivo->archivo && Storage::disk('public')->exists($archivo->archivo) ? Storage::disk('public')->url($archivo->archivo) : $archivo->archivo_drive_url }}"
                                 target="_blank"
                                 class="block text-blue-600 dark:text-blue-400 text-sm hover:underline">
                                 Archivo: {{ $archivo->nombre }}

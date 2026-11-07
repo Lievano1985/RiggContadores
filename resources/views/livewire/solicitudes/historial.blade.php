@@ -106,6 +106,9 @@
                                 · {{ $evento->requerimiento->tipo === 'resultado' ? 'Resultado esperado' : 'Req. #' . $evento->requerimiento->id }}
                             @endif
                         </div>
+                        @if ($evento->tipo === 'documentos_enviados_cliente' && !empty($evento->datos['archivos']))
+                            <div class="mt-1 text-xs text-gray-600 dark:text-gray-300">{{ implode(', ', $evento->datos['archivos']) }}</div>
+                        @endif
                         @if (in_array($evento->tipo, $respuestas, true))
                             @php
                                 $camposRespondidos = collect($evento->datos['formulario'] ?? [])

@@ -11,6 +11,20 @@
         $hayArchivosRelacionados = count($archivosDisponibles) > 0;
     @endphp
 
+    <div class="mb-4">
+        <label for="tipo-envio-notificacion" class="block text-sm mb-1 text-stone-600 dark:text-white">Tipo de envío</label>
+        <select id="tipo-envio-notificacion" wire:model.live="tipoEnvio"
+            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600">
+            <option value="obligaciones">Obligaciones</option>
+            <option value="solicitudes">Solicitudes</option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Para {{ $cliente->correo ?: 'Cliente sin correo registrado' }}</p>
+        @error('correoCliente')
+            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
+    </div>
+
+    @if ($tipoEnvio === 'obligaciones')
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
             <label class="block text-sm mb-1 text-stone-600 dark:text-white">Ejercicio</label>
@@ -56,7 +70,10 @@
         @enderror
     </div>
 
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        @if ($tipoEnvio === 'obligaciones')
         <section class="border border-gray-200 dark:border-gray-700 rounded-xl bg-stone-50 dark:bg-gray-800/70 p-4">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold text-stone-700 dark:text-white">
@@ -87,6 +104,25 @@
             @endif
         </section>
 
+        @else
+        <section class="border border-gray-200 dark:border-gray-700 rounded-xl bg-stone-50 dark:bg-gray-800/70 p-4">
+            <label for="solicitud-notificacion" class="block text-sm font-semibold mb-2 text-stone-700 dark:text-white">Solicitud cerrada</label>
+            <select id="solicitud-notificacion" wire:model.live="solicitudSeleccionada"
+                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white border-gray-300 dark:border-gray-600">
+                <option value="">Selecciona una solicitud</option>
+                @foreach ($solicitudesDisponibles as $solicitud)
+                    <option value="{{ $solicitud->id }}">{{ $solicitud->titulo }} · #{{ $solicitud->id }}</option>
+                @endforeach
+            </select>
+            @if ($solicitudesDisponibles->isEmpty())
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No hay solicitudes cerradas con archivos de resultado.</p>
+            @endif
+            @error('solicitudSeleccionada')
+                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+        </section>
+        @endif
+
         <section class="border border-gray-200 dark:border-gray-700 rounded-xl bg-stone-50 dark:bg-gray-800/70 p-4">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold text-stone-700 dark:text-white">
@@ -97,7 +133,26 @@
                 </span>
             </div>
 
-            @if ($archivosElegidos->isNotEmpty())
+            @if ($tipoEnvio === 'solicitudes')
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                    @forelse ($archivosDisponibles as $archivo)
+                        <div wire:key="archivo-resultado-envio-{{ $archivo['id'] }}" class="flex items-start justify-between gap-2 text-sm">
+                            <label class="flex items-start gap-2 break-words">
+                                <input type="checkbox" wire:model.live="archivoIdsSeleccionados" value="{{ $archivo['id'] }}">
+                                <span>{{ $archivo['nombre'] }}</span>
+                            </label>
+                            @if ($archivo['url'])
+                                <a href="{{ $archivo['url'] }}" target="_blank" rel="noopener noreferrer" class="text-blue-700 underline dark:text-blue-300">Ver</a>
+                            @endif
+                        </div>
+                    @empty
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Selecciona una solicitud para ver sus archivos de resultado.</p>
+                    @endforelse
+                </div>
+                @error('archivoIdsSeleccionados')
+                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            @elseif ($archivosElegidos->isNotEmpty())
                 <div class="space-y-2 max-h-48 overflow-y-auto">
                     @foreach ($archivosElegidos as $archivo)
                         <div class="flex items-start justify-between gap-3 rounded-lg bg-white dark:bg-gray-700 px-3 py-2 text-sm">
@@ -164,12 +219,13 @@
     </div>
 
     <div class="flex justify-end">
-        <button wire:click="guardar"
+        <button wire:click="guardar" wire:loading.attr="disabled" wire:target="guardar"
             class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded">
             Enviar notificacion
         </button>
     </div>
 
+    @if ($tipoEnvio === 'obligaciones')
     <div x-cloak
         x-show="selectorOpen"
         x-transition.opacity
@@ -303,4 +359,5 @@
             </div>
         </div>
     </div>
+    @endif
 </div>

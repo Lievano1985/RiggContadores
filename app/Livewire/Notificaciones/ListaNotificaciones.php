@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 class ListaNotificaciones extends Component
 {
     public $cliente;
+    protected $listeners = ['notificacion-enviada' => '$refresh'];
     public $sidebarVisible = false;
     public $notificacionSeleccionada = null;
     public string $sortField = 'created_at';
@@ -54,7 +55,7 @@ class ListaNotificaciones extends Component
     {
         $this->notificacionSeleccionada =
             $this->notificacionesVisibles()
-                ->with(['usuario','obligaciones','archivos'])
+                ->with(['usuario','obligaciones','archivos','solicitud'])
                 ->findOrFail($id);
     
         $this->sidebarVisible = true;
@@ -73,7 +74,7 @@ class ListaNotificaciones extends Component
         $obligaciones = $this->obligacionesDisponibles();
 
         $query = $this->notificacionesVisibles()
-            ->with(['usuario', 'cliente'])
+            ->with(['usuario', 'cliente', 'solicitud'])
             ->when($this->cliente_filtro !== '', fn ($q) => $q->where('cliente_id', $this->cliente_filtro))
             ->when($this->fecha_desde !== '', fn ($q) => $q->whereDate('created_at', '>=', $this->fecha_desde))
             ->when($this->fecha_hasta !== '', fn ($q) => $q->whereDate('created_at', '<=', $this->fecha_hasta))

@@ -20,6 +20,7 @@ class NotificacionCliente extends Model
 
     protected $fillable = [
         'cliente_id',
+        'solicitud_id',
         'user_id',
         'asunto',
         'cc',
@@ -40,6 +41,11 @@ class NotificacionCliente extends Model
     public function usuario()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function solicitud()
+    {
+        return $this->belongsTo(Solicitud::class);
     }
 
     public function obligaciones()

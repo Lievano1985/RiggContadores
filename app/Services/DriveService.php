@@ -149,6 +149,22 @@ class DriveService
         }
     }
 
+    public function descargarArchivo(string $referencia): ?string
+    {
+        if (preg_match('~^https://drive\.google\.com/(?:file/d/|open\?id=)([\w-]+)(?:[/?&#]|$)~', $referencia, $partes)) {
+            $referencia = $partes[1];
+        }
+
+        if (!preg_match('/^[\w-]+$/D', $referencia)) {
+            return null;
+        }
+
+        return $this->googleService->files->get($referencia, [
+            'alt' => 'media',
+            'supportsAllDrives' => true,
+        ])->getBody()->getContents();
+    }
+
     public function eliminarArchivo(string $id): void
     {
         try {
