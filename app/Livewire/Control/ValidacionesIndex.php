@@ -418,7 +418,18 @@ class ValidacionesIndex extends Component
      * =========================== */
     public function render()
     {
+        $tareasIniciadas = TareaAsignada::query()
+            ->selectRaw('1')
+            ->activasParaCliente()
+            ->whereColumn('tareas_asignadas.obligacion_cliente_contador_id', 'obligacion_cliente_contador.id')
+            ->whereIn('tareas_asignadas.estatus', ['en_progreso', 'realizada', 'revisada', 'rechazada', 'reabierta', 'cerrada', 'terminada']);
+
+        $estatusVisible = "case when obligacion_cliente_contador.estatus = 'asignada' and exists ({$tareasIniciadas->toSql()}) "
+            . "then 'en_progreso' else obligacion_cliente_contador.estatus end";
+        $bindingsEstatus = $tareasIniciadas->getBindings();
+
         $query = ObligacionClienteContador::select('obligacion_cliente_contador.*')
+            ->selectRaw("$estatusVisible as estatus_validacion", $bindingsEstatus)
             ->where('obligacion_cliente_contador.is_activa', true)
             ->with([
                 'cliente',
@@ -429,6 +440,8 @@ class ValidacionesIndex extends Component
                 'tareasActivas.tareaCatalogo',
                 'tareasActivas.contador',
             ]);
+
+        $queryDetalle = clone $query;
 
         $user = auth()->user();
         if ($user && $user->hasRole('supervisor')) {
@@ -448,7 +461,7 @@ class ValidacionesIndex extends Component
         }
 
         if ($this->filtroEstatus !== 'auto' && $this->filtroEstatus !== 'todos') {
-            $query->where('estatus', $this->filtroEstatus);
+            $query->whereRaw("($estatusVisible) = ?", [...$bindingsEstatus, $this->filtroEstatus]);
         }
 
         if ($this->filtroEstatus === 'auto') {
@@ -508,7 +521,9 @@ class ValidacionesIndex extends Component
         } elseif ($this->sortField === 'periodo') {
             $query->orderBy('ejercicio', $this->sortDirection)
                 ->orderBy('mes', $this->sortDirection);
-        } elseif (in_array($this->sortField, ['estatus', 'fecha_vencimiento'], true)) {
+        } elseif ($this->sortField === 'estatus') {
+            $query->orderBy('estatus_validacion', $this->sortDirection);
+        } elseif ($this->sortField === 'fecha_vencimiento') {
             $query->orderBy($this->sortField, $this->sortDirection);
         } else {
             $query->orderBy('fecha_vencimiento')
@@ -518,15 +533,7 @@ class ValidacionesIndex extends Component
         $obligaciones = $query->paginate($this->perPageValue($query, 10));
 
         $obligacionSeleccionada = $this->obligacionIdSeleccionada
-            ? ObligacionClienteContador::with([
-                'cliente',
-                'contador',
-                'obligacion',
-                'archivos',
-                'tareasActivas.archivos',
-                'tareasActivas.tareaCatalogo',
-                'tareasActivas.contador',
-            ])->find($this->obligacionIdSeleccionada)
+            ? $queryDetalle->find($this->obligacionIdSeleccionada)
             : null;
 
         return view('livewire.control.validaciones-index', [

@@ -183,7 +183,7 @@
 
                         {{-- Badge estatus obligacion --}}
                         <td class="px-3 py-2 text-center">
-                            <x-status-badge :status="$oc->estatus" />
+                            <x-status-badge :status="$oc->estatus_validacion" />
                         </td>
                         <td class="px-3 py-2 text-center whitespace-nowrap">
                             {{ $oc->ejercicio }}-{{ str_pad($oc->mes, 2, '0', STR_PAD_LEFT) }}
@@ -276,7 +276,7 @@
                         <p class="mt-1">
                             <strong>Estatus:</strong>
                             <span
-                                class="text-sm">{{ ucfirst(str_replace('_', ' ', $obligacionSeleccionada->estatus)) }}</span>
+                                class="text-sm">{{ ucfirst(str_replace('_', ' ', $obligacionSeleccionada->estatus_validacion)) }}</span>
                         </p>
 
                         <p class="mt-2"><strong>Comentario:</strong> {{ $obligacionSeleccionada->comentario ?? '-' }}
