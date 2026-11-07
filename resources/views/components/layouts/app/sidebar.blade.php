@@ -152,12 +152,12 @@
                             </flux:navlist.group>
 
                             <flux:navlist.group expandable
-                                :expanded="request()->routeIs('solicitudes.index', 'solicitudes.create', 'solicitudes.asignadas', 'mis-requerimientos')"
+                                :expanded="request()->routeIs('solicitudes.index', 'solicitudes.create', 'solicitudes.creadas', 'solicitudes.asignadas', 'mis-requerimientos')"
                                 heading="Solicitudes" class="mt-2 w-full dark:bg-gray-700 dark:text-white">
 
                                 <flux:navlist.item icon="document-text"
-                                    :href="auth()->user()->hasRole('contador') ? route('solicitudes.asignadas') : route('solicitudes.index')"
-                                    :current="request()->routeIs('solicitudes.index', 'solicitudes.create', 'solicitudes.asignadas')" wire:navigate
+                                    :href="auth()->user()->hasRole('contador') ? route('solicitudes.creadas') : route('solicitudes.index')"
+                                    :current="request()->routeIs('solicitudes.index', 'solicitudes.create', 'solicitudes.creadas', 'solicitudes.asignadas')" wire:navigate
                                     class="rigg-shell-link border border-transparent transition-all duration-300 hover:border-amber-600 data-[current]:border-amber-600">
                                     {{ __('Mis solicitudes') }}
                                 </flux:navlist.item>

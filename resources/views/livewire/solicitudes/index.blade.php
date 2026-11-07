@@ -358,14 +358,31 @@
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="mb-1 block text-sm font-medium">Archivos de apoyo</label>
-                        <input type="file" wire:model="solicitud_archivos_form" multiple
-                            class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-amber-600 focus:outline-none focus:ring focus:ring-amber-500/40 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Opcional. Puedes adjuntar archivos guÃ­a o soporte para quien atenderÃ¡ el requerimiento.
+                        <div class="mb-1 text-sm font-medium">Archivos de apoyo</div>
+                        <div class="space-y-3">
+                            @foreach ($solicitud_archivos_form as $indice => $adjunto)
+                                <div wire:key="solicitud-archivo-apoyo-{{ $indice }}" class="space-y-2 rounded border p-3 dark:border-gray-600">
+                                    <label for="archivo-apoyo-{{ $indice }}" class="block text-sm">Archivo</label>
+                                    <input id="archivo-apoyo-{{ $indice }}" type="file" wire:model="solicitud_archivos_form.{{ $indice }}.archivo"
+                                        class="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                    @error('solicitud_archivos_form.' . $indice . '.archivo')
+                                        <div class="text-xs text-red-500">{{ $message }}</div>
+                                    @enderror
+                                    <label for="nombre-apoyo-{{ $indice }}" class="block text-sm">Nombre del archivo (opcional)</label>
+                                    <input id="nombre-apoyo-{{ $indice }}" type="text" wire:model="solicitud_archivos_form.{{ $indice }}.nombre" maxlength="150"
+                                        placeholder="{{ $adjunto['archivo']?->getClientOriginalName() ?? 'Se usa el nombre original' }}"
+                                        class="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                    @error('solicitud_archivos_form.' . $indice . '.nombre')
+                                        <div class="text-xs text-red-500">{{ $message }}</div>
+                                    @enderror
+                                    <button type="button" wire:click="quitarArchivoApoyo({{ $indice }})"
+                                        wire:loading.attr="disabled" wire:target="solicitud_archivos_form.{{ $indice }}.archivo"
+                                        class="text-sm text-amber-700 underline dark:text-amber-300">Quitar archivo</button>
+                                </div>
+                            @endforeach
+                            <button type="button" wire:click="agregarArchivoApoyo"
+                                class="text-sm font-medium text-amber-700 underline dark:text-amber-300">+ Agregar archivo de apoyo</button>
                         </div>
-                        @error('solicitud_archivos_form.*') <div class="mt-1 text-xs text-red-500">{{ $message }}</div> @enderror
-
                     </div>
 
                     <div>
@@ -409,7 +426,6 @@
                 <button wire:click="guardarSolicitud"
                     @click="window.dispatchEvent(new CustomEvent('spinner-on'))"
                     wire:loading.attr="disabled"
-                    wire:target="guardarSolicitud"
                     class="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700">
                     {{ $editandoSolicitud ? 'Actualizar solicitud' : 'Guardar solicitud' }}
                 </button>

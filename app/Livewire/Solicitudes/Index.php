@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Services\SolicitudHistorialService;
 use App\Services\SolicitudNotificacionService;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -21,6 +22,7 @@ class Index extends Component
 {
     use WithPagination, HasPerPage, WithFileUploads;
 
+    #[Locked]
     public string $vistaSolicitudes = 'todas';
     public string $sortField = 'created_at';
     public string $sortDirection = 'desc';
@@ -88,6 +90,8 @@ class Index extends Component
             $this->abrirSidebarCrear();
         } elseif (request()->routeIs('solicitudes.asignadas')) {
             $this->vistaSolicitudes = 'asignadas';
+        } elseif (request()->routeIs('solicitudes.creadas')) {
+            $this->vistaSolicitudes = 'creadas';
         }
 
         $this->cargarOpcionesFormulario();
@@ -904,6 +908,20 @@ class Index extends Component
         $this->prioridad_form = $tipo->prioridad_default ?: '';
     }
 
+    public function agregarArchivoApoyo(): void
+    {
+        $this->solicitud_archivos_form[] = ['archivo' => null, 'nombre' => ''];
+    }
+
+    public function quitarArchivoApoyo(int $indice): void
+    {
+        unset($this->solicitud_archivos_form[$indice]);
+        $this->resetValidation([
+            "solicitud_archivos_form.$indice.archivo",
+            "solicitud_archivos_form.$indice.nombre",
+        ]);
+    }
+
     public function guardarSolicitud(): void
     {
         try {
@@ -925,7 +943,8 @@ class Index extends Component
                 'descripcion_form' => ['nullable', 'string'],
                 'prioridad_form' => ['nullable', Rule::in(['baja', 'media', 'alta', 'urgente'])],
                 'fecha_resultado_form' => ['nullable', 'date'],
-                'solicitud_archivos_form.*' => ['nullable', 'file', 'max:20480'],
+                'solicitud_archivos_form.*.archivo' => ['nullable', 'required_with:solicitud_archivos_form.*.nombre', 'file', 'max:20480'],
+                'solicitud_archivos_form.*.nombre' => ['nullable', 'string', 'max:150'],
             ]);
 
             $user = auth()->user();
@@ -1063,7 +1082,7 @@ class Index extends Component
 
                 $solicitud->update($payload);
 
-                $this->guardarArchivosSolicitud($solicitud);
+                $archivosFallidos = $this->guardarArchivosSolicitud($solicitud);
 
                 $this->sincronizarRequerimientoResultado($solicitud, $user, $responsableAsignadoId);
 
@@ -1082,7 +1101,7 @@ class Index extends Component
                 $payload['creado_por_user_id'] = $user->id;
                 $solicitud = Solicitud::create($payload);
 
-                $this->guardarArchivosSolicitud($solicitud);
+                $archivosFallidos = $this->guardarArchivosSolicitud($solicitud);
 
                 $resultadoRequerimiento = $this->sincronizarRequerimientoResultado($solicitud, $user, $responsableAsignadoId);
 
@@ -1112,6 +1131,10 @@ class Index extends Component
                 SolicitudNotificacionService::notificarSolicitudCreada($solicitud);
 
                 $mensaje = 'Solicitud creada correctamente.';
+            }
+
+            if ($archivosFallidos > 0) {
+                $mensaje .= " Archivos de apoyo sin guardar: {$archivosFallidos}. Puedes volver a adjuntarlos al editar.";
             }
 
             $this->cerrarSidebar();
@@ -1191,7 +1214,11 @@ class Index extends Component
             'tipoSeleccionado' => $this->tipoSeleccionado(),
             'solicitudDetalle' => $this->solicitudDetalle(),
             'usuariosInternosRequerimiento' => $this->usuariosInternosRequerimiento(),
-            'tituloModulo' => $this->vistaSolicitudes === 'asignadas' ? 'Solicitudes asignadas' : 'Solicitudes',
+            'tituloModulo' => match ($this->vistaSolicitudes) {
+                'asignadas' => 'Solicitudes asignadas',
+                'creadas' => 'Mis solicitudes',
+                default => 'Solicitudes',
+            },
             'puedeCrearSolicitud' => $this->usuarioPuedeCrearSolicitud(),
             'puedeCrearSolicitudParaCliente' => $this->usuarioPuedeCrearSolicitudParaCliente(),
             'usuarioEsAdminOSupervisor' => $this->usuarioEsAdminOSupervisor(),
@@ -1651,30 +1678,35 @@ class Index extends Component
         return auth()->check() && auth()->user()->hasAnyRole(['admin_despacho', 'supervisor', 'super_admin']);
     }
 
-    private function guardarArchivosSolicitud(Solicitud $solicitud): void
+    private function guardarArchivosSolicitud(Solicitud $solicitud): int
     {
         if (empty($this->solicitud_archivos_form)) {
-            return;
+            return 0;
         }
 
         $cliente = $solicitud->cliente;
         $despacho = $cliente?->despacho;
 
         if (!$cliente || !$despacho) {
-            return;
+            return 0;
         }
 
-        foreach ($this->solicitud_archivos_form as $archivo) {
-            if (!$archivo || !is_object($archivo) || !method_exists($archivo, 'getClientOriginalName')) {
+        $consecutivo = $solicitud->archivos()->count();
+        $archivosFallidos = 0;
+
+        foreach ($this->solicitud_archivos_form as $adjunto) {
+            $archivo = $adjunto['archivo'];
+            if (!$archivo) {
                 continue;
             }
 
-            $nombreFinal = $this->construirNombreArchivoSolicitud($cliente->rfc, $solicitud->titulo, $archivo);
+            $nombre = trim($adjunto['nombre'] ?? '');
+            $nombreFinal = $this->construirNombreArchivoSolicitud($cliente->rfc, $nombre, $archivo, $consecutivo + 1);
             $rutaStorage = null;
             $urlDrive = null;
 
             if (in_array($despacho->politica_almacenamiento, ['storage_only', 'both'])) {
-                $rutaStorage = $archivo->storeAs('adjuntos', $nombreFinal, 'public');
+                $rutaStorage = $archivo->storeAs("adjuntos/solicitudes/{$solicitud->id}/" . \Str::uuid(), $nombreFinal, 'public');
             }
 
             if (in_array($despacho->politica_almacenamiento, ['drive_only', 'both'])) {
@@ -1693,30 +1725,41 @@ class Index extends Component
                         $archivo->getMimeType()
                     );
 
-                    $urlDrive = is_array($res) ? ($res['webViewLink'] ?? null) : $res;
+                    $urlDrive = $res ? "https://drive.google.com/file/d/{$res}/view" : null;
                 }
             }
 
+            if (!$rutaStorage && !$urlDrive) {
+                $archivosFallidos++;
+                continue;
+            }
+
+            $consecutivo++;
             $solicitud->archivos()->create([
                 'nombre' => $nombreFinal,
-                'archivo' => $rutaStorage,
+                'archivo' => $rutaStorage ?: null,
                 'archivo_drive_url' => $urlDrive,
             ]);
         }
 
-        $this->solicitud_archivos_form = [];
+        return $archivosFallidos;
     }
 
-    private function construirNombreArchivoSolicitud(string $rfc, string $titulo, $archivo): string
+    private function construirNombreArchivoSolicitud(string $rfc, string $nombre, $archivo, int $consecutivo): string
     {
         $extension = strtolower($archivo->getClientOriginalExtension());
-        $mes = now()->format('m');
-        $anio = now()->format('y');
-        $segundos = now()->format('s');
-        $rfcNormalizado = \Str::upper($rfc);
-        $tituloNormalizado = \Str::slug($titulo, '-');
+        $nombreOriginal = pathinfo($archivo->getClientOriginalName(), PATHINFO_FILENAME);
+        if ($extension !== '' && str_ends_with(strtolower($nombre), ".{$extension}")) {
+            $nombre = substr($nombre, 0, -strlen($extension) - 1);
+        }
 
-        return "{$anio}-{$mes}-{$rfcNormalizado}-solicitud-{$tituloNormalizado}-{$segundos}.{$extension}";
+        $rfcNormalizado = mb_strtoupper(trim($rfc));
+        $nombreBase = $nombre !== '' ? $nombre : $nombreOriginal;
+        $nombreNormalizado = preg_replace('~[<>:"/\\\\|?*\x00-\x1F]~u', '-', $nombreBase);
+        $nombreNormalizado = mb_strcut(rtrim($nombreNormalizado, ' .'), 0, 150) ?: 'archivo';
+        $sufijo = preg_match('/^[a-z0-9]{1,16}$/', $extension) ? ".{$extension}" : '';
+
+        return "{$rfcNormalizado}-{$nombreNormalizado}-{$consecutivo}{$sufijo}";
     }
 
     private function usuarioEsAdminOSupervisor(): bool
@@ -1960,6 +2003,12 @@ class Index extends Component
                     $cliente->where('id', $user->cliente_id);
                 }
             });
+
+            if ($this->vistaSolicitudes === 'creadas') {
+                $query->where('creado_por_user_id', $user->id);
+
+                return;
+            }
 
             if ($user->hasRole('contador')) {
                 $query->where(function ($sub) use ($user) {

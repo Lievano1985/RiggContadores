@@ -138,6 +138,9 @@ Route::middleware(['auth', 'role:admin_despacho|contador|supervisor'])->group(fu
     Route::get('/solicitudes/asignadas', SolicitudesIndex::class)
         ->name('solicitudes.asignadas');
 
+    Route::get('/solicitudes/creadas', SolicitudesIndex::class)
+        ->name('solicitudes.creadas');
+
     Route::get('/contador/asignaciones', [ContadorAsignacionesController::class, 'index'])
         ->name('contadores.asignaciones.index');
 
