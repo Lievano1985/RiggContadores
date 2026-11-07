@@ -134,11 +134,12 @@ public ?string $modalObligacion = null;
             ->get()
             ->pluck('cliente')
             ->unique('id')
-            ->values()
             ->map(fn ($c) => [
                 'id' => $c->id,
                 'nombre' => $c->nombre ?? $c->razon_social,
             ])
+            ->sortBy('nombre', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
             ->toArray();
     }
     
